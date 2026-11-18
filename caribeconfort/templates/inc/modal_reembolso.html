@@ -8,6 +8,8 @@
         <p class="refund-amount" id="reembolsoMonto"></p>
         <form id="formReembolso">
             {% csrf_token %}
+            <label for="montoReembolso">Monto a devolver</label>
+            <input id="montoReembolso" name="monto" type="number" min="0.01" step="0.01" required>
             <label for="metodoReembolsoReserva">Método de devolución</label>
             <select id="metodoReembolsoReserva" name="metodo" required>
                 <option value="Efectivo">Efectivo</option>

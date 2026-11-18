@@ -4,7 +4,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
 <header class="ad-top">
     <a href="{% if rol == 'Recepcionista' or request.session.rol == 'Recepcionista' %}/recepcion{% else %}/administrador{% endif %}" class="ad-logo">
-        Caribe Confort
+        {{ nombre_hotel }}
     </a>
     <div class="ad-top-der">
         <button type="button" class="ad-theme-toggle" id="adThemeToggle" aria-label="Activar modo oscuro" title="Activar modo oscuro">

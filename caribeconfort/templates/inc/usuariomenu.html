@@ -1,11 +1,11 @@
 {% load i18n static %}
 <nav class="home-navigation nav-transparente">
-    <a class="brand-link" href="/home" aria-label="{% trans 'Caribe Confort, inicio' %}">
+    <a class="brand-link" href="/home" aria-label="{{ nombre_hotel }} — {% trans 'inicio' %}">
         <span class="brand-mark">
-            <img src="{% static 'img/imagenes/LCFFINAL.png' %}" alt="">
+            <img src="{% if logo_hotel_url %}{{ logo_hotel_url }}{% else %}{% static 'img/imagenes/logo-caribeconfort-default.png' %}{% endif %}" alt="">
         </span>
         <span class="brand-copy">
-            <strong>Caribe Confort</strong>
+            <strong>{{ nombre_hotel }}</strong>
             <small>Riohacha · Guajira</small>
         </span>
     </a>

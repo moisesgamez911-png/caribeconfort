@@ -10,7 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 import os
-import dj_database_url
+try:
+    import dj_database_url
+except ImportError:
+    dj_database_url = None
 from pathlib import Path
 from django.db.backends.mysql.base import DatabaseWrapper
 from django.core.management.utils import get_random_secret_key
@@ -70,6 +73,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'caribeconfort.context_processors.identidad_hotel',
                 'caribeconfort.context_processors.notificaciones_administracion',
             ],
         },
@@ -83,10 +87,27 @@ WSGI_APPLICATION = 'caribeconfort.wsgi.application'
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 DatabaseWrapper.get_database_version = lambda self: (8, 4, 0)
 
-DATABASES = {
+# Database
+# https://docs.djangoproject.com/en/6.1/ref/settings/#databases
+
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'bdcaribeconfort',
+            'USER': 'root',
+            'PASSWORD': 'Sena101', 
+            'HOST': 'localhost',
+            'PORT': '3306',
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            }
+        }
+    }
+else:
+    DATABASES = {
     'default': dj_database_url.config(default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",conn_max_age=600, ssl_require=not DEBUG)
 }
-
 
 CSRF_TRUSTED_ORIGINS = [
     'https://disloyal-festivity-doorframe.ngrok-free.dev',
@@ -141,19 +162,20 @@ MEDIA_ROOT = BASE_DIR / 'caribeconfort' / 'public' / 'img' / 'imagenes'
 
 
 # Email
-# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
+# Configure SMTP credentials through environment variables or the admin panel.
 
 MAILERS = {
     'default': {
         'BACKEND': 'django.core.mail.backends.smtp.EmailBackend',
         'OPTIONS': {
-            'host': 'smtp.gmail.com',
-            'port': 587,
-            'username': 'moisesgamez911@gmail.com',
-            'password': 'iyre yjju efso knnu',
-            'use_tls': True,
+            'host': os.environ.get('EMAIL_HOST', ''),
+            'port': int(os.environ.get('EMAIL_PORT', '587')),
+            'username': os.environ.get('EMAIL_HOST_USER', ''),
+            'password': os.environ.get('EMAIL_HOST_PASSWORD', ''),
+            'use_tls': os.environ.get('EMAIL_USE_TLS', 'true').lower() in {'1', 'true', 'yes'},
         },
     },
 }
 
-DEFAULT_FROM_EMAIL = MAILERS['default']['OPTIONS']['username']
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL') or MAILERS['default']['OPTIONS']['username']
+EMAIL_CREDENTIAL_ENCRYPTION_KEY = os.environ.get('EMAIL_CREDENTIAL_ENCRYPTION_KEY', '')

@@ -20,7 +20,7 @@ body {
 .hero {
     position: relative;
     isolation: isolate;
-    min-height: 430px;
+    min-height: 530px !important; 
     color: white;
     padding-bottom: 58px;
     margin-bottom: 8px;

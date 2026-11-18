@@ -408,7 +408,7 @@
 
 .nav-user-menu .nav-user-logout:hover,
 .nav-user-menu .nav-user-logout:focus-visible {
-    background: #FAF8F5;
+    background: #f5faf9;
     color: #183D3D;
 }
 
@@ -532,12 +532,17 @@
 }
 
 .brand-copy strong {
+    display: block;
+    max-width: 210px;
+    overflow: hidden;
     color: #fff;
     font-family: "Cormorant Garamond", Georgia, serif;
     font-size: 20px;
     font-style: italic;
     font-weight: 600;
     letter-spacing: .2px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .brand-copy small {
@@ -810,6 +815,16 @@
         gap: 10px;
         padding-right: 14px;
         padding-left: 14px;
+    }
+
+    .home-navigation .brand-mark {
+        width: 54px;
+        height: 40px;
+    }
+
+    .home-navigation .brand-copy strong {
+        max-width: 145px;
+        font-size: 18px;
     }
 
     .home-navigation .nav-actions {

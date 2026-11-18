@@ -109,6 +109,7 @@
                             <td><span class="status-pill {% if reserva.estado == 'En curso' %}in-progress{% else %}confirmed{% endif %}">{{ reserva.estado }}</span></td>
                             <td>
                                 <a class="table-action" href="/adminreserva">Gestionar</a>
+                                <a class="table-action" href="/reservas/{{ reserva.id }}/factura/">Factura</a>
                                 {% if reserva.saldo_favor > 0 %}
                                 <button type="button" class="table-action btn-procesar-reembolso"
                                         data-id="{{ reserva.id }}"

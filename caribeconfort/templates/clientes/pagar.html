@@ -84,22 +84,76 @@
             </div>
 
             <div class="formulario-tarjeta">
-                <div class="input-group full">
-                    <label>Método de pago</label>
-                    <div class="select-wrapper">
-                        <i class="bi bi-wallet2 icono-izq"></i>
-                        <select name="metodo_pago" id="metodoPago">
-                            <option value="Tarjeta">Tarjeta</option>
-                            <option value="Transferencia">Transferencia / Nequi</option>
-                            <option value="Efectivo">Efectivo</option>
-                        </select>
-                        <i class="bi bi-chevron-down icono-der"></i>
+                <fieldset class="payment-method-selector">
+                    <legend>Selecciona un medio de pago</legend>
+                    <div class="payment-methods">
+                        <label class="payment-method-option">
+                            <input type="radio" name="metodo_pago" value="Tarjeta" checked required>
+                            <span class="payment-method-card"><i class="bi bi-credit-card-2-front" aria-hidden="true"></i><strong>Tarjeta</strong></span>
+                        </label>
+                        <label class="payment-method-option">
+                            <input type="radio" name="metodo_pago" value="Nequi">
+                            <span class="payment-method-card"><i class="bi bi-phone" aria-hidden="true"></i><strong>Nequi</strong></span>
+                        </label>
+                        <label class="payment-method-option">
+                            <input type="radio" name="metodo_pago" value="Bancolombia">
+                            <span class="payment-method-card"><i class="bi bi-bank" aria-hidden="true"></i><strong>Bancolombia</strong></span>
+                        </label>
+                        <label class="payment-method-option">
+                            <input type="radio" name="metodo_pago" value="PSE">
+                            <span class="payment-method-card"><i class="bi bi-shield-check" aria-hidden="true"></i><strong>PSE</strong></span>
+                        </label>
                     </div>
+                </fieldset>
+
+                <div class="payment-fields" data-payment-fields="Tarjeta">
+                    <div class="input-group full">
+                        <label for="cardNumber">Número de tarjeta</label>
+                        <input id="cardNumber" type="text" inputmode="numeric" autocomplete="off" maxlength="23" pattern="[0-9 ]{13,23}" placeholder="0000 0000 0000 0000" required>
+                    </div>
+                    <div class="input-group full">
+                        <label for="cardHolder">Titular de la tarjeta</label>
+                        <input id="cardHolder" type="text" autocomplete="off" maxlength="100" placeholder="Nombre como aparece en la tarjeta" required>
+                    </div>
+                    <div class="input-group half">
+                        <label for="cardExpiry">Fecha de expiración</label>
+                        <input id="cardExpiry" type="text" inputmode="numeric" autocomplete="off" maxlength="5" pattern="(0[1-9]|1[0-2])/[0-9]{2}" placeholder="MM/AA" required>
+                    </div>
+                    <div class="input-group half">
+                        <label for="cardCvv">CVV</label>
+                        <input id="cardCvv" type="password" inputmode="numeric" autocomplete="off" maxlength="4" pattern="[0-9]{3,4}" placeholder="•••" required>
+                    </div>
+                </div>
+
+                <div class="payment-fields" data-payment-fields="Nequi" hidden>
+                    <div class="input-group full">
+                        <label for="nequiPhone">Número de celular asociado a Nequi</label>
+                        <input id="nequiPhone" type="tel" inputmode="tel" autocomplete="off" maxlength="16" pattern="[0-9+ ]{10,16}" placeholder="300 000 0000" required>
+                    </div>
+                </div>
+
+                <div class="payment-fields" data-payment-fields="Bancolombia" hidden>
+                    <div class="input-group full">
+                        <label for="bancolombiaAccount">Número de cuenta</label>
+                        <input id="bancolombiaAccount" type="text" inputmode="numeric" autocomplete="off" maxlength="20" pattern="[0-9]{6,20}" placeholder="Número de cuenta" required>
+                    </div>
+                    <div class="input-group full">
+                        <label for="bancolombiaAccountType">Tipo de cuenta</label>
+                        <select id="bancolombiaAccountType" required>
+                            <option value="">Selecciona el tipo de cuenta</option>
+                            <option value="Ahorros">Ahorros</option>
+                            <option value="Corriente">Corriente</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="payment-fields" data-payment-fields="PSE" hidden>
+                    <p class="payment-method-hint">Simulación PSE: el hotel verificará el pago registrado. No se realizará una conexión bancaria.</p>
                 </div>
 
                 <div class="alerta-pago">
                     <i class="bi bi-info-circle-fill"></i>
-                    Este formulario registra el pago para verificación del hotel; no realiza cargos bancarios ni almacena datos de tarjetas.
+                    Simulación visual: no ingreses datos reales. Los datos de los campos no se envían ni se almacenan; solo se registra el medio de pago para verificación del hotel.
                 </div>
             </div>
 

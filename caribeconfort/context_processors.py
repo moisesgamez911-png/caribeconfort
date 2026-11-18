@@ -1,4 +1,12 @@
-from caribeconfort.models import Reservas, ServicioReserva
+from caribeconfort.models import Hoteles, Reservas, ServicioReserva
+
+
+def identidad_hotel(request):
+    hotel = Hoteles.objects.order_by('id').only('nombre', 'logo').first()
+    return {
+        'nombre_hotel': hotel.nombre if hotel else 'Caribe Confort',
+        'logo_hotel_url': hotel.logo.url if hotel and hotel.logo else '',
+    }
 
 
 def notificaciones_administracion(request):

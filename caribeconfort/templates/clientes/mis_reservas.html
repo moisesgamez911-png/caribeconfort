@@ -4,17 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mis Reservas | Caribe Confort</title>
+    <title>Mis Reservas | {{ nombre_hotel }}</title>
 
-    <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=4">
     <link rel="stylesheet" href="{% static 'css/idiomas.css' %}">
-    <link rel="stylesheet" href="{% static 'css/mi_reserva.css' %}?v=27">
+    <link rel="stylesheet" href="{% static 'css/mi_reserva.css' %}?v=28">
     <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="mis-reservas-page">
 
@@ -34,7 +34,10 @@
                 <p class="section-eyebrow">TU ESTADÍA</p>
                 <h2 id="upcoming-title">Próxima reserva</h2>
             </div>
-            <span class="section-count">{{ activas|length }} estancia{% if activas|length != 1 %}s{% endif %} activa{% if activas|length != 1 %}s{% endif %}</span>
+            <div class="reservation-heading-actions">
+                <span class="section-count">{{ activas|length }} estancia{% if activas|length != 1 %}s{% endif %} activa{% if activas|length != 1 %}s{% endif %}</span>
+                <a class="payment-button" href="/mis-reservas/certificado-pagos/">Descargar certificado de pagos</a>
+            </div>
         </div>
 
         <div class="reservation-carousel">
@@ -46,16 +49,16 @@
                 <article class="reservation-card">
                     <div class="reservation-photo">
                         {% if r.habitaciones and r.habitaciones.imagen %}
-                            <img src="/media/{{ r.habitaciones.imagen }}" alt="Habitación {{ r.habitaciones.numero }}">
+                            <img src="/media/{{ r.habitaciones.imagen }}" alt="Habitación {{ r.habitaciones.numero }}" loading="lazy" decoding="async">
                             <span class="reservation-photo-tag">Hab. {{ r.habitaciones.numero }}</span>
                         {% elif r.habitaciones and r.habitaciones.tipohabitacion.imagen %}
-                            <img src="/media/{{ r.habitaciones.tipohabitacion.imagen }}" alt="{{ r.habitaciones.tipohabitacion.nombre }}">
+                            <img src="/media/{{ r.habitaciones.tipohabitacion.imagen }}" alt="{{ r.habitaciones.tipohabitacion.nombre }}" loading="lazy" decoding="async">
                             <span class="reservation-photo-tag">Hab. {{ r.habitaciones.numero }}</span>
                         {% elif r.planes and r.planes.imagen %}
-                            <img src="/media/{{ r.planes.imagen }}" alt="{{ r.planes.nombre }}">
+                            <img src="/media/{{ r.planes.imagen }}" alt="{{ r.planes.nombre }}" loading="lazy" decoding="async">
                             <span class="reservation-photo-tag">Plan</span>
                         {% else %}
-                            <img src="{% static 'img/imagenes/foto2.png' %}" alt="Hotel Caribe Confort">
+                            <img src="{% static 'img/imagenes/foto2.png' %}" alt="{{ nombre_hotel }}" loading="lazy" decoding="async">
                             <span class="reservation-photo-tag">{% if r.habitaciones %}Hab. {{ r.habitaciones.numero }}{% else %}Plan{% endif %}</span>
                         {% endif %}
                     </div>
@@ -146,6 +149,10 @@
                                 <i class="bi bi-receipt" aria-hidden="true"></i>
                                 Ver comprobante
                             </button>
+                            <a class="payment-button payment-button-secondary" href="/reservas/{{ r.id }}/factura/">
+                                <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+                                Descargar factura
+                            </a>
                         </div>
                     </aside>
                 </article>
@@ -187,13 +194,13 @@
                 <article class="history-card" data-hist="{% if r.estado == 'Finalizada' %}finalizada{% elif r.estado == 'En curso' %}curso{% else %}otra{% endif %}">
                     <div class="history-photo">
                         {% if r.habitaciones and r.habitaciones.imagen %}
-                            <img src="/media/{{ r.habitaciones.imagen }}" alt="Habitación {{ r.habitaciones.numero }}">
+                            <img src="/media/{{ r.habitaciones.imagen }}" alt="Habitación {{ r.habitaciones.numero }}" loading="lazy" decoding="async">
                         {% elif r.habitaciones and r.habitaciones.tipohabitacion.imagen %}
-                            <img src="/media/{{ r.habitaciones.tipohabitacion.imagen }}" alt="{{ r.habitaciones.tipohabitacion.nombre }}">
+                            <img src="/media/{{ r.habitaciones.tipohabitacion.imagen }}" alt="{{ r.habitaciones.tipohabitacion.nombre }}" loading="lazy" decoding="async">
                         {% elif r.planes and r.planes.imagen %}
-                            <img src="/media/{{ r.planes.imagen }}" alt="{{ r.planes.nombre }}">
+                            <img src="/media/{{ r.planes.imagen }}" alt="{{ r.planes.nombre }}" loading="lazy" decoding="async">
                         {% else %}
-                            <img src="{% static 'img/imagenes/foto2.png' %}" alt="Hotel Caribe Confort">
+                            <img src="{% static 'img/imagenes/foto2.png' %}" alt="{{ nombre_hotel }}" loading="lazy" decoding="async">
                         {% endif %}
                     </div>
                     <div class="history-info">
@@ -258,7 +265,7 @@
 </main>
 
 <footer class="reservas-footer">
-    <p>Caribe Confort <span>·</span> Riohacha, La Guajira</p>
+    <p>{{ nombre_hotel }} <span>·</span> Riohacha, La Guajira</p>
 </footer>
 
 <div class="modal-overlay" id="modalReserva">

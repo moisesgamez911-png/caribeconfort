@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const csrfInput = form.querySelector('input[name="csrfmiddlewaretoken"]');
     const feedback = document.getElementById("reembolsoFeedback");
     const submitButton = document.getElementById("confirmarReembolso");
+    const amountInput = document.getElementById("montoReembolso");
 
     function cerrarModal() {
         modal.classList.remove("activo");
@@ -15,6 +16,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".btn-procesar-reembolso").forEach(function (button) {
         button.addEventListener("click", function () {
             form.dataset.reservaId = button.dataset.id;
+            form.dataset.pagoId = button.dataset.pagoId || "";
             document.getElementById("reembolsoHuesped").textContent = button.dataset.nombre;
             document.getElementById("reembolsoReserva").textContent = "CC-" + button.dataset.id.padStart(4, "0");
             document.getElementById("reembolsoMonto").textContent = new Intl.NumberFormat("es-CO", {
@@ -22,6 +24,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 currency: "COP",
                 maximumFractionDigits: 2
             }).format(Number(button.dataset.monto));
+            amountInput.value = button.dataset.monto;
+            amountInput.max = button.dataset.monto;
             feedback.textContent = "";
             submitButton.disabled = false;
             modal.classList.add("activo");
@@ -43,11 +47,17 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        const button = document.querySelector('.btn-procesar-reembolso[data-id="' + reservaId + '"]');
+        const monto = Number(amountInput.value);
+        const maximo = Number(amountInput.max);
+        if (!Number.isFinite(monto) || monto <= 0 || monto > maximo) {
+            feedback.textContent = "Ingresa un monto válido dentro del saldo disponible.";
+            return;
+        }
         submitButton.disabled = true;
         feedback.textContent = "Procesando reembolso…";
         const body = new URLSearchParams(new FormData(form));
-        body.set("monto", button ? button.dataset.monto : "");
+        body.set("monto", amountInput.value);
+        body.set("pago_id", form.dataset.pagoId || "");
         fetch("/adminreserva/" + reservaId + "/reembolso", {
             method: "POST",
             headers: {

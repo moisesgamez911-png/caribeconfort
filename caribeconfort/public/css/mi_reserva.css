@@ -1662,7 +1662,7 @@ button {
     position: relative;
     isolation: isolate;
     display: flex;
-    min-height: 340px;
+    height: 100vh;
     flex-direction: column;
     overflow: visible;
     color: #fff;
@@ -1721,6 +1721,25 @@ button {
     justify-content: space-between;
     gap: 24px;
     margin-bottom: 20px;
+}
+
+.reservation-heading-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+@media (max-width: 700px) {
+    .section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .reservation-heading-actions {
+        justify-content: flex-start;
+    }
 }
 
 .section-eyebrow {

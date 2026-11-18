@@ -30,6 +30,13 @@ class Hoteles(models.Model):
     telefono=models.CharField(max_length=20)
     correo=models.EmailField(max_length=100)
     fotografias=models.CharField(max_length=255, blank=True, null=True)
+    logo=models.ImageField(upload_to='hoteles/logos/', blank=True, null=True)
+    smtp_host=models.CharField(max_length=255, blank=True, default='')
+    smtp_port=models.PositiveIntegerField(default=587)
+    smtp_username=models.CharField(max_length=255, blank=True, default='')
+    smtp_from_email=models.EmailField(max_length=254, blank=True, default='')
+    smtp_password_encrypted=models.TextField(blank=True, default='')
+    smtp_use_tls=models.BooleanField(default=True)
 
     class Meta:
         db_table='hoteles'
@@ -191,6 +198,8 @@ class Reservas (models.Model):
     ]
     estado=models.CharField(max_length=50, choices=estados, default='Pendiente')
     valortotal=models.DecimalField(max_digits=10, decimal_places=2)
+    recordatorio_dos_dias_enviado=models.BooleanField(default=False)
+    recordatorio_un_dia_enviado=models.BooleanField(default=False)
 
     class Meta:
         db_table='reservas'
@@ -254,6 +263,13 @@ class Resena(models.Model):
 
 class Pagos (models.Model):
     reservas=models.ForeignKey(Reservas, on_delete=models.CASCADE, db_column='idreservas')
+    pago_origen=models.ForeignKey(
+        'self',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='reembolsos',
+    )
     fecha=models.DateTimeField(auto_now_add=True)
     valor=models.DecimalField(max_digits=10, decimal_places=2)
     estados=[('Pendiente','Pendiente'),

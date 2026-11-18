@@ -210,6 +210,102 @@ body {
     margin-bottom: 25px;
 }
 
+.payment-method-selector {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.payment-method-selector legend {
+    margin-bottom: 10px;
+    color: #426B78;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.payment-methods {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.payment-method-option {
+    position: relative;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.payment-method-option input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.payment-method-card {
+    display: flex;
+    min-height: 76px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 10px 6px;
+    border: 1.5px solid #dce3e1;
+    border-radius: 9px;
+    background: #fff;
+    color: #426B78;
+    text-align: center;
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.payment-method-card i {
+    font-size: 20px;
+}
+
+.payment-method-card strong {
+    color: #16484B;
+    font-size: 11px;
+}
+
+.payment-method-option input:checked + .payment-method-card {
+    border-color: #16484B;
+    background: #f0f6f3;
+    color: #16484B;
+    box-shadow: 0 3px 10px rgba(22, 72, 75, 0.09);
+}
+
+.payment-method-option input:focus-visible + .payment-method-card {
+    outline: 3px solid rgba(22, 72, 75, 0.25);
+    outline-offset: 2px;
+}
+
+.payment-fields {
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.payment-fields[hidden] {
+    display: none;
+}
+
+.payment-method-hint {
+    width: 100%;
+    margin: 0;
+    padding: 16px;
+    border: 1px solid #dce3e1;
+    border-radius: 9px;
+    background: #f7f8f6;
+    color: #426B78;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
 .input-group {
     display: flex;
     flex-direction: column;
@@ -233,6 +329,7 @@ body {
 }
 
 .input-group input {
+    width: 100%;
     padding: 12px 15px;
     border: 1.5px solid #dce3e1;
     border-radius: 8px;
@@ -242,6 +339,18 @@ body {
     outline: none;
     transition: all 0.2s;
     background: #fff;
+}
+
+.input-group select {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1.5px solid #dce3e1;
+    border-radius: 8px;
+    background: #fff;
+    color: #16484B;
+    font-family: 'Segoe UI', Arial, sans-serif !important;
+    font-size: 14px;
 }
 
 .input-group input:focus {
@@ -338,6 +447,11 @@ body {
     .opciones-pago {
         grid-template-columns: 1fr;
     }
+
+    .payment-methods {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .input-group.half {
         width: 100%;
     }

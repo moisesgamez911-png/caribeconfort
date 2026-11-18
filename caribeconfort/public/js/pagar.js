@@ -28,4 +28,25 @@ document.addEventListener("DOMContentLoaded", function () {
         opcion.addEventListener('change', actualizarMonto);
     });
     actualizarMonto();
+
+    const metodosPago = document.querySelectorAll('input[name="metodo_pago"]');
+    const panelesPago = document.querySelectorAll('[data-payment-fields]');
+
+    function actualizarCamposPago() {
+        const metodoSeleccionado = document.querySelector('input[name="metodo_pago"]:checked');
+        panelesPago.forEach(function (panel) {
+            const activo = metodoSeleccionado
+                && panel.dataset.paymentFields === metodoSeleccionado.value;
+            panel.hidden = !activo;
+            panel.querySelectorAll('input, select').forEach(function (campo) {
+                campo.disabled = !activo;
+                campo.required = activo;
+            });
+        });
+    }
+
+    metodosPago.forEach(function (metodo) {
+        metodo.addEventListener('change', actualizarCamposPago);
+    });
+    actualizarCamposPago();
 });

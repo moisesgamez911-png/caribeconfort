@@ -1,5 +1,6 @@
 import csv
 from html import escape as escape_html
+from io import BytesIO
 import logging
 import math
 import random
@@ -10,22 +11,29 @@ from pathlib import Path
 from smtplib import SMTPException
 from uuid import uuid4
 
+from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.files.storage import FileSystemStorage
 from django.core.validators import validate_email
-from django.core.mail import send_mail
+from django.core.mail import get_connection, send_mail
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.db.models import Avg, Count, Exists, OuterRef, Q, Sum
-from django.http import HttpResponse, JsonResponse
+from django.forms import ImageField
+from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.utils.crypto import get_random_string
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import mm
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from caribeconfort.models import (Habitaciones, Servicios,TipoHabitacion, Usuarios, CategoriaGaleria, ImagenGaleria,
 Planes, CaracteristicaPlan, Huespedes, Roles, Pagos, Reservas, Hoteles, ServicioReserva, Acompanante,
@@ -35,14 +43,73 @@ from caribeconfort.models import Resena
 logger = logging.getLogger(__name__)
 
 
+def _fernet_credenciales_correo():
+    clave = getattr(settings, 'EMAIL_CREDENTIAL_ENCRYPTION_KEY', '')
+    if not clave:
+        raise ValueError(
+            'Configura EMAIL_CREDENTIAL_ENCRYPTION_KEY en el entorno antes de guardar credenciales SMTP.'
+        )
+    try:
+        return Fernet(clave.encode('ascii'))
+    except (ValueError, UnicodeError) as error:
+        raise ValueError(
+            'EMAIL_CREDENTIAL_ENCRYPTION_KEY debe ser una clave Fernet válida.'
+        ) from error
+
+
+def _cifrar_contrasena_smtp(contrasena):
+    return _fernet_credenciales_correo().encrypt(
+        contrasena.encode('utf-8')
+    ).decode('ascii')
+
+
+def _descifrar_contrasena_smtp(contrasena_cifrada):
+    try:
+        return _fernet_credenciales_correo().decrypt(
+            contrasena_cifrada.encode('ascii')
+        ).decode('utf-8')
+    except (InvalidToken, UnicodeError) as error:
+        raise RuntimeError(
+            'No se pudo descifrar la contraseña SMTP; verifica EMAIL_CREDENTIAL_ENCRYPTION_KEY.'
+        ) from error
+
+
+def _conexion_correo_hotel():
+    hotel = Hoteles.objects.filter(smtp_host__gt='').order_by('id').first()
+    if not hotel:
+        return None, settings.DEFAULT_FROM_EMAIL
+
+    if not all((
+        hotel.smtp_host,
+        hotel.smtp_port,
+        hotel.smtp_username,
+        hotel.smtp_from_email,
+        hotel.smtp_password_encrypted,
+    )):
+        raise RuntimeError('La configuración SMTP del hotel está incompleta.')
+
+    conexion = get_connection(
+        host=hotel.smtp_host,
+        port=hotel.smtp_port,
+        username=hotel.smtp_username,
+        password=_descifrar_contrasena_smtp(hotel.smtp_password_encrypted),
+        use_tls=hotel.smtp_use_tls,
+        use_ssl=False,
+        fail_silently=False,
+    )
+    return conexion, hotel.smtp_from_email
+
+
 def _enviar_correo_hotel(asunto, titulo, mensaje, destinatario):
+    hotel = Hoteles.objects.order_by('id').first()
+    nombre_hotel = hotel.nombre if hotel else 'Caribe Confort'
     mensaje_html = escape_html(mensaje).replace('\n', '<br>')
     html_message = f'''<!doctype html>
 <html lang="es"><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:32px 12px;background:#f1f5f3;font-family:Arial,sans-serif;color:#24464a">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;margin:0 auto;background:#fff;border:1px solid #dfe8e4;border-radius:16px;overflow:hidden">
     <tr><td style="padding:24px 30px;background:#16484b;color:#fff">
-      <div style="font-family:Georgia,serif;font-size:27px;font-weight:bold;letter-spacing:.3px">Caribe Confort</div>
+      <div style="font-family:Georgia,serif;font-size:27px;font-weight:bold;letter-spacing:.3px">{escape_html(nombre_hotel)}</div>
       <div style="margin-top:5px;color:#dce9e5;font-size:12px;letter-spacing:1.6px;text-transform:uppercase">Hotel · Riohacha, La Guajira</div>
     </td></tr>
     <tr><td style="height:4px;background:#c6a15b;font-size:0">&nbsp;</td></tr>
@@ -51,21 +118,47 @@ def _enviar_correo_hotel(asunto, titulo, mensaje, destinatario):
       <div style="color:#42595a;font-size:15px;line-height:1.8">{mensaje_html}</div>
     </td></tr>
     <tr><td style="padding:18px 30px;background:#f7f9f8;border-top:1px solid #e6ece9;color:#718184;font-size:12px;line-height:1.6">
-      Este mensaje fue enviado automáticamente por Caribe Confort. Si necesitas ayuda, comunícate con recepción.
+      Este mensaje fue enviado automáticamente por {escape_html(nombre_hotel)}. Si necesitas ayuda, comunícate con recepción.
     </td></tr>
   </table>
 </body></html>'''
+    conexion, remitente = _conexion_correo_hotel()
     enviados = send_mail(
         asunto,
         mensaje,
-        settings.DEFAULT_FROM_EMAIL,
+        remitente,
         [destinatario],
         fail_silently=False,
+        connection=conexion,
         html_message=html_message,
     )
     if enviados != 1:
         raise RuntimeError(f'El correo "{asunto}" no fue aceptado por el backend.')
     return enviados
+
+
+def servir_logo_hotel(request, nombre_archivo):
+    logo = Hoteles.objects.filter(
+        logo=f'hoteles/logos/{nombre_archivo}',
+    ).first()
+    if not logo or not logo.logo:
+        raise Http404
+    try:
+        archivo = logo.logo.open('rb')
+    except FileNotFoundError as error:
+        raise Http404 from error
+    extension = Path(nombre_archivo).suffix.lower()
+    tipos_contenido = {
+        '.gif': 'image/gif',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.webp': 'image/webp',
+    }
+    return FileResponse(
+        archivo,
+        content_type=tipos_contenido.get(extension, 'application/octet-stream'),
+    )
 
 
 def _enviar_invitacion_resena(reserva, request):
@@ -92,14 +185,13 @@ def _enviar_invitacion_resena(reserva, request):
     )
 
     try:
-        enviados = send_mail(
-            subject=_('¿Cómo estuvo tu estancia en Caribe Confort?'),
-            message=mensaje,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[destinatario],
-            fail_silently=False,
+        enviados = _enviar_correo_hotel(
+            _('¿Cómo estuvo tu estancia en Caribe Confort?'),
+            'Cuéntanos cómo estuvo tu estancia',
+            mensaje,
+            destinatario,
         )
-    except (SMTPException, OSError):
+    except (SMTPException, OSError, RuntimeError):
         logger.exception(
             'No se pudo enviar la invitación de reseña para la reserva %s.',
             reserva.pk,
@@ -179,6 +271,8 @@ class MultiSessionMiddleware:
         return self.get_response(request)
 
 def home(request):
+    hotel = Hoteles.objects.order_by('id').first()
+    direccion_mapa = (hotel.direccion or '').strip() if hotel else ''
     tipos = TipoHabitacion.objects.all().order_by('nombre')
     resenas_publicas = Resena.objects.filter(
         calificacion__isnull=False,
@@ -197,15 +291,35 @@ def home(request):
         'resenas': resenas,
         'promedio_resenas': resumen_resenas['promedio'],
         'total_resenas': resumen_resenas['total'],
+        'direccion_mapa': direccion_mapa or 'Riohacha, La Guajira, Colombia',
     })
 
 def galeria(request):
     categoria_id = request.GET.get('categoria')
-    categorias = CategoriaGaleria.objects.filter(
+    categorias_bd = CategoriaGaleria.objects.filter(
         estado=True,
         imagengaleria__estado=True,
         imagengaleria__seccion='galeria',
     ).distinct().order_by('orden')
+    grupos_categorias = {}
+    for categoria in categorias_bd:
+        clave = categoria.nombre.strip().casefold()
+        grupo = grupos_categorias.setdefault(clave, {
+            'categoria': categoria,
+            'ids': [],
+        })
+        grupo['ids'].append(categoria.id)
+
+    categorias = []
+    for grupo in grupos_categorias.values():
+        categoria = grupo['categoria']
+        categoria.total = ImagenGaleria.objects.filter(
+            categoria_id__in=grupo['ids'],
+            estado=True,
+            seccion='galeria',
+        ).count()
+        categorias.append(categoria)
+
     imagenes = ImagenGaleria.objects.filter(
         estado=True,
         seccion='galeria',
@@ -213,19 +327,19 @@ def galeria(request):
     categoria_activa = None
 
     if categoria_id:
-        categoria_activa = CategoriaGaleria.objects.filter(id=categoria_id, estado=True).first()
-        if categoria_activa:
-            imagenes = imagenes.filter(categoria=categoria_activa)
+        categoria_seleccionada = CategoriaGaleria.objects.filter(
+            id=categoria_id,
+            estado=True,
+        ).first()
+        if categoria_seleccionada:
+            grupo = grupos_categorias.get(categoria_seleccionada.nombre.strip().casefold())
+            categoria_activa = grupo['categoria'] if grupo else categoria_seleccionada
+            imagenes = imagenes.filter(
+                categoria_id__in=grupo['ids'] if grupo else [categoria_seleccionada.id]
+            )
 
     for imagen in imagenes:
         imagen.url_imagen = _url_imagen_local(imagen.imagen)
-
-    for c in categorias:
-        c.total = ImagenGaleria.objects.filter(
-            categoria=c,
-            estado=True,
-            seccion='galeria',
-        ).count()
 
     total_general = ImagenGaleria.objects.filter(estado=True, seccion='galeria').count()
 
@@ -340,12 +454,11 @@ def cancelar_reserva(request, reserva_id):
             asunto = f"Cancelación de Reserva #{reserva.id}"
             mensaje = f"Hola {reserva.huespedes.nombres},\n\nTe confirmamos que tu reserva en Caribe Confort ha sido cancelada exitosamente.\n\nEsperamos verte en otra ocasión."
             
-            send_mail(
+            _enviar_correo_hotel(
                 asunto,
+                'Tu reserva fue cancelada',
                 mensaje,
-                settings.DEFAULT_FROM_EMAIL, 
-                [reserva.huespedes.correo], 
-                fail_silently=False,
+                reserva.huespedes.correo,
             )
 
             return JsonResponse({'success': True, 'message': 'Reserva cancelada exitosamente.'})
@@ -657,9 +770,12 @@ def procesar_pago(request, reserva_id):
     metodo_seleccionado = request.POST.get('metodo_pago', '')
     metodos_pago = {
         'tarjeta_nueva': 'Tarjeta',
+        'Tarjeta': 'Tarjeta',
+        'Nequi': 'Transferencia',
+        'Bancolombia': 'Transferencia',
+        'PSE': 'Transferencia',
         'nequi': 'Transferencia',
         'Efectivo': 'Efectivo',
-        'Tarjeta': 'Tarjeta',
         'Transferencia': 'Transferencia',
     }
     if tipo_pago not in {'50', '100'} or metodo_seleccionado not in metodos_pago:
@@ -704,18 +820,17 @@ def procesar_pago(request, reserva_id):
     )
     if correo_destino:
         try:
-            send_mail(
-                subject=f'Pago registrado - Reserva CC-{reserva.id:04d}',
-                message=(
+            _enviar_correo_hotel(
+                f'Pago registrado - Reserva CC-{reserva.id:04d}',
+                'Recibimos tu pago',
+                (
                     f'Hola {reserva.huespedes.nombres},\n\n'
                     f'Registramos un pago de ${monto_a_pagar:,.2f} COP para tu reserva '
                     f'CC-{reserva.id:04d}. El saldo pendiente es '
                     f'${max(Decimal("0.00"), saldo_pendiente - monto_a_pagar):,.2f} COP.\n\n'
                     'El hotel verificará el pago antes de confirmarlo.'
                 ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[correo_destino],
-                fail_silently=False,
+                correo_destino,
             )
         except Exception:
             messages.warning(request, 'El pago se registró, pero no se pudo enviar el correo de confirmación.')
@@ -904,12 +1019,11 @@ def perfil_cliente(request):
                 try:
                     asunto = "Seguridad: Tu contraseña ha sido cambiada - Caribe Confort"
                     mensaje = f"¡Hola {usuario.nombre}!\n\nTe informamos que la contraseña de tu cuenta en Caribe Confort ha sido cambiada exitosamente.\n\nSi realizaste este cambio, puedes ignorar este mensaje.\n\nSi NO reconoces esta actividad, por favor contacta inmediatamente a nuestro equipo de soporte.\n\n¡Gracias por elegirnos!\n— El equipo de Caribe Confort"
-                    send_mail(
-                        subject=asunto,
-                        message=mensaje,
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=[usuario.correo],
-                        fail_silently=False,
+                    _enviar_correo_hotel(
+                        asunto,
+                        'Tu contraseña fue actualizada',
+                        mensaje,
+                        usuario.correo,
                     )
                 except Exception as e:
                     print(f"Error al enviar correo de cambio de contraseña: {e}")
@@ -941,18 +1055,17 @@ def recuperar_password(request):
             request.session['reset_verificado'] = False
 
             try:
-                send_mail(
-                    subject='Recuperación de contraseña — Caribe Confort',
-                    message=(
+                _enviar_correo_hotel(
+                    'Recuperación de contraseña — Caribe Confort',
+                    'Recupera el acceso a tu cuenta',
+                    (
                         f'¡Hola {usuario.nombre}!\n\n'
                         f'Recibimos una solicitud para restablecer tu contraseña.\n\n'
                         f'Tu código de verificación es: {codigo}\n\n'
                         f'Si no solicitaste este cambio, ignora este mensaje.\n\n'
                         f'— Caribe Confort Hotel'
                     ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[correo],
-                    fail_silently=False,
+                    correo,
                 )
                 messages.success(request, 'Te hemos enviado un código a tu correo electrónico.')
                 return redirect('/cambiar-password')
@@ -1167,7 +1280,12 @@ def validar_reserva(request, reserva_id):
 
             asunto = "¡Tu reserva ha sido confirmada! - Caribe Confort"
             mensaje = f"Hola {reserva.huespedes.nombres}, tu pago ha sido validado y tu reserva #{reserva.id} está confirmada."
-            send_mail(asunto, mensaje, settings.DEFAULT_FROM_EMAIL, [reserva.huespedes.correo])
+            _enviar_correo_hotel(
+                asunto,
+                'Tu reserva está confirmada',
+                mensaje,
+                reserva.huespedes.correo,
+            )
 
             return JsonResponse({'success': True, 'message': 'Reserva validada y confirmada correctamente.'})
             
@@ -1430,17 +1548,15 @@ def _enviar_confirmacion_reserva(reserva):
         logger.error('El correo registrado del huésped de la reserva CC-%s no es válido.', reserva.id)
         return ' La reserva quedó registrada, pero el correo del huésped no es válido.'
 
-    configuracion_correo = getattr(settings, 'MAILERS', {}).get('default', {})
-    opciones_correo = configuracion_correo.get('OPTIONS', {})
-    remitente = opciones_correo.get('username') or settings.DEFAULT_FROM_EMAIL
     alojamiento = (
         f'Habitación: {reserva.habitaciones.numero}'
         if reserva.habitaciones_id
         else f'Plan: {reserva.planes.nombre}'
     )
     try:
-        enviados = send_mail(
+        enviados = _enviar_correo_hotel(
             f'Confirmación de reserva CC-{reserva.id:04d}',
+            'Tu reserva fue registrada',
             (
                 f'Hola {huesped.nombres} {huesped.apellidos},\n\n'
                 f'Tu reserva en Caribe Confort quedó registrada en recepción.\n'
@@ -1449,11 +1565,9 @@ def _enviar_confirmacion_reserva(reserva):
                 f'Check-out: {reserva.fechasalida:%d/%m/%Y}\n'
                 f'Total de la estadía: ${reserva.valortotal:,.2f}\n'
             ),
-            remitente,
-            [huesped.correo],
-            using='default',
+            huesped.correo,
         )
-    except (OSError, SMTPException):
+    except (OSError, SMTPException, RuntimeError):
         logger.exception('No se pudo enviar la confirmación de reserva CC-%s.', reserva.id)
         return ' La reserva quedó registrada, pero el correo de confirmación no se pudo enviar.'
 
@@ -2507,6 +2621,31 @@ def pagosadmin(request):
     pagos_reservas = pagos.filter(concepto='Reserva')
     pagos_servicios = pagos.filter(concepto='Servicio')
     reembolsos = pagos.filter(Q(concepto='Reembolso') | Q(valor__lt=0)).distinct()
+    pagos_reembolsables = pagos.filter(
+        valor__gt=0,
+        concepto__in=['Reserva', 'Servicio'],
+    ).exclude(metodopago='Pendiente')
+    pagos_reembolsables = list(pagos_reembolsables)
+    reembolsos_por_pago = {
+        fila['pago_origen_id']: fila['total'] or Decimal('0.00')
+        for fila in Pagos.objects.filter(
+            pago_origen__in=pagos_reembolsables,
+            concepto='Reembolso',
+        ).values('pago_origen_id').annotate(total=Sum('valor'))
+    }
+    for pago in pagos_reembolsables:
+        pago.monto_reembolsable = max(
+            Decimal('0.00'),
+            pago.valor + reembolsos_por_pago.get(pago.id, Decimal('0.00')),
+        )
+    montos_disponibles = {
+        pago.id: pago.monto_reembolsable for pago in pagos_reembolsables
+    }
+    for pago in [*pagos_reservas, *pagos_servicios]:
+        pago.monto_reembolsable = montos_disponibles.get(
+            pago.id,
+            Decimal('0.00'),
+        )
     pestaña = request.GET.get('tab', 'reservas')
     listas = {
         'reservas': pagos_reservas,
@@ -2519,11 +2658,189 @@ def pagosadmin(request):
         'pagos_reservas': pagos_reservas,
         'pagos_servicios': pagos_servicios,
         'reembolsos': reembolsos,
+        'pagos_reembolsables': pagos_reembolsables,
         'page_obj': Paginator(listas[pestaña], 25).get_page(request.GET.get('page')),
         'tab_activa': pestaña,
         'nombre': request.session.get('usuario_nom', 'Administrador'),
         'rol': request.session.get('rol', 'Administrador'),
     })
+
+
+def _crear_pdf_movimientos(titulo, subtitulo, datos, encabezados, anchos):
+    salida = BytesIO()
+    documento = SimpleDocTemplate(
+        salida,
+        pagesize=A4,
+        rightMargin=18 * mm,
+        leftMargin=18 * mm,
+        topMargin=18 * mm,
+        bottomMargin=18 * mm,
+        title=titulo,
+    )
+    estilos = getSampleStyleSheet()
+    estilo_titulo = ParagraphStyle(
+        'HotelTitle',
+        parent=estilos['Title'],
+        textColor=colors.HexColor('#16484b'),
+        fontName='Helvetica-Bold',
+        fontSize=20,
+        alignment=0,
+        spaceAfter=8,
+    )
+    estilo_detalle = ParagraphStyle(
+        'HotelDetail',
+        parent=estilos['BodyText'],
+        textColor=colors.HexColor('#42595a'),
+        fontSize=9,
+        leading=13,
+    )
+    estilo_celda = ParagraphStyle(
+        'HotelCell',
+        parent=estilo_detalle,
+        fontSize=8,
+        leading=10,
+    )
+    tabla_datos = [[Paragraph(escape_html(str(valor)), estilo_celda) for valor in encabezados]]
+    tabla_datos.extend([
+        [Paragraph(escape_html(str(valor)), estilo_celda) for valor in fila]
+        for fila in datos
+    ])
+    tabla = Table(tabla_datos, colWidths=anchos, repeatRows=1, hAlign='LEFT')
+    tabla.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#16484b')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [
+            colors.white,
+            colors.HexColor('#f4f7f5'),
+        ]),
+        ('GRID', (0, 0), (-1, -1), 0.35, colors.HexColor('#dce5e1')),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 7),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
+    ]))
+    hotel = Hoteles.objects.order_by('id').first()
+    nombre_hotel = hotel.nombre if hotel else 'Caribe Confort'
+    ubicacion = ', '.join(
+        valor for valor in (
+            hotel.direccion if hotel else '',
+            hotel.municipio if hotel else '',
+        ) if valor
+    )
+    contenido = [
+        Paragraph(escape_html(nombre_hotel), estilo_titulo),
+        Paragraph(escape_html(titulo), estilos['Heading2']),
+        Paragraph(escape_html(subtitulo), estilo_detalle),
+    ]
+    if ubicacion:
+        contenido.extend([Paragraph(escape_html(ubicacion), estilo_detalle)])
+    contenido.extend([Spacer(1, 10 * mm), tabla])
+    documento.build(contenido)
+    return salida.getvalue()
+
+
+def _respuesta_pdf(contenido, nombre_archivo):
+    respuesta = HttpResponse(contenido, content_type='application/pdf')
+    respuesta['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+    return respuesta
+
+
+def descargar_factura_reserva(request, reserva_id):
+    rol = request.session.get('rol')
+    usuario_id = request.session.get('usuario_id')
+    if rol not in {'Administrador', 'Recepcionista'} and not usuario_id:
+        return redirect('/login')
+
+    reserva = get_object_or_404(
+        Reservas.objects.select_related(
+            'huespedes',
+            'habitaciones__tipohabitacion',
+            'planes',
+        ),
+        id=reserva_id,
+    )
+    if (
+        rol not in {'Administrador', 'Recepcionista'}
+        and reserva.huespedes.usuarios_id != usuario_id
+    ):
+        return HttpResponseForbidden('No tienes permiso para descargar esta factura.')
+
+    pagos = Pagos.objects.filter(reservas=reserva).exclude(
+        metodopago='Pendiente',
+    ).order_by('fecha', 'id')
+    filas = [
+        (
+            pago.fecha.strftime('%d/%m/%Y %H:%M'),
+            pago.get_concepto_display(),
+            pago.metodopago,
+            f'${pago.valor:,.2f} COP',
+        )
+        for pago in pagos
+    ]
+    alojamiento = (
+        f'Habitación {reserva.habitaciones.numero} · '
+        f'{reserva.habitaciones.tipohabitacion.nombre}'
+        if reserva.habitaciones
+        else (reserva.planes.nombre if reserva.planes else 'Estancia')
+    )
+    huesped = f'{reserva.huespedes.nombres} {reserva.huespedes.apellidos}'
+    subtitulo = (
+        f'Reserva CC-{reserva.id:04d} · Huésped: {huesped} · '
+        f'{alojamiento} · Entrada: {reserva.fechaentrada:%d/%m/%Y} · '
+        f'Salida: {reserva.fechasalida:%d/%m/%Y} · '
+        f'Total de la estancia: ${reserva.valortotal:,.2f} COP'
+    )
+    contenido = _crear_pdf_movimientos(
+        'Factura de reserva',
+        subtitulo,
+        filas,
+        ('Fecha', 'Concepto', 'Método', 'Valor'),
+        (35 * mm, 43 * mm, 40 * mm, 48 * mm),
+    )
+    return _respuesta_pdf(contenido, f'factura_reserva_CC-{reserva.id:04d}.pdf')
+
+
+def descargar_certificado_pagos(request):
+    usuario_id = request.session.get('usuario_id')
+    if not usuario_id:
+        return redirect('/login')
+    try:
+        huesped = Huespedes.objects.get(usuarios_id=usuario_id)
+    except Huespedes.DoesNotExist:
+        return HttpResponseForbidden('No hay un huésped asociado a esta cuenta.')
+
+    pagos = Pagos.objects.filter(
+        reservas__huespedes=huesped,
+    ).exclude(
+        metodopago='Pendiente',
+    ).select_related('reservas').order_by('fecha', 'id')
+    filas = [
+        (
+            pago.fecha.strftime('%d/%m/%Y %H:%M'),
+            f'CC-{pago.reservas_id:04d}',
+            pago.get_concepto_display(),
+            pago.metodopago,
+            f'${pago.valor:,.2f} COP',
+        )
+        for pago in pagos
+    ]
+    total_neto = sum((pago.valor for pago in pagos), Decimal('0.00'))
+    subtitulo = (
+        f'Certificado de movimientos de {huesped.nombres} {huesped.apellidos}. '
+        f'Total neto registrado: ${total_neto:,.2f} COP.'
+    )
+    contenido = _crear_pdf_movimientos(
+        'Certificado de pagos',
+        subtitulo,
+        filas,
+        ('Fecha', 'Reserva', 'Concepto', 'Método', 'Valor'),
+        (30 * mm, 25 * mm, 38 * mm, 35 * mm, 38 * mm),
+    )
+    return _respuesta_pdf(
+        contenido,
+        f'certificado_pagos_huesped_{huesped.id}.pdf',
+    )
 
 
 def reglas_descuento_admin(request):
@@ -2667,12 +2984,20 @@ def procesar_reembolso(request, reserva_id):
         return JsonResponse({'success': False, 'message': 'No autorizado.'}, status=403)
 
     try:
-        monto = Decimal(request.POST.get('monto', '').strip()).quantize(Decimal('0.01'))
+        monto = Decimal(request.POST.get('monto', '').strip())
+        monto_centavos = monto.quantize(Decimal('0.01'))
     except (InvalidOperation, AttributeError):
         return JsonResponse({'success': False, 'message': 'Ingresa un monto válido.'}, status=400)
     metodo = request.POST.get('metodo', '').strip()
-    if not monto.is_finite() or monto <= 0 or metodo not in {'Efectivo', 'Transferencia'}:
+    if (
+        not monto.is_finite()
+        or monto != monto_centavos
+        or monto <= 0
+        or metodo not in {'Efectivo', 'Transferencia'}
+    ):
         return JsonResponse({'success': False, 'message': 'El monto o el método de reembolso no son válidos.'}, status=400)
+    monto = monto_centavos
+    pago_origen_id = request.POST.get('pago_id', '').strip()
 
     with transaction.atomic():
         reserva = get_object_or_404(
@@ -2682,9 +3007,28 @@ def procesar_reembolso(request, reserva_id):
         pagado = Pagos.objects.filter(reservas=reserva).exclude(
             metodopago='Pendiente',
         ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
-        excedente = max(Decimal('0.00'), pagado - reserva.valortotal)
+        pago_origen = None
+        if pago_origen_id:
+            pago_origen = Pagos.objects.select_for_update().filter(
+                id=pago_origen_id,
+                reservas=reserva,
+                concepto__in=['Reserva', 'Servicio'],
+                valor__gt=0,
+            ).exclude(metodopago='Pendiente').first()
+            if pago_origen is None:
+                return JsonResponse({'success': False, 'message': 'El pago seleccionado no existe o no admite reembolso.'}, status=400)
+            reembolsado = Pagos.objects.filter(
+                pago_origen=pago_origen,
+                concepto='Reembolso',
+            ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
+            excedente = min(
+                max(Decimal('0.00'), pago_origen.valor + reembolsado),
+                max(Decimal('0.00'), pagado),
+            )
+        else:
+            excedente = max(Decimal('0.00'), pagado - reserva.valortotal)
         if monto > excedente:
-            return JsonResponse({'success': False, 'message': 'El monto supera el excedente disponible para reembolso.'}, status=400)
+            return JsonResponse({'success': False, 'message': 'El monto supera el saldo disponible del pago para reembolso.'}, status=400)
         correo_destino = reserva.huespedes.correo or (
             reserva.huespedes.usuarios.correo if reserva.huespedes.usuarios_id else ''
         )
@@ -2695,6 +3039,7 @@ def procesar_reembolso(request, reserva_id):
             valor=-monto,
             metodopago=metodo,
             concepto='Reembolso',
+            pago_origen=pago_origen,
         )
 
     try:
@@ -2859,41 +3204,150 @@ def configuracionadmin(request):
         return redirect('/login')
 
     hotel = Hoteles.objects.order_by('id').first()
+    opciones_smtp = getattr(settings, 'MAILERS', {}).get('default', {}).get('OPTIONS', {})
+    smtp_form = {
+        'host': hotel.smtp_host if hotel and hotel.smtp_host else opciones_smtp.get('host', ''),
+        'port': hotel.smtp_port if hotel and hotel.smtp_host else opciones_smtp.get('port', 587),
+        'username': hotel.smtp_username if hotel and hotel.smtp_host else opciones_smtp.get('username', ''),
+        'from_email': hotel.smtp_from_email if hotel and hotel.smtp_host else settings.DEFAULT_FROM_EMAIL,
+        'use_tls': hotel.smtp_use_tls if hotel and hotel.smtp_host else opciones_smtp.get('use_tls', True),
+    }
+
     if request.method == 'POST':
-        campos = {
-            'nombre': request.POST.get('nombre', '').strip(),
-            'descripcion': request.POST.get('descripcion', '').strip(),
-            'direccion': request.POST.get('direccion', '').strip(),
-            'municipio': request.POST.get('municipio', '').strip(),
-            'telefono': request.POST.get('telefono', '').strip(),
-            'correo': request.POST.get('correo', '').strip(),
-            'fotografias': request.POST.get('fotografias', '').strip(),
-        }
-        limites = {
-            'nombre': 100, 'direccion': 100, 'municipio': 100,
-            'telefono': 20, 'correo': 100, 'fotografias': 255,
-        }
-        if not all(campos[key] for key in ('nombre', 'direccion', 'municipio', 'telefono', 'correo')):
-            messages.error(request, 'Completa los campos obligatorios del hotel.')
-        elif any(len(campos[key]) > limite for key, limite in limites.items()):
-            messages.error(request, 'Uno o más campos superan la longitud permitida.')
+        if request.POST.get('seccion') == 'correo':
+            smtp_form = {
+                'host': request.POST.get('smtp_host', '').strip(),
+                'port': request.POST.get('smtp_port', '').strip(),
+                'username': request.POST.get('smtp_username', '').strip(),
+                'from_email': request.POST.get('smtp_from_email', '').strip(),
+                'use_tls': request.POST.get('smtp_use_tls') == 'on',
+            }
+            smtp_password = request.POST.get('smtp_password', '')
+            puerto = None
+            try:
+                puerto = int(smtp_form['port'])
+            except (TypeError, ValueError):
+                messages.error(request, 'El puerto SMTP debe ser un número entre 1 y 65535.')
+
+            if puerto is None:
+                pass
+            elif not all((
+                smtp_form['host'],
+                smtp_form['username'],
+                smtp_form['from_email'],
+            )):
+                messages.error(request, 'Completa el host, usuario SMTP y correo de envío.')
+            elif any((
+                len(smtp_form['host']) > 255,
+                len(smtp_form['username']) > 255,
+                len(smtp_form['from_email']) > 254,
+            )):
+                messages.error(request, 'Uno o más datos SMTP superan la longitud permitida.')
+            elif not 1 <= puerto <= 65535:
+                messages.error(request, 'El puerto SMTP debe estar entre 1 y 65535.')
+            else:
+                try:
+                    validate_email(smtp_form['from_email'])
+                except ValidationError:
+                    messages.error(request, 'Ingresa un correo de envío válido.')
+                else:
+                    if hotel is None:
+                        messages.error(request, 'Guarda primero la información del hotel.')
+                    else:
+                        try:
+                            if smtp_password:
+                                contrasena_cifrada = _cifrar_contrasena_smtp(smtp_password)
+                            elif hotel.smtp_password_encrypted:
+                                _descifrar_contrasena_smtp(hotel.smtp_password_encrypted)
+                                contrasena_cifrada = hotel.smtp_password_encrypted
+                            else:
+                                raise ValueError('Ingresa la contraseña SMTP para completar la configuración.')
+                        except ValueError as error:
+                            messages.error(request, str(error))
+                        except RuntimeError as error:
+                            messages.error(request, str(error))
+                        else:
+                            hotel.smtp_host = smtp_form['host']
+                            hotel.smtp_port = puerto
+                            hotel.smtp_username = smtp_form['username']
+                            hotel.smtp_from_email = smtp_form['from_email']
+                            hotel.smtp_password_encrypted = contrasena_cifrada
+                            hotel.smtp_use_tls = smtp_form['use_tls']
+                            hotel.save(update_fields=[
+                                'smtp_host',
+                                'smtp_port',
+                                'smtp_username',
+                                'smtp_from_email',
+                                'smtp_password_encrypted',
+                                'smtp_use_tls',
+                            ])
+                            messages.success(request, 'La configuración SMTP se guardó de forma cifrada.')
+                            return redirect('/adminconfiguracion')
         else:
             try:
-                validate_email(campos['correo'])
-            except ValidationError:
-                messages.error(request, 'Ingresa un correo de contacto válido.')
+                archivo_logo = request.FILES.get('logo')
+                if archivo_logo and archivo_logo.size > TAMANO_MAXIMO_IMAGEN:
+                    raise ValidationError('El logo no puede superar los 10 MB.')
+                logo_subido = ImageField(required=False).clean(
+                    archivo_logo
+                )
+            except ValidationError as error:
+                logo_subido = None
+                messages.error(request, str(error.messages[0]))
             else:
-                if hotel is None:
-                    hotel = Hoteles.objects.create(**campos)
+                quitar_logo = request.POST.get('quitar_logo') == 'on'
+                if logo_subido and quitar_logo:
+                    messages.error(request, 'Sube un logo nuevo o marca la opción para quitarlo, no ambas.')
                 else:
-                    for campo, valor in campos.items():
-                        setattr(hotel, campo, valor)
-                    hotel.save(update_fields=list(campos))
-                messages.success(request, 'Los datos del hotel se guardaron correctamente.')
-                return redirect('/adminconfiguracion')
+                    campos = {
+                        'nombre': request.POST.get('nombre', '').strip(),
+                        'descripcion': request.POST.get('descripcion', '').strip(),
+                        'direccion': request.POST.get('direccion', '').strip(),
+                        'municipio': request.POST.get('municipio', '').strip(),
+                        'telefono': request.POST.get('telefono', '').strip(),
+                        'correo': request.POST.get('correo', '').strip(),
+                        'fotografias': request.POST.get('fotografias', '').strip(),
+                    }
+                    limites = {
+                        'nombre': 100, 'direccion': 100, 'municipio': 100,
+                        'telefono': 20, 'correo': 100, 'fotografias': 255,
+                    }
+                    if not all(campos[key] for key in ('nombre', 'direccion', 'municipio', 'telefono', 'correo')):
+                        messages.error(request, 'Completa los campos obligatorios del hotel.')
+                    elif any(len(campos[key]) > limite for key, limite in limites.items()):
+                        messages.error(request, 'Uno o más campos superan la longitud permitida.')
+                    else:
+                        try:
+                            validate_email(campos['correo'])
+                        except ValidationError:
+                            messages.error(request, 'Ingresa un correo de contacto válido.')
+                        else:
+                            logo_anterior = hotel.logo.name if hotel and hotel.logo else ''
+                            if hotel is None:
+                                hotel = Hoteles.objects.create(**campos, logo=logo_subido)
+                            else:
+                                for campo, valor in campos.items():
+                                    setattr(hotel, campo, valor)
+                                if logo_subido:
+                                    hotel.logo = logo_subido
+                                elif quitar_logo:
+                                    hotel.logo = None
+                                hotel.save(update_fields=[*campos, 'logo'])
+                            if logo_anterior and hotel.logo.name != logo_anterior:
+                                hotel.logo.storage.delete(logo_anterior)
+                            messages.success(request, 'Los datos del hotel se guardaron correctamente.')
+                            return redirect('/adminconfiguracion')
 
     return render(request, 'admini/configuracion.html', {
         'hotel': hotel,
+        'smtp_form': smtp_form,
+        'smtp_password_configurada': bool(
+            hotel.smtp_password_encrypted if hotel and hotel.smtp_host
+            else opciones_smtp.get('password')
+        ),
+        'smtp_encryption_key_configured': bool(
+            getattr(settings, 'EMAIL_CREDENTIAL_ENCRYPTION_KEY', '')
+        ),
         'nombre': request.session.get('usuario_nom', 'Administrador'),
         'rol': request.session.get('rol', 'Administrador'),
     })
@@ -3091,18 +3545,17 @@ def registrarcliente(request):
         }
 
         try:
-            send_mail(
-                subject='Tu código de verificación — Caribe Confort',
-                message=(
+            _enviar_correo_hotel(
+                'Tu código de verificación — Caribe Confort',
+                'Confirma tu correo electrónico',
+                (
                     f'¡Hola {nombre}!\n\n'
                     f'Tu código de verificación es: {codigo}\n\n'
                     f'Ingrésalo en la página para completar tu registro.\n\n'
                     f'Si no solicitaste esta cuenta, ignora este mensaje.\n\n'
                     f'— Caribe Confort Hotel'
                 ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[correo],
-                fail_silently=False,
+                correo,
             )
         except Exception as e:
             contexto['errores'] = [f'No se pudo enviar el correo: {e}']
@@ -3651,10 +4104,15 @@ Total pagado: ${reserva.valortotal:,.0f} COP
 Riohacha, La Guajira
 """
         try:
-            send_mail(asunto, mensaje, settings.DEFAULT_FROM_EMAIL, [correo_destino], fail_silently=False)
+            _enviar_correo_hotel(
+                asunto,
+                'Tu reserva fue confirmada',
+                mensaje,
+                correo_destino,
+            )
             mensaje_respuesta = 'Reserva aprobada y correo enviado exitosamente.'
-        except Exception as e:
-            print(f"Error al enviar correo: {e}")
+        except Exception:
+            logger.exception('No se pudo enviar la confirmación de la reserva CC-%s.', reserva.id)
             mensaje_respuesta = 'Reserva aprobada. (El correo no pudo enviarse)'
         
         return JsonResponse({'success': True, 'message': mensaje_respuesta})
@@ -3685,10 +4143,15 @@ Si tienes alguna duda o crees que esto es un error, por favor contacta con nuest
 Riohacha, La Guajira
 """
         try:
-            send_mail(asunto, mensaje, settings.DEFAULT_FROM_EMAIL, [correo_destino], fail_silently=False)
+            _enviar_correo_hotel(
+                asunto,
+                'No fue posible confirmar tu reserva',
+                mensaje,
+                correo_destino,
+            )
             mensaje_respuesta = 'Reserva rechazada y correo enviado exitosamente.'
-        except Exception as e:
-            print(f"Error al enviar correo: {e}")
+        except Exception:
+            logger.exception('No se pudo enviar la notificación de rechazo de la reserva CC-%s.', reserva.id)
             mensaje_respuesta = 'Reserva rechazada. (El correo no pudo enviarse)'
         
         return JsonResponse({'success': True, 'message': mensaje_respuesta})
@@ -3874,9 +4337,9 @@ def aprobar_servicio_recepcion(request, servicio_reserva_id):
                     'Tu servicio fue aprobado',
                     (
                         f'Hola {huesped.nombres},\n\n'
-                        f'La solicitud de {servicio_reserva.servicios.nombre} para la reserva '
-                        f'CC-{servicio_reserva.reservas_id:04d} fue aprobada y registrada en tu cuenta '
-                        f'por ${servicio_reserva.valor:,.2f} COP.\n'
+                        f'Usted solicitó {servicio_reserva.servicios.nombre}, por un valor de '
+                        f'${servicio_reserva.valor:,.2f} COP. Ha sido aprobado y cargado a su cuenta.\n'
+                        f'Reserva: CC-{servicio_reserva.reservas_id:04d}.\n'
                         f'Método de pago registrado: {metodo}.'
                     ),
                     correo_destino,

@@ -48,6 +48,26 @@ Aplicación web para la operación de un hotel en Riohacha. Incluye una experien
 
 El modelo `Resena` se relaciona uno a uno con `Reservas`; guarda token único, fecha, comentario y calificación. Al completar el check-out se intenta enviar una invitación individual por correo. Las reservas vencidas también se finalizan y se procesan para el envío de invitaciones. El cliente envía la reseña desde la ruta con token.
 
+## Correo SMTP
+
+El correo puede configurarse desde el panel del administrador o mediante las variables de entorno `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS` y `DEFAULT_FROM_EMAIL`. La contraseña guardada desde el panel se cifra con Fernet; antes de guardarla, define `EMAIL_CREDENTIAL_ENCRYPTION_KEY` en el entorno con una clave generada así:
+
+```powershell
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+Mantén esa clave fuera del repositorio y consérvala sin cambios mientras haya contraseñas cifradas en la base de datos. Aplica las migraciones pendientes antes de usar la configuración SMTP o la identidad del hotel desde el panel.
+
+## Identidad, pagos y documentos
+
+El nombre público y el logo del hotel se actualizan desde **Administrador → Configuración**. El logo admite imágenes y se muestra junto al nombre con las tipografías de marca `Cormorant Garamond` y `Plus Jakarta Sans`.
+
+Las facturas por reserva y los certificados de pagos se descargan en PDF con ReportLab. Los clientes solo pueden descargar documentos de sus propias reservas; administración y recepción pueden descargar facturas.
+
+Los reembolsos pueden iniciarse desde el historial de pagos y se vinculan al pago original. El monto disponible se recalcula al registrar cada devolución y se notifica al huésped por correo.
+
+El comando `python manage.py enviar_recordatorios_reservas` envía avisos dos días y un día antes de una reserva confirmada. Programa su ejecución diaria en el Programador de tareas de Windows o en cron; el comando marca cada aviso enviado para evitar duplicados. El segundo correo informa la política de no reembolso del abono del 50% si el huésped no se presenta.
+
 La migración inicial es `caribeconfort/migrations/0025_resena.py`. Para crear o aplicar migraciones:
 
 ```powershell

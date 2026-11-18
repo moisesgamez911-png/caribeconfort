@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Configuración | Caribe Confort</title>
+    <title>Configuración | {{ nombre_hotel }}</title>
     <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
@@ -36,7 +36,7 @@
             <div><h2>Información del hotel</h2><p>Los campos marcados son obligatorios.</p></div>
             <span class="adm-stat-icon gold"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg></span>
         </div>
-        <form method="post" class="adm-form">
+        <form method="post" class="adm-form" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="adm-form-grid">
                 <div class="adm-field">
@@ -67,10 +67,78 @@
                     <label for="hotelFotografias">Ruta o referencia de fotografías</label>
                     <input id="hotelFotografias" name="fotografias" maxlength="255" value="{{ hotel.fotografias|default:'' }}">
                 </div>
+                <div class="adm-field adm-span-2">
+                    <label for="hotelLogo">Logo del hotel</label>
+                    <div class="adm-logo-setting">
+                        <img
+                            class="adm-logo-preview"
+                            src="{% if hotel.logo %}{{ hotel.logo.url }}{% else %}{% static 'img/imagenes/logo-caribeconfort-default.png' %}{% endif %}"
+                            alt="Vista previa del logo de {{ hotel.nombre|default:nombre_hotel }}"
+                        >
+                        <div>
+                            <input id="hotelLogo" name="logo" type="file" accept="image/*">
+                            <p class="adm-help-text">Usa una imagen clara del símbolo del hotel; el nombre se muestra junto al logo.</p>
+                            {% if hotel.logo %}
+                            <label class="adm-logo-remove"><input type="checkbox" name="quitar_logo"> Quitar el logo actual</label>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="adm-form-actions">
                 <a class="adm-button secondary" href="/administrador">Cancelar</a>
                 <button class="adm-button" type="submit">Guardar configuración</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="adm-card adm-form-card">
+        <div class="adm-card-heading">
+            <div>
+                <h2>Servidor de correo (SMTP)</h2>
+                <p>Configura el envío de notificaciones del hotel.</p>
+            </div>
+            <span class="adm-stat-icon blue" aria-hidden="true">@</span>
+        </div>
+        {% if smtp_password_configurada %}
+            <p class="adm-help-text">Hay una contraseña configurada. Déjala vacía para conservarla.</p>
+        {% else %}
+            <p class="adm-help-text">Aún no hay una contraseña SMTP configurada.</p>
+        {% endif %}
+        {% if not smtp_encryption_key_configured %}
+            <p class="adm-help-text" role="note">Antes de guardar la contraseña, configura la variable de entorno EMAIL_CREDENTIAL_ENCRYPTION_KEY con una clave Fernet. La contraseña se cifrará antes de guardarse y no volverá a mostrarse.</p>
+        {% endif %}
+        <form method="post" class="adm-form">
+            {% csrf_token %}
+            <input type="hidden" name="seccion" value="correo">
+            <div class="adm-form-grid">
+                <div class="adm-field">
+                    <label for="smtpHost">Host SMTP <span>*</span></label>
+                    <input id="smtpHost" name="smtp_host" maxlength="255" value="{{ smtp_form.host }}" placeholder="smtp.ejemplo.com" required>
+                </div>
+                <div class="adm-field">
+                    <label for="smtpPort">Puerto <span>*</span></label>
+                    <input id="smtpPort" name="smtp_port" type="number" min="1" max="65535" value="{{ smtp_form.port }}" required>
+                </div>
+                <div class="adm-field">
+                    <label for="smtpUsername">Usuario SMTP <span>*</span></label>
+                    <input id="smtpUsername" name="smtp_username" maxlength="255" value="{{ smtp_form.username }}" autocomplete="username" required>
+                </div>
+                <div class="adm-field">
+                    <label for="smtpFromEmail">Correo de envío <span>*</span></label>
+                    <input id="smtpFromEmail" name="smtp_from_email" type="email" maxlength="254" value="{{ smtp_form.from_email }}" required>
+                </div>
+                <div class="adm-field adm-span-2">
+                    <label for="smtpPassword">Contraseña SMTP</label>
+                    <input id="smtpPassword" name="smtp_password" type="password" autocomplete="new-password" placeholder="Ingresa para guardar o reemplazar">
+                </div>
+                <label class="adm-field smtp-tls-option">
+                    <span>Seguridad de conexión</span>
+                    <span><input type="checkbox" name="smtp_use_tls" {% if smtp_form.use_tls %}checked{% endif %}> Usar TLS</span>
+                </label>
+            </div>
+            <div class="adm-form-actions">
+                <button class="adm-button" type="submit">Guardar configuración SMTP</button>
             </div>
         </form>
     </section>

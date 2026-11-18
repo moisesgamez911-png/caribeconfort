@@ -784,6 +784,52 @@
     font-size: 11px;
 }
 
+.location-section {
+    padding: 64px 24px;
+    background: #FAF8F5;
+}
+
+.location-content {
+    display: grid;
+    width: min(100%, 1120px);
+    grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+    align-items: center;
+    gap: 42px;
+    margin: 0 auto;
+}
+
+.location-copy h2 {
+    margin: 8px 0 12px;
+    color: #183D3D;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: clamp(30px, 4vw, 46px);
+    line-height: 1.05;
+}
+
+.location-copy p:last-child {
+    margin: 0;
+    color: #68716D;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.location-map {
+    min-width: 0;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border: 1px solid #E8E4DD;
+    border-radius: 16px;
+    background: #E8E4DD;
+    box-shadow: 0 12px 32px rgba(24, 61, 61, .1);
+}
+
+.location-map iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
 .home-footer {
     position: relative;
     overflow: hidden;
@@ -1159,6 +1205,15 @@
 
     .review-card {
         min-height: 170px;
+    }
+
+    .location-content {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 24px;
+    }
+
+    .location-section {
+        padding: 48px 20px;
     }
 
     .footer-content {

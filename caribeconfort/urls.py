@@ -14,7 +14,8 @@ from caribeconfort.views import (home, galeria, servicios, habitaciones, imagene
                                 crear_reserva_recepcion, registrar_pago_servicio_recepcion,
                                 servicios_pendientes_recepcion, aprobar_servicio_recepcion,
                                 reglas_descuento_admin, modificar_reserva, procesar_reembolso,
-                                dejar_resena)
+                                dejar_resena, descargar_factura_reserva,
+                                descargar_certificado_pagos, servir_logo_hotel)
 
 
 urlpatterns = [
@@ -55,11 +56,14 @@ urlpatterns = [
     path('adminreserva/<int:reserva_id>/reembolso', procesar_reembolso, name='procesar_reembolso'),
     path('admingaleria', galeriaadmin, name='admingaleria'),
     path('adminconfiguracion', configuracionadmin, name='adminconfiguracion'),
+    path('media/hoteles/logos/<str:nombre_archivo>', servir_logo_hotel, name='logo_hotel'),
     path('pagar-reserva/<int:reserva_id>/', pagar_reserva, name='pagar_reserva'),
     path('procesar-pago/<int:reserva_id>/', procesar_pago, name='procesar_pago'),
     path('reservar-plan/crear/', crear_reserva_plan, name='crear_reserva_plan'),
     path('servicios/solicitar',solicitar_servicio, name='solicitar_servicio'),
     path('mis-reservas', mis_reservas, name='mis_reservas'),
+    path('mis-reservas/certificado-pagos/', descargar_certificado_pagos, name='certificado_pagos'),
+    path('reservas/<int:reserva_id>/factura/', descargar_factura_reserva, name='factura_reserva'),
     path('perfil', perfil_cliente, name='perfil'),
     path('recuperar-password', recuperar_password, name='recuperar_password'),
     path('cambiar-password', cambiar_password_reset, name='cambiar_password_reset'),

@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/reservar.css' %}?v=105">
-    <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=4">
     <link rel="stylesheet" href="{% static 'css/idiomas.css' %}">
 </head>
 <body class="reservas-page">
@@ -135,30 +135,30 @@
                             <figure class="room-gallery-main">
                                 <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
                                     {% if t.imagen %}
-                                        <img src="{% static 'img/imagenes/' %}{{ t.imagen }}" alt="{% trans 'Habitación' %} {{ t.nombre }}" loading="lazy">
+                                        <img src="{% static 'img/imagenes/' %}{{ t.imagen }}" alt="{% trans 'Habitación' %} {{ t.nombre }}" loading="lazy" decoding="async">
                                     {% else %}
-                                        <img src="{% static 'img/imagenes/' %}{{ habitacion_imagen }}" alt="{% trans 'Habitación' %} {{ t.nombre }}" loading="lazy">
+                                        <img src="{% static 'img/imagenes/' %}{{ habitacion_imagen }}" alt="{% trans 'Habitación' %} {{ t.nombre }}" loading="lazy" decoding="async">
                                     {% endif %}
                                 </button>
                             </figure>
                             <figure class="room-gallery-photo">
                                 <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
-                                    <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_uno }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy">
+                                    <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_uno }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy" decoding="async">
                                 </button>
                             </figure>
                             <figure class="room-gallery-photo">
                                 <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
-                                    <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_dos }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy">
+                                    <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_dos }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy" decoding="async">
                                 </button>
                             </figure>
                             <figure class="room-gallery-photo">
                                 <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
-                                    <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_tres }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy">
+                                    <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_tres }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy" decoding="async">
                                 </button>
                             </figure>
                             <figure class="room-gallery-photo room-gallery-last">
                                 <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
-                                    <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_cuatro }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy">
+                                    <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_cuatro }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy" decoding="async">
                                 </button>
                                 <button class="room-gallery-more" type="button" data-gallery-open aria-haspopup="dialog">{% trans "Ver todas las fotos" %}</button>
                             </figure>
