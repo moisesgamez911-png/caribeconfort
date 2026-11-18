@@ -75,6 +75,8 @@ def seed_static_images(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
+    atomic = False
+
     dependencies = [
         ('caribeconfort', '0020_reservas_codigosconvenio_one_to_one'),
     ]
