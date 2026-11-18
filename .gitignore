@@ -172,3 +172,14 @@ cython_debug/
 #.idea/
 
 # End of https://www.toptal.com/developers/gitignore/api/django
+
+# Respaldos de base de datos
+*.sql
+*.sqlite3
+
+# Accesos directos de Windows
+*.lnk
+
+# Archivos comprimidos (si subes alguno)
+*.zip
+*.rar
