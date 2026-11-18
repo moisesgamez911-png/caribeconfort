@@ -1,0 +1,123 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check-in · Reserva CC-{{ reserva.id|stringformat:"04d" }} | Caribe Confort</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="{% static 'css/administrador/checkin.css' %}">
+</head>
+<body>
+    {% if messages %}
+        {% for m in messages %}<div class="ck-messages">{{ m }}</div>{% endfor %}
+    {% endif %}
+
+    <div class="ck-wrapper">
+        <div class="ck-card">
+            <header class="ck-header">
+                <div class="ck-badge">Check-in</div>
+                <h1>Confirmar datos del huésped</h1>
+                <p>Reserva <span class="ck-res-id">CC-{{ reserva.id|stringformat:"04d" }}</span> · Hotel Caribe Confort</p>
+            </header>
+
+            <form method="post" class="ck-body">
+                {% csrf_token %}
+
+                <h2 class="ck-section-title">Datos del huésped</h2>
+                <div class="ck-grid">
+                    <div class="ck-field">
+                        <label>Nombres</label>
+                        <input type="text" name="nombres" value="{{ reserva.huespedes.nombres }}" required>
+                    </div>
+                    <div class="ck-field">
+                        <label>Apellidos</label>
+                        <input type="text" name="apellidos" value="{{ reserva.huespedes.apellidos }}" required>
+                    </div>
+                    <div class="ck-field">
+                        <label>Tipo de documento</label>
+                        <select name="tipodocumento">
+                            <option value="CC" {% if reserva.huespedes.tipodocumento == 'CC' %}selected{% endif %}>Cédula de ciudadanía</option>
+                            <option value="CE" {% if reserva.huespedes.tipodocumento == 'CE' %}selected{% endif %}>Cédula de extranjería</option>
+                            <option value="PP" {% if reserva.huespedes.tipodocumento == 'PP' %}selected{% endif %}>Pasaporte</option>
+                            <option value="TI" {% if reserva.huespedes.tipodocumento == 'TI' %}selected{% endif %}>Tarjeta de identidad</option>
+                        </select>
+                    </div>
+                    <div class="ck-field">
+                        <label>Número de documento</label>
+                        <input type="text" name="identificacion" value="{{ reserva.huespedes.identificacion }}" required>
+                    </div>
+                    <div class="ck-field">
+                        <label>Teléfono</label>
+                        <input type="tel" name="telefono" value="{{ reserva.huespedes.telefono }}" required>
+                    </div>
+                    <div class="ck-field">
+                        <label>Correo electrónico</label>
+                        <input type="email" value="{{ reserva.huespedes.correo }}" disabled>
+                    </div>
+                    <div class="ck-field" style="grid-column: 1 / -1;">
+                        <label>Dirección</label>
+                        <input type="text" name="direccion" value="{{ reserva.huespedes.direccion|default:'' }}">
+                    </div>
+                </div>
+
+                <h2 class="ck-section-title">Detalles de la reserva</h2>
+                <div class="ck-summary">
+                    <div class="ck-summary-grid">
+                        <div class="ck-summary-item">
+                            <div class="lbl">Alojamiento</div>
+                            <div class="val">{% if reserva.habitaciones %}Hab. {{ reserva.habitaciones.numero }}{% else %}{{ reserva.planes.nombre }}{% endif %}</div>
+                        </div>
+                        <div class="ck-summary-item">
+                            <div class="lbl">Entrada</div>
+                            <div class="val">{{ reserva.fechaentrada|date:"d/m/Y" }}</div>
+                        </div>
+                        <div class="ck-summary-item">
+                            <div class="lbl">Salida</div>
+                            <div class="val">{{ reserva.fechasalida|date:"d/m/Y" }}</div>
+                        </div>
+                        <div class="ck-summary-item">
+                            <div class="lbl">Total</div>
+                            <div class="val">${{ reserva.valortotal|floatformat:"0g" }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h2 class="ck-section-title">¿Viene acompañado?</h2>
+                <div class="ck-summary" style="padding: 20px;">
+                    <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="tieneAcompanantes" style="width: 18px; height: 18px; cursor: pointer;">
+                        <label for="tieneAcompanantes" style="font-weight: 600; color: #16484B; cursor: pointer; text-transform: none; font-size: 14px;">
+                            Sí, registrar acompañantes
+                        </label>
+                    </div>
+
+                    <div id="contenedorAcompanantes" style="display: none;">
+                        <div id="listaAcompanantes"></div>
+                        
+                        <button type="button" id="btnAgregarAcompanante" style="margin-top: 10px; background: #E1E8EC; color: #16484B; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                            Agregar otra persona
+                        </button>
+                    </div>
+                    </div>
+
+                    <div class="ck-summary" style="padding: 20px;">
+                        <label style="display: flex; align-items: flex-start; gap: 10px; text-transform: none;">
+                            <input type="checkbox" name="documentacion_verificada" required style="width: 18px; height: 18px;">
+                            Confirmo que verifiqué la identidad del titular y los documentos requeridos de sus acompañantes.
+                        </label>
+                    </div>
+
+                    <div class="ck-actions">
+                        <a class="ck-btn ck-btn-back" href="{% if request.session.rol == 'Recepcionista' %}/recepcion{% else %}/adminreserva{% endif %}">Cancelar</a>
+                        <button class="ck-btn ck-btn-confirm" type="submit">Confirmar check-in</button>
+                    </div>
+            </form>
+        </div>
+    </div>
+
+<script src="{% static 'js/administrador/checkin.js' %}"></script>
+
+</body>
+</html>

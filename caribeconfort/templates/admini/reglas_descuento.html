@@ -1,0 +1,62 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Descuentos por estancia | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
+</head>
+<body>
+{% include 'inc/admin_header.html' %}
+{% include 'inc/admin_nav.html' %}
+<main class="ad-main adm-page">
+    <header class="adm-heading">
+        <div><p class="adm-eyebrow">PROMOCIONES DEL HOTEL</p><h1>Descuentos por larga estancia</h1><p>Configura el porcentaje que se aplicará a las reservas según sus noches de estancia.</p></div>
+    </header>
+    {% if messages %}
+    <section class="reception-messages" aria-live="polite">
+        {% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}
+    </section>
+    {% endif %}
+    <section class="adm-card">
+        <div class="adm-card-heading"><div><h2>Crear regla</h2><p>Se aplicará la regla activa con el mayor mínimo de noches que cumpla la reserva.</p></div></div>
+        <form method="post" class="discount-rule-form">
+            {% csrf_token %}
+            <label class="adm-field">Noches mínimas<input type="number" name="dias_minimos" min="1" required></label>
+            <label class="adm-field">Descuento (%)<input type="number" name="porcentaje" min="0.01" max="100" step="0.01" required></label>
+            <label class="discount-active"><input type="checkbox" name="estado" checked> Regla activa</label>
+            <button type="submit" class="adm-button primary">Guardar regla</button>
+        </form>
+    </section>
+    <section class="adm-card">
+        <div class="adm-card-heading"><div><h2>Reglas configuradas</h2><p>Edita los días, porcentaje y estado de cada regla.</p></div></div>
+        <div class="adm-table-wrap">
+            <table class="adm-table">
+                <thead><tr><th>Noches mínimas</th><th>Descuento</th><th>Estado</th><th>Acción</th></tr></thead>
+                <tbody>
+                    {% for regla in reglas %}
+                    <tr>
+                        <td>
+                        <form id="regla-{{ regla.id }}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="editar">
+                            <input type="hidden" name="regla_id" value="{{ regla.id }}">
+                        </form>
+                        <input type="number" name="dias_minimos" min="1" value="{{ regla.dias_minimos }}" required form="regla-{{ regla.id }}">
+                        </td>
+                        <td><input type="number" name="porcentaje" min="0.01" max="100" step="0.01" value="{{ regla.porcentaje }}" required form="regla-{{ regla.id }}">%</td>
+                        <td><label class="discount-active"><input type="checkbox" name="estado" {% if regla.estado %}checked{% endif %} form="regla-{{ regla.id }}"> Activa</label></td>
+                        <td><button type="submit" class="adm-button primary" form="regla-{{ regla.id }}">Guardar</button></td>
+                    </tr>
+                    {% empty %}<tr><td class="adm-empty" colspan="4">No hay reglas de descuento configuradas.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+</body>
+</html>

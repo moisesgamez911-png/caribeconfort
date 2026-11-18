@@ -1,0 +1,61 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperar Contraseña | Caribe Confort</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/recuperar.css' %}?v=2">
+</head>
+<body>
+
+    <nav class="navbar-auth">
+        <a href="/home">
+            <img src="{% static 'img/imagenes/LCFFINAL.png' %}" alt="Caribe Confort" class="nav-logo">
+        </a>
+        <div class="nav-actions">
+            <button class="btn-lang">ES | EN</button>
+            <button class="btn-user">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </button>
+        </div>
+    </nav>
+
+    <main class="auth-card">
+        
+        <div class="auth-image"> 
+            <h2>Bienvenido de nuevo<br>a tu descanso</h2>
+            <span></span>
+        </div>
+
+        <div class="auth-form-container">
+            <div class="auth-eyebrow">RECUPERAR ACCESO</div>
+            <h1 class="auth-title">¿Olvidaste tu contraseña?</h1>
+            <p class="auth-subtitle">Ingresa tu correo electrónico y te enviaremos un código de verificación para restablecer tu cuenta.</p>
+
+            {% if error %}
+                <div class="auth-error">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" class="auth-form">
+                {% csrf_token %}
+                
+                <div class="input-group">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    <input type="email" name="correo" class="form-control" placeholder="Correo electrónico" value="{{ correo|default:'' }}" required>
+                </div>
+
+                <button type="submit" class="btn-submit">Enviar código</button>
+            </form>
+
+            <div class="auth-footer">
+                <a href="/login">Volver al inicio de sesión</a>
+            </div>
+        </div>
+
+    </main>
+
+</body>
+</html>

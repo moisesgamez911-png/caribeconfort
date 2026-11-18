@@ -1,0 +1,272 @@
+{% load static i18n l10n %}
+{% get_current_language as CURRENT_LANGUAGE %}
+<!DOCTYPE html>
+<html lang="{{ CURRENT_LANGUAGE }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Servicios" %} | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/servicios.css' %}?v=21">
+    <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/idiomas.css' %}">
+    <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="servicios-page">
+
+<svg class="icon-library" aria-hidden="true" focusable="false">
+    <symbol id="i-todas" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></symbol>
+    <symbol id="i-cama" viewBox="0 0 24 24"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/></symbol>
+    <symbol id="i-restaurante" viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></symbol>
+    <symbol id="i-copa" viewBox="0 0 24 24"><path d="M8 22h8M12 15v7M3 3h18l-2 8a5 5 0 0 1-5 4h-4a5 5 0 0 1-5-4z"/></symbol>
+    <symbol id="i-piscina" viewBox="0 0 24 24"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></symbol>
+    <symbol id="i-evento" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+    <symbol id="i-lavanderia" viewBox="0 0 24 24"><rect x="3" y="2" width="18" height="20" rx="2"/><circle cx="12" cy="14" r="4"/><path d="M7 6h.01M11 6h.01"/></symbol>
+    <symbol id="i-transporte" viewBox="0 0 24 24"><path d="M3 17h18M5 17V6a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v11M5 12h14"/><circle cx="8" cy="19" r="1.6"/><circle cx="16" cy="19" r="1.6"/></symbol>
+    <symbol id="i-estrella" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M5 9a11 11 0 0 1 14 0M8 12a6.5 6.5 0 0 1 8 0M11 15a2 2 0 0 1 2 0"/><circle cx="12" cy="18" r="1"/></symbol>
+    <symbol id="i-reloj" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></symbol>
+    <symbol id="i-parqueadero" viewBox="0 0 24 24"><path d="M5 21V3h8a6 6 0 0 1 0 12H5M5 9h8a2 2 0 0 1 0 4H5"/></symbol>
+    <symbol id="i-bolsa" viewBox="0 0 24 24"><path d="M3 3h2l2.5 12.5a2 2 0 0 0 2 1.5h8.8a2 2 0 0 0 2-1.6L22 8H6"/><circle cx="10" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></symbol>
+    <symbol id="i-cerrar" viewBox="0 0 24 24"><path d="m18 6-12 12M6 6l12 12"/></symbol>
+    <symbol id="i-imagen" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></symbol>
+</svg>
+
+<header class="services-hero">
+    <img class="services-hero-image" src="{% static 'img/imagenes/FBAR.jpg' %}" alt="">
+    <div class="services-hero-overlay" aria-hidden="true"></div>
+    {% include 'inc/usuariomenu.html' %}
+    <div class="services-hero-copy">
+        <p class="services-eyebrow">{% trans "Hospitalidad Caribeña" %}</p>
+        <h1>{% trans "Servicios & Experiencias" %}</h1>
+        <p>{% trans "Cada detalle de tu estadía está pensado para tu descanso: gastronomía local, bienestar frente al mar y traslados privados en Riohacha." %}</p>
+    </div>
+</header>
+
+<section class="service-highlights" aria-label="{% trans 'Servicios destacados del hotel' %}">
+    <article class="service-highlight">
+        <span class="highlight-icon"><svg class="icon"><use href="#i-wifi"/></svg></span>
+        <span><strong>{% trans "Wi-Fi Alta Velocidad" %}</strong><small>{% trans "Conexión en todo el hotel" %}</small></span>
+    </article>
+    <article class="service-highlight">
+        <span class="highlight-icon"><svg class="icon"><use href="#i-reloj"/></svg></span>
+        <span><strong>{% trans "Recepción 24/7" %}</strong><small>{% trans "Asistencia permanente" %}</small></span>
+    </article>
+    <article class="service-highlight">
+        <span class="highlight-icon"><svg class="icon"><use href="#i-restaurante"/></svg></span>
+        <span><strong>{% trans "Desayuno Caribeño" %}</strong><small>{% trans "6:30 AM – 10:00 AM" %}</small></span>
+    </article>
+    <article class="service-highlight">
+        <span class="highlight-icon"><svg class="icon"><use href="#i-parqueadero"/></svg></span>
+        <span><strong>{% trans "Parqueadero Privado" %}</strong><small>{% trans "Vigilancia incluida" %}</small></span>
+    </article>
+</section>
+
+<main class="services-main" id="servicios">
+    {% if servicio_destacado %}
+        <section class="service-featured" aria-labelledby="featuredServiceTitle">
+            <div class="featured-image">
+                {% if servicio_destacado.url_imagen %}
+                    <img src="{{ servicio_destacado.url_imagen }}" alt="{{ servicio_destacado.nombre }}" loading="lazy">
+                {% else %}
+                    <img src="{% static 'img/imagenes/FBAR.jpg' %}" alt="{{ servicio_destacado.nombre }}" loading="lazy">
+                {% endif %}
+                <span class="featured-image-badge">{% trans "Experiencia destacada" %}</span>
+            </div>
+            <div class="featured-content">
+                <div class="featured-kicker">
+                    <span>{% trans "Recomendado del hotel" %}</span>
+                    <span class="featured-category">{{ servicio_destacado.categoria }}</span>
+                </div>
+                <h2 id="featuredServiceTitle">{{ servicio_destacado.nombre }}</h2>
+                <p>{{ servicio_destacado.descripcion|default:"Una experiencia especial para disfrutar durante tu estadía en Caribe Confort." }}</p>
+                <div class="featured-footer">
+                    <div class="service-price">
+                        <span>{% trans "Desde" %}</span>
+                        <strong>${{ servicio_destacado.precio|floatformat:"0g" }}</strong>
+                    </div>
+                    {% if request.session.usuario_id %}
+                        <button type="button" class="btn-solicitar" data-servicio-id="{{ servicio_destacado.id }}" data-servicio="{{ servicio_destacado.nombre }}" data-precio="{{ servicio_destacado.precio|unlocalize }}">
+                            {% trans "Solicitar experiencia" %}
+                        </button>
+                    {% else %}
+                        <a href="/login" class="btn-solicitar-login">{% trans "Solicitar experiencia" %}</a>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+    {% endif %}
+
+    <div class="services-toolbar">
+        <nav class="services-filters" aria-label="{% trans 'Filtrar servicios por categoría' %}">
+            <a href="{% url 'servicios' %}" class="svc-tab{% if not categoria_activa %} is-active{% endif %}"{% if not categoria_activa %} aria-current="page"{% endif %}>
+                {% trans "Todos" %}<span>{{ total_general }}</span>
+            </a>
+            {% for c in categorias %}
+                <a href="{% url 'servicios' %}?categoria={{ c.nombre|urlencode }}" class="svc-tab{% if categoria_activa == c.nombre %} is-active{% endif %}"{% if categoria_activa == c.nombre %} aria-current="page"{% endif %}>
+                    {{ c.nombre }}<span>{{ c.total }}</span>
+                </a>
+            {% endfor %}
+        </nav>
+        <p class="services-catalog-note">{% trans "Catálogo de servicios adicionales" %}</p>
+    </div>
+
+    <section class="services-catalog" aria-label="{% trans 'Catálogo de servicios' %}">
+        <div class="services-grid">
+            {% for s in servicios %}
+                <article class="service-card">
+                    <div class="service-card-image">
+                        {% if s.url_imagen %}
+                            <img src="{{ s.url_imagen }}" alt="{{ s.nombre }}" loading="lazy">
+                        {% else %}
+                            <span class="service-image-empty" aria-hidden="true"><svg class="icon"><use href="#i-estrella"/></svg></span>
+                        {% endif %}
+                    </div>
+                    <div class="service-card-content">
+                        <div class="service-card-meta">
+                            <span>{{ s.categoria }}</span>
+                        </div>
+                        <h2>{{ s.nombre }}</h2>
+                        <p>{{ s.descripcion|default:"Servicio exclusivo pensado para tu comodidad." }}</p>
+                        <div class="service-card-footer">
+                            <div class="service-price">
+                                <span>{% trans "Desde" %}</span>
+                                <strong>${{ s.precio|floatformat:"0g" }}</strong>
+                            </div>
+                            {% if request.session.usuario_id %}
+                                <button type="button" class="btn-solicitar" data-servicio-id="{{ s.id }}" data-servicio="{{ s.nombre }}" data-precio="{{ s.precio|unlocalize }}">
+                                    <svg class="icon"><use href="#i-bolsa"/></svg>
+                                    {% trans "Solicitar" %}
+                                </button>
+                            {% else %}
+                                <a href="/login" class="btn-solicitar-login">{% trans "Solicitar" %}</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </article>
+            {% empty %}
+                {% if not servicio_destacado %}
+                    <div class="services-empty">
+                        <svg class="icon"><use href="#i-imagen"/></svg>
+                        <strong>{% trans "Aún no hay servicios disponibles" %}</strong>
+                        <span>
+                            {% if categoria_activa %}
+                                {% trans "Esta categoría todavía no tiene servicios cargados." %}
+                            {% else %}
+                                {% trans "Pronto verás aquí todo lo que Caribe Confort tiene para ti." %}
+                            {% endif %}
+                        </span>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </section>
+</main>
+
+<div class="modal-servicio-overlay" id="modalPagoServicio">
+    <section class="modal-servicio-box" role="dialog" aria-modal="true" aria-labelledby="tituloModalServicio">
+        <header class="modal-servicio-header">
+            <span class="service-modal-icon"><svg class="icon"><use href="#i-bolsa"/></svg></span>
+            <div class="encabezado-texto">
+                <h2 id="tituloModalServicio">{% trans "Solicitar servicio" %}</h2>
+                <p>{% trans "El consumo se agregará al saldo de la reserva." %}</p>
+            </div>
+            <button type="button" class="cerrar-superior" id="btnCerrarServicio" aria-label="{% trans 'Cerrar' %}">
+                <svg class="icon"><use href="#i-cerrar"/></svg>
+            </button>
+        </header>
+
+        <form id="formSolicitarServicio" class="modal-form-flex">
+            {% csrf_token %}
+            <div class="modal-servicio-body">
+                <div class="resumen-box">
+                    <div class="resumen-item">
+                        <span class="etiqueta">{% trans "Servicio seleccionado" %}</span>
+                        <strong id="txtServicioNombre">{% trans "Nombre del servicio" %}</strong>
+                    </div>
+                    <div class="resumen-item resumen-item-right">
+                        <span class="etiqueta">{% trans "Total del servicio" %}</span>
+                        <strong class="precio" id="txtServicioPrecio">$ 0</strong>
+                    </div>
+                </div>
+
+                <div class="form-group-servicio">
+                    <label for="selectReservaServicio">{% trans "¿A qué reserva deseas adjuntarlo?" %}</label>
+                    <select id="selectReservaServicio" name="reserva_id" class="input-servicio" required>
+                        <option value="">{% trans "Selecciona una reserva activa" %}</option>
+                        {% for r in reservas_activas %}
+                            <option value="{{ r.id }}">
+                                #CC-{{ r.id|stringformat:"04d" }} - {% if r.habitaciones %}{% trans "Hab." %} {{ r.habitaciones.numero }}{% else %}{{ r.planes.nombre }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group-servicio">
+                    <label for="cantidadServicio">{% trans "Cantidad" %}</label>
+                    <input type="number" id="cantidadServicio" name="cantidad" class="input-servicio" min="1" max="50" value="1" required>
+                </div>
+
+                <div class="form-group-servicio">
+                    <label for="nombreSolicitanteServicio">{% trans "Nombre de quien solicita" %}</label>
+                    <input
+                        type="text"
+                        id="nombreSolicitanteServicio"
+                        name="solicitado_por"
+                        class="input-servicio"
+                        maxlength="100"
+                        value="{% if huesped %}{{ huesped.nombres }} {{ huesped.apellidos }}{% endif %}"
+                        autocomplete="name"
+                        required
+                    >
+                </div>
+
+                <fieldset class="service-payment-method">
+                    <legend>{% trans "¿Con qué método prefieres pagar?" %}</legend>
+                    <div class="service-payment-options">
+                        <label class="service-payment-option" for="pagoServicioTarjeta">
+                            <input id="pagoServicioTarjeta" type="radio" name="metodo_pago_preferido" value="Tarjeta" required>
+                            <span>{% trans "Tarjeta" %}</span>
+                        </label>
+                        <label class="service-payment-option" for="pagoServicioNequi">
+                            <input id="pagoServicioNequi" type="radio" name="metodo_pago_preferido" value="Nequi">
+                            <span>{% trans "Nequi" %}</span>
+                        </label>
+                    </div>
+                </fieldset>
+                <p class="service-payment-note">{% trans "Guardaremos tu método preferido para que recepción lo tenga en cuenta. Esta solicitud no procesa el pago ni realiza cargos bancarios." %}</p>
+            </div>
+
+            <footer class="modal-servicio-footer">
+                <button type="button" class="boton boton-secundario" id="btnCancelarServicio">{% trans "Cancelar" %}</button>
+                <button type="submit" class="boton boton-principal" id="btnConfirmarPagoServicio">{% trans "Agregar a la reserva" %}</button>
+            </footer>
+        </form>
+    </section>
+</div>
+
+<div class="modal-servicio-overlay" id="modalExitoServicio">
+    <section class="modal-servicio-box modal-servicio-success" role="dialog" aria-modal="true" aria-labelledby="tituloServicioAgregado">
+        <span class="service-success-icon" aria-hidden="true">✓</span>
+        <h2 id="tituloServicioAgregado">{% trans "Servicio agregado" %}</h2>
+        <p>{% trans "El consumo quedó asociado a tu reserva y pendiente de pago." %}</p>
+        <button type="button" class="boton boton-principal" id="btnCerrarExitoServicio">{% trans "Entendido" %}</button>
+    </section>
+</div>
+
+<input type="hidden" id="hdnServicioId">
+<input type="hidden" id="hdnServicioNombre">
+<input type="hidden" id="hdnServicioPrecio">
+
+<footer class="services-footer">
+    © 2026 Hotel Caribe Confort · Av. La Marina #14-28, Riohacha, La Guajira · reservas@caribeconfort.com
+</footer>
+
+<script src="{% static 'js/bootstrap.bundle.js' %}"></script>
+<script src="{% static 'js/feedback.js' %}?v=1"></script>
+<script src="{% static 'js/servicios.js' %}?v=21"></script>
+</body>
+</html>

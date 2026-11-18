@@ -1,0 +1,187 @@
+.review-page {
+    display: grid;
+    min-height: 100vh;
+    place-items: center;
+    margin: 0;
+    padding: 28px 16px;
+    background: #FAF8F5;
+    color: #183D3D;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+.review-page * {
+    box-sizing: border-box;
+}
+
+.review-card {
+    width: min(100%, 560px);
+    padding: clamp(26px, 6vw, 52px);
+    border: 1px solid #E8E4DD;
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: 0 22px 65px rgba(24, 61, 61, 0.12);
+}
+
+.review-brand {
+    display: inline-block;
+    margin-bottom: 36px;
+    color: #183D3D;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 23px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.review-eyebrow {
+    margin: 0 0 8px;
+    color: #B09050;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.review-card h1 {
+    margin: 0;
+    color: #183D3D;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: clamp(32px, 7vw, 44px);
+    line-height: 1.05;
+}
+
+.review-intro,
+.review-complete > p:last-child {
+    margin: 14px 0 24px;
+    color: #5C5852;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.review-error {
+    margin: 0 0 18px;
+    padding: 12px 14px;
+    border: 1px solid #E7B8B8;
+    border-radius: 10px;
+    background: #FFF4F4;
+    color: #8C2F2F;
+    font-size: 12px;
+}
+
+.rating-fieldset {
+    margin: 0 0 24px;
+    padding: 0;
+    border: 0;
+}
+
+.rating-fieldset legend,
+.comment-label {
+    margin-bottom: 10px;
+    color: #183D3D;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.rating-options {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.rating-options input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    clip-path: inset(50%);
+}
+
+.rating-options label {
+    color: #D8D1C4;
+    font-size: 38px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.rating-options input:checked + label,
+.rating-options input:checked + label ~ input + label,
+.rating-options label:hover,
+.rating-options label:hover ~ input + label {
+    color: #C6A15B;
+}
+
+.rating-options label:hover {
+    transform: translateY(-2px);
+}
+
+.rating-options input:focus-visible + label {
+    outline: 2px solid #183D3D;
+    outline-offset: 3px;
+}
+
+.comment-label {
+    display: block;
+}
+
+.review-form textarea {
+    display: block;
+    width: 100%;
+    min-height: 136px;
+    padding: 13px 14px;
+    border: 1px solid #D9D4CA;
+    border-radius: 12px;
+    background: #FFFEFC;
+    color: #1A1816;
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.6;
+    resize: vertical;
+}
+
+.review-form textarea:focus {
+    border-color: #183D3D;
+    outline: 3px solid rgba(22, 72, 75, 0.12);
+}
+
+.review-submit {
+    width: 100%;
+    margin-top: 20px;
+    padding: 13px 18px;
+    border: 0;
+    border-radius: 999px;
+    background: #16484B;
+    color: #fff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.review-submit:hover {
+    background: #103A3D;
+    transform: translateY(-1px);
+}
+
+.review-complete {
+    text-align: center;
+}
+
+.review-complete-icon {
+    display: grid;
+    width: 58px;
+    height: 58px;
+    place-items: center;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    background: #E8F1EB;
+    color: #16484B;
+    font-size: 25px;
+    font-weight: 700;
+}
+
+.review-complete .review-eyebrow {
+    margin-bottom: 10px;
+}

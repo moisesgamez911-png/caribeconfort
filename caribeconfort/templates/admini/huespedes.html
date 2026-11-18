@@ -1,0 +1,88 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Huéspedes | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
+</head>
+<body>
+{% include 'inc/admin_header.html' %}
+{% include 'inc/admin_nav.html' %}
+
+<main class="ad-main adm-page">
+    <header class="adm-heading">
+        <div>
+            <p class="adm-eyebrow">GESTIÓN DE CLIENTES</p>
+            <h1>Huéspedes</h1>
+            <p>Consulta los huéspedes registrados y sus datos de contacto.</p>
+        </div>
+        <div class="adm-heading-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21v-2a7 7 0 0 1 14 0v2M17 4a4 4 0 0 1 0 8m2 3a5 5 0 0 1 3 4v2"/></svg>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="adm-messages" role="status">
+        {% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}
+    </div>
+    {% endif %}
+
+    <section class="adm-stats">
+        <article class="adm-stat-card">
+            <span class="adm-stat-icon teal"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21v-2a7 7 0 0 1 14 0v2"/></svg></span>
+            <span class="adm-stat-label">Huéspedes registrados</span>
+            <strong>{{ total_huespedes }}</strong>
+        </article>
+        <article class="adm-stat-card">
+            <span class="adm-stat-icon green"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span>
+            <span class="adm-stat-label">Resultados en esta página</span>
+            <strong>{{ page_obj.paginator.count }}</strong>
+        </article>
+    </section>
+
+    <section class="adm-card">
+        <div class="adm-card-heading">
+            <div><h2>Listado de huéspedes</h2><p>Busca por nombre, documento o correo.</p></div>
+            <form method="get" class="adm-search">
+                <label class="sr-only" for="buscarHuesped">Buscar huésped</label>
+                <input id="buscarHuesped" type="search" name="q" value="{{ busqueda }}" placeholder="Nombre, documento o correo">
+                <button class="adm-button" type="submit">Buscar</button>
+                {% if busqueda %}<a class="adm-button secondary" href="/adminhuespedes">Limpiar</a>{% endif %}
+            </form>
+        </div>
+        <div class="adm-table-wrap">
+            <table class="adm-table">
+                <thead><tr><th>Nombre</th><th>Documento</th><th>Correo</th><th>Teléfono</th><th>Reservas</th></tr></thead>
+                <tbody>
+                    {% for huesped in page_obj %}
+                    <tr>
+                        <td><strong>{{ huesped.nombres }} {{ huesped.apellidos }}</strong></td>
+                        <td>{{ huesped.tipodocumento }} · {{ huesped.identificacion }}</td>
+                        <td>{{ huesped.correo|default:"—" }}</td>
+                        <td>{{ huesped.telefono|default:"—" }}</td>
+                        <td><span class="adm-pill blue">{{ huesped.total_reservas }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td class="adm-empty" colspan="5">No hay huéspedes que coincidan con la búsqueda.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="adm-pagination" aria-label="Paginación">
+            <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            <div>
+                {% if page_obj.has_previous %}<a href="?q={{ busqueda|urlencode }}&amp;page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}
+                {% if page_obj.has_next %}<a href="?q={{ busqueda|urlencode }}&amp;page={{ page_obj.next_page_number }}">Siguiente</a>{% endif %}
+            </div>
+        </nav>
+        {% endif %}
+    </section>
+</main>
+<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+</body>
+</html>

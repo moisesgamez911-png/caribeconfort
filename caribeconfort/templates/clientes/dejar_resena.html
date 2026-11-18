@@ -1,0 +1,81 @@
+{% load static i18n %}
+{% get_current_language as CURRENT_LANGUAGE %}
+<!DOCTYPE html>
+<html lang="{{ CURRENT_LANGUAGE }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Deja tu reseña" %} | Caribe Confort</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/resena.css' %}?v=2">
+</head>
+<body class="review-page">
+    <main class="review-card">
+        <a class="review-brand" href="/home">Caribe Confort</a>
+
+        {% if enviada %}
+            <section class="review-complete" aria-live="polite">
+                <span class="review-complete-icon" aria-hidden="true">✓</span>
+                <p class="review-eyebrow">{% trans "Caribe Confort · Riohacha" %}</p>
+                <h1>{% trans "¡Gracias por compartir tu experiencia!" %}</h1>
+                <p>{% trans "Tu reseña fue recibida. Esperamos darte la bienvenida nuevamente." %}</p>
+            </section>
+        {% else %}
+            <p class="review-eyebrow">{% trans "Tu experiencia importa" %}</p>
+            <h1>{% trans "Cuéntanos cómo fue tu estancia" %}</h1>
+            <p class="review-intro">
+                {% blocktrans with reserva_id=resena.reserva_id|stringformat:"04d" nombre=resena.reserva.huespedes.nombres %}
+                    Hola {{ nombre }}, comparte tu opinión sobre la reserva CC-{{ reserva_id }}.
+                {% endblocktrans %}
+            </p>
+
+            {% if error %}
+                <p class="review-error" role="alert">{{ error }}</p>
+            {% endif %}
+
+            <form class="review-form" method="post">
+                {% csrf_token %}
+                <fieldset class="rating-fieldset">
+                    <legend>{% trans "Califica tu estancia" %}</legend>
+                    <div class="rating-options">
+                    <input id="rating-stay-5" type="radio" name="calificacion" value="5" required>
+                    <label for="rating-stay-5" aria-label="{% trans '5 estrellas' %}">★</label>
+                    <input id="rating-stay-4" type="radio" name="calificacion" value="4">
+                    <label for="rating-stay-4" aria-label="{% trans '4 estrellas' %}">★</label>
+                    <input id="rating-stay-3" type="radio" name="calificacion" value="3">
+                    <label for="rating-stay-3" aria-label="{% trans '3 estrellas' %}">★</label>
+                    <input id="rating-stay-2" type="radio" name="calificacion" value="2">
+                    <label for="rating-stay-2" aria-label="{% trans '2 estrellas' %}">★</label>
+                    <input id="rating-stay-1" type="radio" name="calificacion" value="1">
+                    <label for="rating-stay-1" aria-label="{% trans '1 estrella' %}">★</label>
+                    </div>
+                </fieldset>
+
+                {% if resena.reserva.habitaciones %}
+                    <fieldset class="rating-fieldset">
+                        <legend>{% trans "Califica la habitación (opcional)" %}</legend>
+                        <div class="rating-options">
+                            <input id="rating-room-5" type="radio" name="calificacion_habitacion" value="5">
+                            <label for="rating-room-5" aria-label="{% trans '5 estrellas' %}">★</label>
+                            <input id="rating-room-4" type="radio" name="calificacion_habitacion" value="4">
+                            <label for="rating-room-4" aria-label="{% trans '4 estrellas' %}">★</label>
+                            <input id="rating-room-3" type="radio" name="calificacion_habitacion" value="3">
+                            <label for="rating-room-3" aria-label="{% trans '3 estrellas' %}">★</label>
+                            <input id="rating-room-2" type="radio" name="calificacion_habitacion" value="2">
+                            <label for="rating-room-2" aria-label="{% trans '2 estrellas' %}">★</label>
+                            <input id="rating-room-1" type="radio" name="calificacion_habitacion" value="1">
+                            <label for="rating-room-1" aria-label="{% trans '1 estrella' %}">★</label>
+                        </div>
+                    </fieldset>
+                {% endif %}
+
+                <label class="comment-label" for="comentario">{% trans "Tu comentario" %}</label>
+                <textarea id="comentario" name="comentario" rows="5" maxlength="2000" required placeholder="{% trans '¿Qué fue lo que más disfrutaste?' %}"></textarea>
+                <button class="review-submit" type="submit">{% trans "Enviar reseña" %}</button>
+            </form>
+        {% endif %}
+    </main>
+</body>
+</html>

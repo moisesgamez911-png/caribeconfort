@@ -1,0 +1,725 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservas | Caribe Confort</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=102">
+    <link rel="stylesheet" href="{% static 'css/administrador/reservas.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
+    <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
+
+</head>
+<body>
+
+{% include 'inc/admin_header.html' %}
+{% include 'inc/admin_nav.html' %}
+
+{% if messages %}
+<div style="margin-bottom:20px;">
+    {% for m in messages %}
+    <div style="padding:14px 18px; border-radius:8px; margin-bottom:8px; font-size:14px; font-weight:500;
+        {% if m.tags == 'error' %}background:#FBE5E5; color:#B91C1C; border:1px solid #FCA5A5;
+        {% else %}background:#E0F3EA; color:#166534; border:1px solid #86EFAC;{% endif %}">
+        {{ m }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<main class="ad-main">
+
+    {% if reservas_por_validar %}
+    <div class="rv-alerta-validacion">
+        <div class="rv-alerta-header">
+            <div class="rv-alerta-title">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                <h2>Reservas pendientes de validación</h2>
+            </div>
+            <p>Los siguientes clientes ya realizaron el pago. Revisa los detalles y confirma la reserva.</p>
+        </div>
+        
+        <div class="rv-alerta-grid">
+            {% for r in reservas_por_validar %}
+            <div class="rv-alerta-card">
+                <div class="rv-alerta-info">
+                    <strong>{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}</strong>
+                    <span>Hab. {{ r.habitaciones.numero|default:"Plan" }} | {{ r.fechaentrada|date:"d/m/Y" }} al {{ r.fechasalida|date:"d/m/Y" }}</span>
+                    <span class="rv-monto">$ {{ r.valortotal|floatformat:"0g" }}</span>
+                </div>
+                <button type="button" class="rv-btn-validar btn-abrir-validacion"
+                        data-id="{{ r.id }}"
+                        data-nombre="{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}"
+                        data-documento="{{ r.huespedes.tipodocumento }} {{ r.huespedes.identificacion }}"
+                        data-correo="{{ r.huespedes.correo }}"
+                        data-telefono="{{ r.huespedes.telefono }}"
+                        data-hab="{% if r.habitaciones %}{{ r.habitaciones.numero }}{% else %}Plan: {{ r.planes.nombre }}{% endif %}"
+                        data-entrada="{{ r.fechaentrada|date:'d/m/Y' }}"
+                        data-salida="{{ r.fechasalida|date:'d/m/Y' }}"
+                        data-total="$ {{ r.valortotal|floatformat:'0g' }}">
+                    Revisar pago
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="rv-header">
+        <div class="rv-title-wrap">
+            <div class="rv-icon-main">
+            </div>
+            <div>
+                <p class="adm-eyebrow" style="margin-left: -20%; margin-right: 20%;">RESERVACIONES DEL HOTEL</p>
+                <h1 class="rv-title" style="margin-left: -20%; margin-right: 20%;">Reservas</h1>
+                <p class="rv-sub" style="margin-left: -20%; margin-right: 20%;">Gestiona y consulta todas las reservas del hotel.</p>
+            </div>
+        </div>
+        <div class="dash-fecha">
+            <div>
+                <strong>{% now "l, j \d\e F \d\e Y" %}</strong>
+                <span>Hotel Caribe Confort - Riohacha, La Guajira</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="rv-kpis">
+        <div class="rv-kpi-card">
+            <div class="rv-kpi-top">
+                <div class="rv-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+                <span class="rv-kpi-label">Total de reservas</span>
+            </div>
+            <div class="rv-kpi-valor">{{ total_reservas }}</div>
+            <div class="rv-kpi-foot verde">↑ +12% vs. mes anterior</div>
+        </div>
+
+        <div class="rv-kpi-card">
+            <div class="rv-kpi-top">
+                <div class="rv-kpi-icon verde"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg></div>
+                <span class="rv-kpi-label">Confirmadas</span>
+            </div>
+            <div class="rv-kpi-valor">{{ total_confirmadas }}</div>
+            <div class="rv-kpi-foot">{{ porcentaje_confirmadas }}% del total</div>
+            <div class="rv-kpi-progress"><div class="rv-kpi-bar verde" style="width: {{ porcentaje_confirmadas }}%;"></div></div>
+        </div>
+
+        <div class="rv-kpi-card">
+            <div class="rv-kpi-top">
+                <div class="rv-kpi-icon naranja"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                <span class="rv-kpi-label">En proceso</span>
+            </div>
+            <div class="rv-kpi-valor">{{ total_proceso }}</div>
+            <div class="rv-kpi-foot naranja">{{ porcentaje_proceso }}% del total</div>
+            <div class="rv-kpi-progress"><div class="rv-kpi-bar naranja" style="width: {{ porcentaje_proceso }}%;"></div></div>
+        </div>
+
+        <div class="rv-kpi-card">
+            <div class="rv-kpi-top">
+                <div class="rv-kpi-icon rojo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg></div>
+                <span class="rv-kpi-label">Canceladas</span>
+            </div>
+            <div class="rv-kpi-valor">{{ total_canceladas }}</div>
+            <div class="rv-kpi-foot rojo">{{ porcentaje_canceladas }}% del total</div>
+            <div class="rv-kpi-progress"><div class="rv-kpi-bar rojo" style="width: {{ porcentaje_canceladas }}%;"></div></div>
+        </div>
+
+        <div class="rv-kpi-card">
+            <div class="rv-kpi-top">
+                <div class="rv-kpi-icon azul"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+                <span class="rv-kpi-label">Check-in hoy</span>
+            </div>
+            <div class="rv-kpi-valor">{{ checkin_hoy }}</div>
+            <div class="rv-kpi-foot azul">{{ porcentaje_checkin }}% del total</div>
+            <div class="rv-kpi-progress"><div class="rv-kpi-bar azul" style="width: {{ porcentaje_checkin }}%;"></div></div>
+        </div>
+    </div>
+
+    <div class="rv-layout">
+        <div class="rv-left-col">
+            <div class="rv-card">
+                <div class="rv-card-head">
+                    <h2 class="rv-card-title">Listado de reservas</h2>
+                    <button type="button" class="rv-btn-primary" id="btnNuevaReserva">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Nueva reserva
+                    </button>
+                </div>
+                
+                <div class="rv-table-wrap">
+                    <table class="rv-table">
+                        <thead>
+                            <tr>
+                                <th>Nº Reserva</th>
+                                <th>Huésped</th>
+                                <th>Habitación</th>
+                                <th>Entrada</th>
+                                <th>Salida</th>
+                                <th>Estado</th>
+                                <th class="text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in page_obj %}
+                            <tr>
+                                <td>CC-{{ r.id|stringformat:"04d" }}</td>
+                                <td style="font-weight: 600;">{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}</td>
+                                <td>{% if r.habitaciones %}{{ r.habitaciones.numero }}{% else %}Plan{% endif %}</td>
+                                <td>{{ r.fechaentrada|date:"d/m/Y" }}</td>
+                                <td>{{ r.fechasalida|date:"d/m/Y" }}</td>
+                                <td>
+                                    <span class="rv-badge 
+                                        {% if r.estado == 'Confirmada' %}confirmada
+                                        {% elif r.estado == 'Pagada - Por validar' %}validar
+                                        {% elif r.estado == 'Cancelada' %}cancelada
+                                        {% elif r.estado == 'En curso' %}encurso
+                                        {% else %}finalizada{% endif %}">
+                                        {{ r.estado }}
+                                    </span>
+                                </td>
+                                <td class="text-right rv-actions">
+                                    {% if r.estado != 'Cancelada' and r.estado != 'Finalizada' %}
+                                    <button type="button" title="Modificar fechas" class="btn-modificar-reserva"
+                                            data-id="{{ r.id }}"
+                                            data-entrada="{{ r.fechaentrada|date:'Y-m-d' }}"
+                                            data-salida="{{ r.fechasalida|date:'Y-m-d' }}">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                                    </button>
+                                    {% endif %}
+                                    {% if r.estado == 'Confirmada' %}
+                                    <button type="button" title="Editar / Check-in" class="btn-checkin"
+                                            data-id="{{ r.id }}"
+                                            data-nombre="{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}"
+                                            data-documento="{{ r.huespedes.tipodocumento }} {{ r.huespedes.identificacion }}"
+                                            data-hab="{% if r.habitaciones %}Hab. {{ r.habitaciones.numero }}{% else %}Plan: {{ r.planes.nombre }}{% endif %}"
+                                            data-entrada="{{ r.fechaentrada|date:'d/m/Y' }}"
+                                            data-salida="{{ r.fechasalida|date:'d/m/Y' }}"
+                                            data-estado="{{ r.estado }}">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                                    </button>
+                                    {% elif r.estado == 'En curso' %}
+                                    <button type="button" title="Registrar check-out" class="btn-checkout"
+                                            data-id="{{ r.id }}"
+                                            data-saldo="{{ r.saldo_pendiente|default_if_none:'0.00'|floatformat:'2' }}"
+                                            data-nombre="{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+                                    </button>
+                                    {% endif %}
+
+                                    {% if r.saldo_pendiente > 0 and r.estado != 'Cancelada' and r.estado != 'Finalizada' %}
+                                    <button type="button" title="Registrar pago" class="btn-pago-reserva"
+                                            data-id="{{ r.id }}"
+                                            data-saldo="{{ r.saldo_pendiente|default_if_none:'0.00'|floatformat:'2' }}"
+                                            data-nombre="{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                                    </button>
+                                    {% endif %}
+
+                                    {% if r.saldo_favor > 0 %}
+                                    <button type="button" class="btn-procesar-reembolso"
+                                            data-id="{{ r.id }}"
+                                            data-nombre="{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}"
+                                            data-monto="{{ r.saldo_favor|floatformat:'2' }}">
+                                        Procesar reembolso
+                                    </button>
+                                    {% endif %}
+
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="7" style="text-align:center; padding: 20px;">No hay reservas registradas.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="rv-pagination">
+                    <span class="rv-pag-info">
+                        Mostrando {{ page_obj.start_index|default:"0" }} - {{ page_obj.end_index|default:"0" }} de {{ page_obj.paginator.count }} reservas
+                    </span>
+                    <div class="rv-pag-controls">
+                        {% if page_obj.has_previous %}
+                            <a href="?{% if parametros_paginacion %}{{ parametros_paginacion }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" class="rv-pag-btn">&lt;</a>
+                        {% else %}
+                            <button class="rv-pag-btn" disabled>&lt;</button>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            <a href="?{% if parametros_paginacion %}{{ parametros_paginacion }}&amp;{% endif %}page={{ num }}" class="rv-pag-btn {% if page_obj.number == num %}active{% endif %}">{{ num }}</a>
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <a href="?{% if parametros_paginacion %}{{ parametros_paginacion }}&amp;{% endif %}page={{ page_obj.next_page_number }}" class="rv-pag-btn">&gt;</a>
+                        {% else %}
+                            <button class="rv-pag-btn" disabled>&gt;</button>
+                        {% endif %}
+                    </div>
+                </div>
+                                
+            </div>
+
+            <div class="rv-card rv-report-card">
+                <div class="rv-report-info">
+                    <div class="rv-report-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
+                    </div>
+                    <div>
+                        <strong style="color: #f0f4f3;">Generar reporte de reservas</strong>
+                        <p>Descarga reportes de reservas por fecha, estado, habitación o huésped.</p>
+                    </div>
+                </div>
+                <a class="rv-btn-outline" href="/adminreportes/exportar?tipo=reservas">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Generar reporte
+                </a>
+            </div>
+        </div>
+
+        <div class="rv-right-col">
+            <div class="rv-card">
+                <div class="rv-card-head" style="margin-bottom: 20px;">
+                    <h2 class="rv-card-title">Buscar reservas</h2>
+                </div>
+                <form class="rv-search-form" method="GET" action="/adminreserva">
+                    <div class="rv-input-icon">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        <input type="search" name="q" value="{{ request.GET.q }}" placeholder="Nombre, documento o número de reserva">
+                    </div>
+                    
+                    <div class="rv-row-2">
+                        <div class="rv-form-group">
+                            <label for="filtroDesde">Entrada desde</label>
+                            <input id="filtroDesde" name="desde" type="date" class="rv-input" value="{{ request.GET.desde }}">
+                        </div>
+                        <div class="rv-form-group">
+                            <label for="filtroHasta">Entrada hasta</label>
+                            <input id="filtroHasta" name="hasta" type="date" class="rv-input" value="{{ request.GET.hasta }}">
+                        </div>
+                    </div>
+
+                    <div class="rv-row-2">
+                        <div class="rv-form-group">
+                            <label for="filtroEstado">Estado</label>
+                            <select id="filtroEstado" name="estado" class="rv-input">
+                                <option value="">Todos</option>
+                                {% for valor, etiqueta in estados_reserva %}
+                                <option value="{{ valor }}" {% if request.GET.estado == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="rv-form-group">
+                            <label for="filtroHabitacion">Habitación</label>
+                            <select id="filtroHabitacion" name="habitacion" class="rv-input">
+                                <option value="">Todas</option>
+                                {% for habitacion in habitaciones %}
+                                <option value="{{ habitacion.id }}" {% if request.GET.habitacion == habitacion.id|stringformat:"s" %}selected{% endif %}>{{ habitacion.numero }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="rv-row-2" style="margin-top: 10px;">
+                        <button type="submit" class="rv-btn-primary" style="justify-content: center;">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Buscar
+                        </button>
+                        <a href="/adminreserva" class="rv-btn-outline" style="justify-content: center;">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Limpiar filtros
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <div class="rv-card">
+                <div class="rv-card-head">
+                    <h2 class="rv-card-title">Reservas próximas</h2>
+                    <button type="button" class="rv-link rv-link-button" id="abrirProximasReservas">Ver todas</button>
+                </div>
+                <ul class="rv-upcoming-list">
+                    {% for r in proximas_reservas_preview %}
+                    <li>
+                        <div class="rv-avatar">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </div>
+                        <div class="rv-up-info">
+                            <strong>{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}</strong>
+                            <span>Hab. {{ r.habitaciones.numero|default:"Plan" }} | {{ r.fechaentrada|date:"d/m/Y" }} - {{ r.fechasalida|date:"d/m/Y" }}</span>
+                        </div>
+                        <a class="rv-badge-time azul" href="/adminreserva?q={{ r.id }}">Ver reserva</a>
+                        <svg class="rv-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                    </li>
+                    {% empty %}
+                    <li style="text-align: center; color: #6B7A82; font-size: 13px;">No hay reservas próximas.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<dialog class="rv-upcoming-dialog" id="modalProximasReservas" aria-labelledby="tituloProximasReservas">
+    <header class="rv-modal-header">
+        <div>
+            <h2 id="tituloProximasReservas">Todas las reservas próximas</h2>
+            <p>Reservas pendientes, por validar y confirmadas desde hoy.</p>
+        </div>
+        <button type="button" class="rv-modal-close" id="cerrarProximasReservas" aria-label="Cerrar">&times;</button>
+    </header>
+    <div class="rv-upcoming-dialog-body">
+        <div class="rv-table-wrap">
+            <table class="rv-table">
+                <thead>
+                    <tr><th>Nº Reserva</th><th>Huésped</th><th>Habitación/Plan</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in proximas_reservas %}
+                    <tr>
+                        <td>CC-{{ r.id|stringformat:"04d" }}</td>
+                        <td>{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}</td>
+                        <td>{% if r.habitaciones %}Hab. {{ r.habitaciones.numero }}{% elif r.planes %}Plan: {{ r.planes.nombre }}{% else %}—{% endif %}</td>
+                        <td>{{ r.fechaentrada|date:"d/m/Y" }}</td>
+                        <td>{{ r.fechasalida|date:"d/m/Y" }}</td>
+                        <td>{{ r.estado }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="rv-upcoming-empty">No hay reservas próximas.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</dialog>
+
+<div class="rv-modal-overlay" id="modalNuevaReserva">
+    <div class="rv-modal-box rv-modal-nueva" role="dialog" aria-modal="true" aria-labelledby="tituloNuevaReserva">
+        <header class="rv-modal-header">
+            <div class="rv-modal-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
+            <div>
+                <h2 id="tituloNuevaReserva">Registrar huésped y check-in</h2>
+                <p>Registra los datos de llegada, habitación, pago y acompañantes.</p>
+            </div>
+            <button type="button" class="rv-modal-close" id="cerrarModalNueva" aria-label="Cerrar">&times;</button>
+        </header>
+        <form method="post" action="/adminreserva/crear">
+            {% csrf_token %}
+            <div class="rv-modal-body rv-nueva-form">
+                <div class="rv-form-group">
+                    <label for="nuevoTipoDocumento">Tipo de documento</label>
+                    <select id="nuevoTipoDocumento" name="tipodocumento" required>
+                        <option value="">Selecciona</option>
+                        <option>CC</option><option>CE</option><option>Pasaporte</option><option>TI</option>
+                    </select>
+                </div>
+                <div class="rv-form-group">
+                    <label for="nuevaIdentificacion">Número de documento</label>
+                    <input id="nuevaIdentificacion" name="identificacion" maxlength="50" required>
+                </div>
+                <div class="rv-form-group">
+                    <label for="nuevoNombre">Nombres</label>
+                    <input id="nuevoNombre" name="nombres" maxlength="100" required>
+                </div>
+                <div class="rv-form-group">
+                    <label for="nuevoApellido">Apellidos</label>
+                    <input id="nuevoApellido" name="apellidos" maxlength="100" required>
+                </div>
+                <div class="rv-form-group">
+                    <label for="nuevoTelefono">Teléfono</label>
+                    <input id="nuevoTelefono" name="telefono" maxlength="100" required>
+                </div>
+                <div class="rv-form-group">
+                    <label for="nuevoCorreo">Correo electrónico</label>
+                    <input id="nuevoCorreo" name="correo" type="email" maxlength="100">
+                </div>
+                <div class="rv-form-group">
+                    <label for="nuevaDireccion">Dirección</label>
+                    <input id="nuevaDireccion" name="direccion" maxlength="100" required>
+                </div>
+                <div class="rv-form-group">
+                    <label for="nuevaNacionalidad">Nacionalidad</label>
+                    <input id="nuevaNacionalidad" name="nacionalidad" list="opcionesNacionalidad" value="Colombia" maxlength="100" autocomplete="off" required>
+                    <datalist id="opcionesNacionalidad">
+                        {% for gentilicio, pais in nacionalidades.items %}
+                        <option value="{{ pais }}">{{ gentilicio }}</option>
+                        {% endfor %}
+                    </datalist>
+                </div>
+                <div class="rv-form-group">
+                    <label for="nuevoTipoHabitacion">Tipo de habitación</label>
+                    <select id="nuevoTipoHabitacion" name="tipo_habitacion" required>
+                        <option value="">Selecciona un tipo</option>
+                        {% for tipo in tipos_habitacion %}
+                        <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="rv-form-group">
+                    <label for="nuevaHabitacion">Habitación disponible</label>
+                    <select id="nuevaHabitacion" name="habitacion" required disabled>
+                        <option value="">Primero selecciona un tipo</option>
+                        {% for habitacion in habitaciones_disponibles %}
+                        <option value="{{ habitacion.id }}" data-tipo-id="{{ habitacion.tipohabitacion_id }}" data-capacidad="{{ habitacion.capacidad }}" data-precio="{{ habitacion.precio }}">
+                            Hab. {{ habitacion.numero }} · Capacidad {{ habitacion.capacidad }} · ${{ habitacion.precio|floatformat:0 }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="rv-form-group">
+                    <label for="cantidadAcompanantes">Cantidad de huéspedes</label>
+                    <input id="cantidadAcompanantes" name="cantidadacompanantes" type="number" min="1" value="1" required>
+                </div>
+                <div class="rv-form-group">
+                    <label for="nuevaFechaEntrada">Fecha de check-in</label>
+                    <input id="nuevaFechaEntrada" name="fechaentrada" type="date" value="{{ hoy|date:'Y-m-d' }}" readonly required>
+                </div>
+                <div class="rv-form-group">
+                    <label for="nuevaFechaSalida">Fecha de check-out</label>
+                    <input id="nuevaFechaSalida" name="fechasalida" type="date" min="{{ manana|date:'Y-m-d' }}" value="{{ manana|date:'Y-m-d' }}" required>
+                </div>
+                <div class="rv-form-group">
+                    <label for="nuevoMontoPagado">Monto pagado al ingreso</label>
+                    <input id="nuevoMontoPagado" name="monto_pagado" type="number" min="0" step="0.01" value="0" required>
+                </div>
+                <div class="rv-form-group">
+                    <label for="nuevoMetodoPago">Método de pago</label>
+                    <select id="nuevoMetodoPago" name="metodopago" disabled>
+                        <option value="">Selecciona un método</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                        <option value="Transferencia">Transferencia</option>
+                    </select>
+                </div>
+                <div class="rv-form-group rv-modal-span-2">
+                    <label>Acompañantes</label>
+                    <div id="listaAcompanantes" class="rv-acompanantes-list" aria-live="polite">
+                        <p class="rv-acompanantes-empty">Ingresa la cantidad de huéspedes para agregar sus acompañantes.</p>
+                    </div>
+                </div>
+                <p class="rv-form-error rv-modal-span-2" id="errorNuevaReserva" role="alert" aria-live="polite"></p>
+            </div>
+            <footer class="rv-modal-footer">
+                <button type="button" class="rv-btn-outline" id="cancelarModalNueva">Cancelar</button>
+                <button type="submit" class="rv-btn-primary">Guardar y hacer check-in</button>
+            </footer>
+        </form>
+    </div>
+</div>
+
+<div class="rv-modal-overlay" id="modalReservaExitosa">
+    <div class="rv-modal-box rv-modal-success" role="dialog" aria-modal="true" aria-labelledby="tituloReservaExitosa">
+        <div class="rv-success-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12 4 4L19 6"/></svg>
+        </div>
+        <p class="adm-eyebrow">REGISTRO COMPLETADO</p>
+        <h2 id="tituloReservaExitosa">¡Reserva y Check-in exitosos!</h2>
+        <p id="mensajeReservaExitosa" role="status"></p>
+        <button type="button" class="rv-btn-primary" id="cerrarReservaExitosa">Volver a reservas</button>
+    </div>
+</div>
+
+<div class="rv-modal-overlay" id="modalValidar">
+    <div class="rv-modal-box">
+        <header class="rv-modal-header">
+            <div class="rv-modal-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+            </div>
+            <div>
+                <h2>Validar Reserva</h2>
+                <p>Verifica los datos antes de confirmar.</p>
+            </div>
+            <button class="rv-modal-close" id="btnCerrarModal">&times;</button>
+        </header>
+
+        <div class="rv-modal-body">
+            <div class="rv-modal-section">
+                <h3>Información del Huésped</h3>
+                <div class="rv-modal-row">
+                    <span>Nombre:</span> <strong id="valNombre"></strong>
+                </div>
+                <div class="rv-modal-row">
+                    <span>Documento:</span> <strong id="valDocumento"></strong>
+                </div>
+                <div class="rv-modal-row">
+                    <span>Correo:</span> <strong id="valCorreo"></strong>
+                </div>
+                <div class="rv-modal-row">
+                    <span>Teléfono:</span> <strong id="valTelefono"></strong>
+                </div>
+            </div>
+
+            <div class="rv-modal-section">
+                <h3>Detalles de la Reserva</h3>
+                <div class="rv-modal-row">
+                    <span>Habitación:</span> <strong id="valHab"></strong>
+                </div>
+                <div class="rv-modal-row">
+                    <span>Entrada:</span> <strong id="valEntrada"></strong>
+                </div>
+                <div class="rv-modal-row">
+                    <span>Salida:</span> <strong id="valSalida"></strong>
+                </div>
+                <div class="rv-modal-row total">
+                    <span>Monto Pagado:</span> <strong id="valTotal"></strong>
+                </div>
+            </div>
+        </div>
+
+        <footer class="rv-modal-footer">
+            <button type="button" class="rv-btn-outline" id="btnCancelarValidacion">Cancelar</button>
+            <button type="button" class="rv-btn-primary" id="btnConfirmarValidacion">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg> Aceptar y Confirmar
+            </button>
+        </footer>
+    </div>
+</div>
+
+
+<div class="rv-modal-overlay" id="modalCheckinConfirm">
+    <div class="rv-modal-box">
+        <header class="rv-modal-header">
+            <div class="rv-modal-icon" style="background: rgba(22,72,75,0.1); color:#16484B;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <div>
+                <h2>¿Realizar check-in?</h2>
+                <p>Revisa los datos antes de continuar.</p>
+            </div>
+            <button class="rv-modal-close" id="btnCerrarCheckin">&times;</button>
+        </header>
+
+        <div class="rv-modal-body">
+            <div class="rv-modal-section">
+                <h3>Reserva CC-<span id="ckId"></span></h3>
+                <div class="rv-modal-row"><span>Huésped:</span> <strong id="ckNombre"></strong></div>
+                <div class="rv-modal-row"><span>Documento:</span> <strong id="ckDocumento"></strong></div>
+                <div class="rv-modal-row"><span>Alojamiento:</span> <strong id="ckHab"></strong></div>
+                <div class="rv-modal-row"><span>Entrada:</span> <strong id="ckEntrada"></strong></div>
+                <div class="rv-modal-row"><span>Salida:</span> <strong id="ckSalida"></strong></div>
+                <div class="rv-modal-row"><span>Estado:</span> <strong id="ckEstado"></strong></div>
+            </div>
+        </div>
+
+        <footer class="rv-modal-footer">
+            <button type="button" class="rv-btn-outline" id="btnNoCheckin">No, cancelar</button>
+            <a href="#" id="btnSiCheckin" class="rv-btn-primary">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                Sí, hacer check-in
+            </a>
+        </footer>
+    </div>
+</div>
+
+<div class="rv-modal-overlay" id="modalCheckOut">
+    <div class="rv-modal-box" role="dialog" aria-modal="true" aria-labelledby="tituloCheckOut">
+        <header class="rv-modal-header">
+            <div class="rv-modal-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+            </div>
+            <div>
+                <h2 id="tituloCheckOut">Confirmar check-out</h2>
+                <p id="checkoutHuesped"></p>
+            </div>
+            <button type="button" class="rv-modal-close" id="btnCerrarCheckOut" aria-label="Cerrar">&times;</button>
+        </header>
+        <form id="formCheckOut" method="post">
+            {% csrf_token %}
+            <div class="rv-modal-body">
+                <div class="rv-modal-section">
+                    <div class="rv-modal-row total"><span>Saldo pendiente:</span> <strong id="checkoutSaldo"></strong></div>
+                    <div data-checkout-payment>
+                        <label for="checkoutMetodo">Método de pago</label>
+                        <select id="checkoutMetodo" name="metodopago" required>
+                            <option value="">Selecciona un método</option>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Tarjeta">Tarjeta</option>
+                            <option value="Transferencia">Transferencia</option>
+                        </select>
+                        <input type="hidden" name="valor" id="checkoutValor">
+                    </div>
+                </div>
+            </div>
+            <footer class="rv-modal-footer">
+                <button type="button" class="rv-btn-outline" id="btnCancelarCheckOut">Cancelar</button>
+                <button type="submit" class="rv-btn-primary">Registrar check-out</button>
+            </footer>
+        </form>
+    </div>
+</div>
+
+<div class="rv-modal-overlay" id="modalPagoReserva">
+    <div class="rv-modal-box" role="dialog" aria-modal="true" aria-labelledby="tituloPagoReserva">
+        <header class="rv-modal-header">
+            <div class="rv-modal-icon">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            </div>
+            <div>
+                <h2 id="tituloPagoReserva">Registrar pago</h2>
+                <p id="pagoReservaHuesped"></p>
+            </div>
+            <button type="button" class="rv-modal-close" id="btnCerrarPagoReserva" aria-label="Cerrar">&times;</button>
+        </header>
+        <form id="formPagoReserva" method="post">
+            {% csrf_token %}
+            <div class="rv-modal-body">
+                <div class="rv-modal-section">
+                    <div class="rv-modal-row total"><span>Saldo pendiente:</span> <strong id="pagoReservaSaldo"></strong></div>
+                    <label for="pagoReservaValor">Monto recibido</label>
+                    <input type="number" id="pagoReservaValor" name="valor" min="0.01" step="0.01" required>
+                    <label for="pagoReservaMetodo">Método de pago</label>
+                    <select id="pagoReservaMetodo" name="metodopago" required>
+                        <option value="">Selecciona un método</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                        <option value="Transferencia">Transferencia</option>
+                    </select>
+                </div>
+            </div>
+            <footer class="rv-modal-footer">
+                <button type="button" class="rv-btn-outline" id="btnCancelarPagoReserva">Cancelar</button>
+                <button type="submit" class="rv-btn-primary">Guardar pago</button>
+            </footer>
+        </form>
+    </div>
+</div>
+
+<div class="rv-modal-overlay" id="modalModificarReserva">
+    <div class="rv-modal-box" role="dialog" aria-modal="true" aria-labelledby="tituloModificarReserva">
+        <header class="rv-modal-header">
+            <div class="rv-modal-icon">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            </div>
+            <div><h2 id="tituloModificarReserva">Modificar fechas</h2><p id="modificarReservaMensaje">Actualiza la entrada y salida de la reserva.</p></div>
+            <button type="button" class="rv-modal-close" id="cerrarModalModificar" aria-label="Cerrar">&times;</button>
+        </header>
+        <form id="formModificarReserva">
+            {% csrf_token %}
+            <div class="rv-modal-body">
+                <div class="rv-modal-section">
+                    <label for="modificarFechaEntrada">Entrada</label>
+                    <input id="modificarFechaEntrada" name="nueva_fecha_entrada" type="date" required>
+                    <label for="modificarFechaSalida">Salida</label>
+                    <input id="modificarFechaSalida" name="nueva_fecha_salida" type="date" required>
+                    <div id="seccionReembolso" hidden>
+                        <label for="metodoReembolso">Método de reembolso</label>
+                        <select id="metodoReembolso"><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select>
+                        <button type="button" class="rv-btn-primary" id="btnProcesarReembolso"></button>
+                    </div>
+                    <p id="errorModificarReserva" class="rv-error" aria-live="polite"></p>
+                </div>
+            </div>
+            <footer class="rv-modal-footer">
+                <button type="button" class="rv-btn-outline" id="cancelarModalModificar">Cancelar</button>
+                <button type="submit" class="rv-btn-primary" id="btnGuardarModificacion">Guardar cambios</button>
+            </footer>
+        </form>
+    </div>
+</div>
+
+{% include 'inc/modal_reembolso.html' %}
+<script src="{% static 'js/administrador/reservas_admin.js' %}?v=10003"></script>
+<script src="{% static 'js/reembolso_reserva.js' %}?v=1"></script>
+<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+</body>
+</html>

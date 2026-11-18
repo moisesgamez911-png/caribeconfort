@@ -1,0 +1,138 @@
+{% load static i18n %}
+{% get_current_language as CURRENT_LANGUAGE %}
+<!DOCTYPE html>
+<html lang="{{ CURRENT_LANGUAGE }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Iniciar sesión" %} | Caribe Confort</title>
+
+    <link rel="stylesheet" href="{% static 'css/reservas.css' %}?v=7">
+    <link rel="stylesheet" href="{% static 'css/login.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/registrarcliente.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'css/idiomas.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+</head>
+
+<body class="registro-body">
+
+<nav class="registro-navbar">
+    <a class="registro-brand" href="/home">
+        <img src="{% static 'img/imagenes/LCFFINAL.png' %}" alt="Caribe Confort" class="registro-logo">
+        <div class="registro-brand-txt">
+            <span class="registro-brand-title">CARIBE CONFORT</span>
+        </div>
+    </a>
+
+    <div class="registro-nav-derecha">
+        {% include "clientes/idioma_switcher.html" %}
+        <a href="/registrarcliente" class="registro-user-icon" aria-label="Crear cuenta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+                <circle cx="12" cy="8" r="4"/>
+                <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>
+            </svg>
+        </a>
+    </div>
+</nav>
+
+<main class="registro-wrap">
+
+    <div class="login-card registro-card-login">
+
+        <aside class="registro-izq">
+            <div class="registro-izq-overlay"></div>
+
+            <div class="registro-izq-content">
+                <span class="registro-izq-linea"></span>
+
+                <p class="registro-izq-tagline">
+                    {% trans "Bienvenido de nuevo" %}<br>{% trans "a tu descanso" %}
+                </p>
+            </div>
+        </aside>
+
+        <section class="registro-der" style="padding-top: 12%;">
+
+            <header class="registro-header">
+                <span class="registro-eyebrow">{% trans "BIENVENIDO DE NUEVO" %}</span>
+                <h1 class="registro-title">{% trans "Iniciar sesión" %}</h1>
+                <p class="registro-sub">
+                    {% trans "Ingresa tus datos para continuar con tu experiencia en Caribe Confort." %}
+                </p>
+            </header>
+
+            {% if error %}
+                <div class="registro-errores">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <ul>
+                        <li>{{ error }}</li>
+                    </ul>
+                </div>
+            {% endif %}
+
+            {% if request.GET.registro == 'ok' %}
+                <div class="registro-exito">
+                    {% trans "¡Cuenta creada con éxito! Ya puedes iniciar sesión." %}
+                </div>
+            {% endif %}
+
+
+            <form class="registro-form" style="display: flex; align-items: center; justify-content: center;" method="POST" novalidate>
+                {% csrf_token %}
+
+                <label class="rg-field rg-field-full">
+                    <span class="rg-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="18" height="18">
+                            <rect x="2" y="4" width="20" height="16" rx="2"/>
+                            <path d="m22 6-10 7L2 6"/>
+                        </svg>
+                    </span>
+                    <input type="email" name="correo" placeholder="{% trans 'Correo electrónico' %}" required autofocus
+                           value="{{ correo_ingresado|default:'' }}">
+                </label>
+
+                <label class="rg-field rg-field-full rg-field-pass">
+                    <span class="rg-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="18" height="18">
+                            <rect x="4" y="10" width="16" height="11" rx="2"/>
+                            <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+                        </svg>
+                    </span>
+                    <input type="password" name="clave" id="rgPassword"
+                           placeholder="{% trans 'Contraseña' %}" required>
+                    <button type="button" class="rg-toggle" data-toggle="rgPassword" aria-label="{% trans 'Mostrar contraseña' %}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="18" height="18">
+                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </button>
+                </label>
+
+                <a href="/recuperar-password" class="registro-olvido" style="margin-left: -1%; margin-right: 1%;">{% trans "¿Olvidó su contraseña?" %}</a>
+
+                <button type="submit" class="rg-submit2">
+                    {% trans "Iniciar sesión" %}
+                </button>
+
+            </form>
+
+            <p class="login-registro">
+                {% trans "¿No está registrado?" %} <a href="/registrarcliente">{% trans "Regístrese" %}</a>
+            </p>
+
+        </section>
+
+    </div>
+
+</main>
+
+
+<script src="{% static 'js/login.js' %}?v=2"></script>
+
+</body>
+</html>

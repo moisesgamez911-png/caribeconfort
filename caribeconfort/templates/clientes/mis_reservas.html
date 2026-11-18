@@ -1,0 +1,529 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Reservas | Caribe Confort</title>
+
+    <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/idiomas.css' %}">
+    <link rel="stylesheet" href="{% static 'css/mi_reserva.css' %}?v=27">
+    <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="mis-reservas-page">
+
+<header class="reservas-hero">
+    {% include "inc/usuariomenu.html" %}
+    <div class="reservas-hero-content">
+        <p class="reservas-eyebrow">TU EXPERIENCIA EN EL CARIBE</p>
+        <h1>Mis reservas</h1>
+        <p>Consulta tus estancias, planes y los detalles de cada reserva.</p>
+    </div>
+</header>
+
+<main class="reservas-content">
+    <section class="upcoming-section" aria-labelledby="upcoming-title">
+        <div class="section-heading">
+            <div>
+                <p class="section-eyebrow">TU ESTADÍA</p>
+                <h2 id="upcoming-title">Próxima reserva</h2>
+            </div>
+            <span class="section-count">{{ activas|length }} estancia{% if activas|length != 1 %}s{% endif %} activa{% if activas|length != 1 %}s{% endif %}</span>
+        </div>
+
+        <div class="reservation-carousel">
+            <button class="carousel-control" id="btnPrev" type="button" aria-label="Reserva anterior">
+                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+            </button>
+            <div class="reservation-carousel-track" id="carouselActivas">
+                {% for r in activas %}
+                <article class="reservation-card">
+                    <div class="reservation-photo">
+                        {% if r.habitaciones and r.habitaciones.imagen %}
+                            <img src="/media/{{ r.habitaciones.imagen }}" alt="Habitación {{ r.habitaciones.numero }}">
+                            <span class="reservation-photo-tag">Hab. {{ r.habitaciones.numero }}</span>
+                        {% elif r.habitaciones and r.habitaciones.tipohabitacion.imagen %}
+                            <img src="/media/{{ r.habitaciones.tipohabitacion.imagen }}" alt="{{ r.habitaciones.tipohabitacion.nombre }}">
+                            <span class="reservation-photo-tag">Hab. {{ r.habitaciones.numero }}</span>
+                        {% elif r.planes and r.planes.imagen %}
+                            <img src="/media/{{ r.planes.imagen }}" alt="{{ r.planes.nombre }}">
+                            <span class="reservation-photo-tag">Plan</span>
+                        {% else %}
+                            <img src="{% static 'img/imagenes/foto2.png' %}" alt="Hotel Caribe Confort">
+                            <span class="reservation-photo-tag">{% if r.habitaciones %}Hab. {{ r.habitaciones.numero }}{% else %}Plan{% endif %}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="reservation-main">
+                        <div class="reservation-heading">
+                            <div>
+                                <h3>Reserva #{{ r.formatted_id }}</h3>
+                                <p class="reservation-description">
+                                    {% if r.habitaciones %}{{ r.habitaciones.tipohabitacion.nombre }}{% endif %}
+                                    {% if r.planes %}{% if r.habitaciones %} · {% endif %}{{ r.planes.nombre }}{% endif %}
+                                    {% if not r.habitaciones and not r.planes %}Plan reservado{% endif %}
+                                </p>
+                            </div>
+                            <span class="status-pill {% if r.estado == 'Confirmada' %}status-confirmada{% elif r.estado == 'En curso' %}status-en-curso{% elif r.estado == 'Pendiente' %}status-pendiente{% elif r.estado == 'Pagada - Por validar' %}status-validar{% else %}status-finalizada{% endif %}">
+                                {{ r.estado }}
+                            </span>
+                        </div>
+
+                        <div class="reservation-facts">
+                            <div class="reservation-fact">
+                                <div>
+                                    <span>Entrada</span>
+                                    <strong>{{ r.fechaentrada|date:"d M Y" }}</strong>
+                                </div>
+                            </div>
+                            <div class="reservation-fact">
+                                <div>
+                                    <span>Salida</span>
+                                    <strong>{{ r.fechasalida|date:"d M Y" }}</strong>
+                                </div>
+                            </div>
+                            <div class="reservation-fact">
+                                <div>
+                                    <span>Huéspedes</span>
+                                    <strong>{{ r.cantidadacompañantes }}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <aside class="reservation-payment">
+                        <span class="payment-label">Total pagado</span>
+                        <strong class="payment-total">$ {{ r.abono_pagado|floatformat:"0g" }} <small>COP</small></strong>
+                        <progress class="payment-progress" value="{{ r.porcentaje_pagado }}" max="100" aria-label="Porcentaje pagado"></progress>
+                        {% if r.estado == 'Pagada - Por validar' %}
+                            <span class="payment-note payment-validating">Pago registrado · En validación</span>
+                        {% elif r.esta_pagada %}
+                            <span class="payment-note payment-complete"><i class="bi bi-check-circle" aria-hidden="true"></i> Pago registrado</span>
+                        {% elif r.abono_pagado > 0 %}
+                            <span class="payment-note">Saldo pendiente: $ {{ r.saldo_pendiente|floatformat:"0g" }} COP</span>
+                        {% else %}
+                            <span class="payment-note">Sin pagos registrados</span>
+                        {% endif %}
+                        <div class="reservation-actions">
+                            <a href="/servicios" class="payment-button">
+                                <i class="bi bi-stars" aria-hidden="true"></i>
+                                Agregar servicio
+                            </a>
+                            {% if r.saldo_pendiente > 0 and r.estado != 'Cancelada' and r.estado != 'Finalizada' %}
+                                <a href="/pagar-reserva/{{ r.id }}/" class="payment-button">
+                                    <i class="bi bi-credit-card" aria-hidden="true"></i>
+                                    Pagar faltante
+                                </a>
+                            {% endif %}
+                            <button type="button" class="payment-button payment-button-secondary btn-ver-detalle"
+                                data-id="{{ r.id }}"
+                                data-nombre="{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}"
+                                data-correo="{{ r.huespedes.correo }}"
+                                data-documento="{{ r.huespedes.tipodocumento }} {{ r.huespedes.identificacion }}"
+                                data-nacionalidad="{{ r.huespedes.nacionalidad }}"
+                                data-estado="{{ r.estado }}"
+                                data-entrada="{{ r.fechaentrada|date:'d/m/Y' }}"
+                                data-salida="{{ r.fechasalida|date:'d/m/Y' }}"
+                                data-acompanantes="{{ r.cantidadacompañantes }}"
+                                data-total="$ {{ r.valortotal|floatformat:'0g' }}"
+                                data-pagado="$ {{ r.abono_pagado|floatformat:'0g' }} COP"
+                                data-pagado-numerico="{{ r.abono_pagado }}"
+                                data-saldo="$ {{ r.saldo_pendiente|floatformat:'0g' }} COP"
+                                data-saldo-numerico="{{ r.saldo_pendiente }}"
+                                data-pago-url="/pagar-reserva/{{ r.id }}/"
+                                data-hab-numero="{% if r.habitaciones %}{{ r.habitaciones.numero }}{% endif %}"
+                                data-hab-tipo="{% if r.habitaciones %}{{ r.habitaciones.tipohabitacion.nombre }}{% else %}{{ r.planes.nombre|default:'Plan reservado' }}{% endif %}"
+                                data-hab-imagen="{% if r.habitaciones and r.habitaciones.imagen %}/media/{{ r.habitaciones.imagen }}{% elif r.habitaciones and r.habitaciones.tipohabitacion.imagen %}/media/{{ r.habitaciones.tipohabitacion.imagen }}{% elif r.planes and r.planes.imagen %}/media/{{ r.planes.imagen }}{% else %}{% static 'img/imagenes/foto2.png' %}{% endif %}"
+                                data-hab-cama="{% if r.habitaciones %}{{ r.habitaciones.tipohabitacion.tipo_cama }}{% endif %}"
+                                data-fecha-registro="{{ r.fechasolicitud|date:'d/m/Y - h:i a' }}">
+                                <i class="bi bi-receipt" aria-hidden="true"></i>
+                                Ver comprobante
+                            </button>
+                        </div>
+                    </aside>
+                </article>
+                {% empty %}
+                <div class="empty-reservations">
+                    <span class="empty-icon"><i class="bi bi-calendar2-heart" aria-hidden="true"></i></span>
+                    <h3>No tienes reservas próximas</h3>
+                    <p>Explora nuestras habitaciones y planes para organizar tu próxima estadía.</p>
+                    <a href="/reservas" class="payment-button">Explorar habitaciones</a>
+                </div>
+                {% endfor %}
+            </div>
+            <button class="carousel-control" id="btnNext" type="button" aria-label="Siguiente reserva">
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+        </div>
+    </section>
+
+    {% if historial %}
+    <section class="history-section" aria-labelledby="history-title">
+        <div class="section-heading history-heading">
+            <div>
+                <p class="section-eyebrow">TUS ESTANCIAS</p>
+                <h2 id="history-title">Historial de reservas</h2>
+            </div>
+            <div class="history-filters" role="group" aria-label="Filtrar historial">
+                <button type="button" class="history-filter is-active" data-history-filter="all" aria-pressed="true">Todas</button>
+                <button type="button" class="history-filter" data-history-filter="finalizada" aria-pressed="false">Finalizadas</button>
+                <button type="button" class="history-filter" data-history-filter="curso" aria-pressed="false">En curso</button>
+            </div>
+        </div>
+
+        <div class="history-carousel">
+            <button class="carousel-control" id="btnPrevHistorial" type="button" aria-label="Reservas anteriores">
+                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+            </button>
+            <div class="history-track" id="carouselHistorial">
+                {% for r in historial %}
+                <article class="history-card" data-hist="{% if r.estado == 'Finalizada' %}finalizada{% elif r.estado == 'En curso' %}curso{% else %}otra{% endif %}">
+                    <div class="history-photo">
+                        {% if r.habitaciones and r.habitaciones.imagen %}
+                            <img src="/media/{{ r.habitaciones.imagen }}" alt="Habitación {{ r.habitaciones.numero }}">
+                        {% elif r.habitaciones and r.habitaciones.tipohabitacion.imagen %}
+                            <img src="/media/{{ r.habitaciones.tipohabitacion.imagen }}" alt="{{ r.habitaciones.tipohabitacion.nombre }}">
+                        {% elif r.planes and r.planes.imagen %}
+                            <img src="/media/{{ r.planes.imagen }}" alt="{{ r.planes.nombre }}">
+                        {% else %}
+                            <img src="{% static 'img/imagenes/foto2.png' %}" alt="Hotel Caribe Confort">
+                        {% endif %}
+                    </div>
+                    <div class="history-info">
+                        <div class="history-card-heading">
+                            <h3>#{{ r.formatted_id }}</h3>
+                            <span class="status-pill {% if r.estado == 'En curso' %}status-en-curso{% elif r.estado == 'Cancelada' %}status-cancelada{% elif r.estado == 'Finalizada' %}status-finalizada{% else %}status-pendiente{% endif %}">{{ r.estado }}</span>
+                        </div>
+                        <p class="history-description">
+                            {% if r.habitaciones %}Hab. {{ r.habitaciones.numero }} · {{ r.habitaciones.tipohabitacion.nombre }}{% else %}{{ r.planes.nombre|default:"Plan reservado" }}{% endif %}
+                        </p>
+                        <p class="history-dates">{{ r.fechaentrada|date:"d M Y" }} – {{ r.fechasalida|date:"d M Y" }}</p>
+                        <strong class="history-total">$ {{ r.valortotal|floatformat:"0g" }} COP</strong>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            <button class="carousel-control" id="btnNextHistorial" type="button" aria-label="Siguientes reservas">
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if historial_servicios %}
+    <section class="services-section" aria-labelledby="services-title">
+        <div class="section-heading">
+            <div>
+                <p class="section-eyebrow">DETALLES DE TU EXPERIENCIA</p>
+                <h2 id="services-title">Historial de servicios</h2>
+            </div>
+            <a href="/servicios" class="explore-services">Explorar servicios</a>
+        </div>
+
+        <div class="services-carousel">
+            <button class="carousel-control" id="btnPrevServicios" type="button" aria-label="Servicios anteriores">
+                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+            </button>
+            <div class="services-track" id="carouselServicios">
+                {% for s in historial_servicios %}
+                <article class="service-row">
+                    {% if s.servicios.url_imagen %}
+                        <img class="service-image" src="{{ s.servicios.url_imagen }}" alt="{{ s.servicios.nombre }}" loading="lazy">
+                    {% else %}
+                        <span class="service-image service-image-placeholder" role="img" aria-label="Imagen no disponible"></span>
+                    {% endif %}
+                    <div class="service-info">
+                        <h3>{{ s.servicios.nombre }}</h3>
+                        <p>{{ s.cantidad }} unidad{% if s.cantidad != 1 %}es{% endif %} · Reserva #CC-{{ s.reservas.id|stringformat:"04d" }}</p>
+                        <small>{{ s.fecha|date:"d M Y" }}</small>
+                    </div>
+                    <span class="service-status {% if s.estado == 'Aprobado' %}service-approved{% elif s.estado == 'Rechazado' %}service-rejected{% else %}service-pending{% endif %}">{{ s.estado }}</span>
+                    <strong class="service-total">$ {{ s.valor|floatformat:"0g" }} COP</strong>
+                </article>
+                {% endfor %}
+            </div>
+            <button class="carousel-control" id="btnNextServicios" type="button" aria-label="Siguientes servicios">
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+        </div>
+    </section>
+    {% endif %}
+</main>
+
+<footer class="reservas-footer">
+    <p>Caribe Confort <span>·</span> Riohacha, La Guajira</p>
+</footer>
+
+<div class="modal-overlay" id="modalReserva">
+    <section class="modal-reserva" role="dialog" aria-modal="true" aria-labelledby="tituloModal">
+
+        <header class="modal-header">
+            <div class="icono-principal">
+                <i class="bi bi-calendar-event"></i>
+            </div>
+
+            <div class="encabezado-texto">
+                <h1 id="tituloModal">Detalles de la reserva</h1>
+                <p>Información completa de la reserva y del huésped.</p>
+            </div>
+
+            <button class="cerrar-superior" type="button" id="btnCerrarSuperior">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </header>
+
+        <div class="modal-contenido">
+
+            <section class="tarjeta tarjeta-huesped">
+                <div class="md-avatar" id="mdAvatar">ML</div>
+
+                <div class="datos-huesped">
+                    <div class="nombre-estado">
+                        <h2 id="mdNombre">María López García</h2>
+                        <span class="estado estado-confirmado">
+                            <span class="punto"></span>
+                            <span id="mdEstadoBadge">Confirmada</span>
+                        </span>
+                    </div>
+
+                    <div class="dato-huesped">
+                        <i class="bi bi-envelope"></i>
+                        <span id="mdCorreo">maria.lopez@ejemplo.com</span>
+                    </div>
+
+                    <div class="dato-huesped">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <span id="mdDocumento">CC ••••••7890</span>
+                    </div>
+
+                    <div class="dato-huesped">
+                        <i class="bi bi-globe2"></i>
+                        <span id="mdNacionalidad">Colombiana</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="tarjeta tarjeta-datos">
+                <div class="datos-superiores">
+                    <div>
+                        <span class="etiqueta">N.º de reserva</span>
+                        <h2 class="numero-reserva" id="mdReservaNum">R-00028</h2>
+                    </div>
+
+                    <div class="estado-reserva">
+                        <span class="etiqueta">Estado</span>
+                        <span class="estado estado-confirmado">
+                            <span class="punto"></span>
+                            <span id="mdEstadoBadge2">Confirmada</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="separador"></div>
+
+                <div class="datos-inferiores">
+                    <div class="bloque-fecha">
+                        <i class="bi bi-calendar-event"></i>
+                        <div>
+                            <span class="etiqueta">Fecha de entrada</span>
+                            <strong id="mdEntrada">16/10/2026</strong>
+                            <small>(Check-in)</small>
+                        </div>
+                    </div>
+
+                    <div class="bloque-fecha">
+                        <i class="bi bi-calendar-event"></i>
+                        <div>
+                            <span class="etiqueta">Fecha de salida</span>
+                            <strong id="mdSalida">17/10/2026</strong>
+                            <small>(Check-out)</small>
+                        </div>
+                    </div>
+
+                    <div class="bloque-resumen">
+                        <div class="dato-resumen">
+                            <i class="bi bi-people"></i>
+                            <div>
+                                <span class="etiqueta">Acompañantes</span>
+                                <strong id="mdAcompanantes">1</strong>
+                            </div>
+                        </div>
+
+                        <div class="dato-resumen total">
+                            <i class="bi bi-coin"></i>
+                            <div>
+                                <span class="etiqueta">Total</span>
+                                <strong id="mdTotal">$ 180.000</strong>
+                                <small>COP</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="tarjeta tarjeta-habitacion">
+                <h3 class="titulo-tarjeta">
+                    <i class="bi bi-layout-text-sidebar-reverse"></i>
+                    Habitación
+                </h3>
+
+                <div class="habitacion-contenido">
+                    <img class="foto-habitacion" id="mdHabImagen" src="" alt="Habitación de hotel con cama doble">
+
+                    <div class="habitacion-datos">
+                        <span class="etiqueta">N.º habitación</span>
+                        <strong class="numero-habitacion" id="mdHabNumero">102</strong>
+
+                        <span class="etiqueta etiqueta-tipo">Tipo de habitación</span>
+                        <strong class="tipo-habitacion" id="mdHabTipo">Estándar</strong>
+                    </div>
+                </div>
+
+                <div class="servicios-habitacion">
+                    <span><i class="bi bi-layout-text-sidebar"></i> <span id="mdHabCama">Cama doble</span></span>
+                    <span><i class="bi bi-wifi"></i> Wi-Fi</span>
+                    <span><i class="bi bi-snow"></i> Aire acondicionado</span>
+                </div>
+            </section>
+
+            <section class="tarjeta tarjeta-resumen">
+                <h3 class="titulo-tarjeta">
+                    <i class="bi bi-file-earmark-text"></i>
+                    Resumen de la reserva
+                </h3>
+
+                <div class="elemento-resumen">
+                    <i class="bi bi-calendar-event"></i>
+                    <div>
+                        <span class="etiqueta">Fecha de registro</span>
+                        <p id="mdFechaRegistro">15/10/2026 - 10:24 a. m.</p>
+                    </div>
+                </div>
+
+                <div class="elemento-resumen">
+                    <i class="bi bi-cash-stack"></i>
+                    <div>
+                        <span class="etiqueta">Total de la reserva</span>
+                        <p id="mdTotalReserva">$ 0 COP</p>
+                    </div>
+                </div>
+
+                <div class="elemento-resumen">
+                    <i class="bi bi-check-circle"></i>
+                    <div>
+                        <span class="etiqueta">Total pagado</span>
+                        <p id="mdTotalPagado">$ 0 COP</p>
+                    </div>
+                </div>
+
+                <div class="elemento-resumen">
+                    <i class="bi bi-wallet2"></i>
+                    <div>
+                        <span class="etiqueta">Saldo pendiente</span>
+                        <p id="mdSaldoPendiente">$ 0 COP</p>
+                        <small class="payment-modal-status" id="mdEstadoPago">Sin pagos registrados</small>
+                    </div>
+                </div>
+            </section>
+
+            <section class="tarjeta tarjeta-seguimiento">
+                <h3>Estado de la reserva</h3>
+
+                <div class="linea-tiempo">
+                    <div class="paso completado">
+                        <span class="marcador"><i class="bi bi-check-lg"></i></span>
+                        <div>
+                            <strong>Reserva creada</strong>
+                            <small id="mdTlCreada">15/10/2026 - 10:24 a. m.</small>
+                        </div>
+                    </div>
+
+                    <div class="paso completado">
+                        <span class="marcador"><i class="bi bi-check-lg"></i></span>
+                        <div>
+                            <strong id="mdTlConfirmadaLabel">Confirmada</strong>
+                            <small id="mdTlConfirmada">15/10/2026 - 10:28 a. m.</small>
+                        </div>
+                    </div>
+
+                    <div class="paso pendiente">
+                        <span class="marcador"></span>
+                        <div>
+                            <strong>Check-in</strong>
+                            <small id="mdTlCheckin">16/10/2026 - 03:00 p. m.</small>
+                        </div>
+                    </div>
+
+                    <div class="paso pendiente">
+                        <span class="marcador"></span>
+                        <div>
+                            <strong>Check-out</strong>
+                            <small id="mdTlCheckout">17/10/2026 - 12:00 p. m.</small>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <footer class="modal-footer">
+            <div class="mensaje-confirmacion">
+                <i class="bi bi-info-circle-fill"></i>
+                <div>
+                    <strong>Esta reserva está confirmada y lista para el check-in.</strong>
+                    <p>Puedes imprimir tu comprobante o cancelar la reserva si tus planes cambian.</p>
+                </div>
+            </div>
+
+            <div class="acciones-modal">
+                <button class="boton boton-secundario" type="button" id="btnImprimir">
+                    <i class="bi bi-printer"></i> Imprimir
+                </button>
+
+                <button class="boton boton-cancelar" type="button" id="btnAbrirCancelar">
+                    <i class="bi bi-x-circle"></i> Cancelar reserva
+                </button>
+
+                <a class="boton boton-principal boton-pagar-modal is-hidden" id="btnModalPagarSaldo" href="#">
+                    <i class="bi bi-credit-card"></i> Pagar faltante
+                </a>
+
+                <button class="boton boton-principal" type="button" id="btnCerrarPrincipal">
+                    Cerrar
+                </button>
+            </div>
+        </footer>
+
+    </section>
+</div>
+
+<div class="confirm-overlay" id="modalConfirmarCancelacion">
+    <div class="confirm-box">
+        <div class="confirm-icon">
+            <i class="bi bi-exclamation-triangle"></i>
+        </div>
+        <h3>¿Cancelar esta reserva?</h3>
+        <p>Esta acción no se puede deshacer. Se enviará un correo electrónico confirmando la cancelación de tu estancia.</p>
+        
+        <div class="confirm-actions">
+            <button class="boton boton-secundario" type="button" id="btnVolverCancelar">Volver</button>
+            <button class="boton boton-peligro" type="button" id="btnConfirmarCancelacion">
+                <i class="bi bi-check2-circle"></i> Sí, cancelar reserva
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/bootstrap.bundle.js' %}"></script>
+<script src="{% static 'js/feedback.js' %}?v=1"></script>
+<script src="{% static 'js/mi_reserva.js' %}?v=27"></script>
+
+</body>
+</html>

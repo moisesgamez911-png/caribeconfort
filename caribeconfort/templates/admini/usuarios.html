@@ -1,0 +1,216 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Usuarios | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
+    <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
+</head>
+<body>
+{% include 'inc/admin_header.html' %}
+{% include 'inc/admin_nav.html' %}
+
+<main class="ad-main adm-page">
+    <header class="adm-heading">
+        <div>
+            <p class="adm-eyebrow">ACCESOS Y PERMISOS</p>
+            <h1>Usuarios</h1>
+            <p>Administra los roles y el acceso de las cuentas del hotel.</p>
+        </div>
+        <button class="adm-button" type="button" id="abrirNuevoUsuario">+ Nuevo Usuario</button>
+    </header>
+
+    {% if messages %}
+    <div class="adm-messages" role="status">
+        {% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}
+    </div>
+    {% endif %}
+
+    <section class="adm-card">
+        <div class="adm-card-heading">
+            <div><h2>Buscar cuentas</h2><p>Filtra clientes y personal por nombre, correo o rol.</p></div>
+            <form method="get" class="adm-search">
+                <label class="sr-only" for="buscarUsuario">Buscar usuario</label>
+                <input id="buscarUsuario" type="search" name="q" value="{{ busqueda }}" placeholder="Nombre, correo o rol">
+                <input type="hidden" name="tab" id="usuariosTabField" value="{{ tab }}">
+                <button class="adm-button" type="submit">Buscar</button>
+                {% if busqueda %}<a class="adm-button secondary" href="/adminusuarios?tab={{ tab|urlencode }}">Limpiar</a>{% endif %}
+            </form>
+        </div>
+    </section>
+
+    <div class="user-tabs" role="tablist" aria-label="Tipo de usuarios">
+        <button type="button" class="user-tab" id="tabClientes" role="tab" data-user-tab="clientes" aria-controls="panelClientes" aria-selected="true">Clientes</button>
+        <button type="button" class="user-tab" id="tabPersonal" role="tab" data-user-tab="personal" aria-controls="panelPersonal" aria-selected="false">Personal</button>
+    </div>
+    <section class="adm-card user-panel" id="panelClientes" role="tabpanel" aria-labelledby="tabClientes" data-user-panel="clientes">
+        <div class="adm-card-heading"><div><h2>Clientes</h2><p>{{ clientes.paginator.count }} cuentas de clientes.</p></div></div>
+        <div class="adm-table-wrap">
+            <table class="adm-table">
+                <thead><tr><th>Nombre</th><th>Correo</th><th>Rol y estado</th><th>Guardar cambios</th><th>Acciones</th></tr></thead>
+                <tbody>
+                    {% for usuario in clientes %}
+                    <tr>
+                        <td><strong>{{ usuario.nombre }} {{ usuario.apellido }}</strong></td>
+                        <td>{{ usuario.correo }}</td>
+                        <td>
+                            <form id="formUsuario{{ usuario.id }}" method="post" class="user-role-form">
+                                {% csrf_token %}<input type="hidden" name="usuario_id" value="{{ usuario.id }}">
+                                <label class="sr-only" for="rolUsuario{{ usuario.id }}">Rol de {{ usuario.nombre }}</label>
+                                <select id="rolUsuario{{ usuario.id }}" name="rol_id" required>{% for rol_disponible in roles %}<option value="{{ rol_disponible.id }}" {% if usuario.roles_id == rol_disponible.id %}selected{% endif %}>{{ rol_disponible.nombre }}</option>{% endfor %}</select>
+                                <label class="user-active"><input type="checkbox" name="estado" {% if usuario.estado %}checked{% endif %}>Activo</label>
+                            </form>
+                        </td>
+                        <td><button class="adm-button" type="submit" form="formUsuario{{ usuario.id }}">Guardar</button></td>
+                        <td>
+                            <form method="post" class="user-delete-form" data-confirm-message="¿Eliminar permanentemente la cuenta de {{ usuario.nombre }} {{ usuario.apellido }}?">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar">
+                                <input type="hidden" name="usuario_id" value="{{ usuario.id }}">
+                                <button class="adm-button danger icon-button" type="submit" aria-label="Eliminar a {{ usuario.nombre }} {{ usuario.apellido }}" title="Eliminar usuario">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6"/></svg>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}<tr><td class="adm-empty" colspan="5">No hay clientes que coincidan con la búsqueda.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if clientes.paginator.num_pages > 1 %}
+        <nav class="adm-pagination" aria-label="Paginación de clientes">
+            <span>Página {{ clientes.number }} de {{ clientes.paginator.num_pages }}</span>
+            <div>{% if clientes.has_previous %}<a href="?q={{ busqueda|urlencode }}&amp;clientes_page={{ clientes.previous_page_number }}&amp;tab=clientes">Anterior</a>{% endif %}{% if clientes.has_next %}<a href="?q={{ busqueda|urlencode }}&amp;clientes_page={{ clientes.next_page_number }}&amp;tab=clientes">Siguiente</a>{% endif %}</div>
+        </nav>
+        {% endif %}
+    </section>
+
+    <section class="adm-card user-panel" id="panelPersonal" role="tabpanel" aria-labelledby="tabPersonal" data-user-panel="personal" hidden>
+        <div class="adm-card-heading"><div><h2>Personal del Hotel</h2><p>{{ personal.paginator.count }} cuentas de administradores y recepcionistas.</p></div></div>
+        <div class="adm-table-wrap">
+            <table class="adm-table">
+                <thead><tr><th>Nombre</th><th>Correo</th><th>Rol y estado</th><th>Guardar cambios</th><th>Acciones</th></tr></thead>
+                <tbody>
+                    {% for usuario in personal %}
+                    <tr>
+                        <td><strong>{{ usuario.nombre }} {{ usuario.apellido }}</strong></td>
+                        <td>{{ usuario.correo }}</td>
+                        <td>
+                            <form id="formUsuario{{ usuario.id }}" method="post" class="user-role-form">
+                                {% csrf_token %}<input type="hidden" name="usuario_id" value="{{ usuario.id }}">
+                                <label class="sr-only" for="rolUsuario{{ usuario.id }}">Rol de {{ usuario.nombre }}</label>
+                                <select id="rolUsuario{{ usuario.id }}" name="rol_id" required>{% for rol_disponible in roles %}<option value="{{ rol_disponible.id }}" {% if usuario.roles_id == rol_disponible.id %}selected{% endif %}>{{ rol_disponible.nombre }}</option>{% endfor %}</select>
+                                <label class="user-active"><input type="checkbox" name="estado" {% if usuario.estado %}checked{% endif %}>Activo</label>
+                            </form>
+                        </td>
+                        <td><button class="adm-button" type="submit" form="formUsuario{{ usuario.id }}">Guardar</button></td>
+                        <td>
+                            <form method="post" class="user-delete-form" data-confirm-message="¿Eliminar permanentemente la cuenta de {{ usuario.nombre }} {{ usuario.apellido }}?">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar">
+                                <input type="hidden" name="usuario_id" value="{{ usuario.id }}">
+                                <button class="adm-button danger icon-button" type="submit" aria-label="Eliminar a {{ usuario.nombre }} {{ usuario.apellido }}" title="Eliminar usuario">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6"/></svg>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}<tr><td class="adm-empty" colspan="5">No hay personal que coincida con la búsqueda.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if personal.paginator.num_pages > 1 %}
+        <nav class="adm-pagination" aria-label="Paginación del personal">
+            <span>Página {{ personal.number }} de {{ personal.paginator.num_pages }}</span>
+            <div>{% if personal.has_previous %}<a href="?q={{ busqueda|urlencode }}&amp;personal_page={{ personal.previous_page_number }}&amp;tab=personal">Anterior</a>{% endif %}{% if personal.has_next %}<a href="?q={{ busqueda|urlencode }}&amp;personal_page={{ personal.next_page_number }}&amp;tab=personal">Siguiente</a>{% endif %}</div>
+        </nav>
+        {% endif %}
+    </section>
+</main>
+<dialog class="adm-dialog" id="nuevoUsuarioDialog" aria-labelledby="nuevoUsuarioTitulo">
+    <header class="adm-dialog-heading">
+        <div><p class="adm-eyebrow">ACCESOS Y PERMISOS</p><h2 id="nuevoUsuarioTitulo">Crear usuario</h2></div>
+        <button class="room-modal-close" type="button" id="cerrarNuevoUsuario" aria-label="Cerrar">&times;</button>
+    </header>
+    <form id="formNuevoUsuario" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="crear">
+        <div class="adm-form-grid">
+            <div class="adm-field"><label for="nuevoNombre">Nombre</label><input id="nuevoNombre" name="nombre" maxlength="100" required></div>
+            <div class="adm-field"><label for="nuevoApellido">Apellido</label><input id="nuevoApellido" name="apellido" maxlength="100" required></div>
+            <div class="adm-field adm-span-2"><label for="nuevoCorreo">Correo</label><input id="nuevoCorreo" name="correo" type="email" maxlength="100" required></div>
+            <div class="adm-field adm-span-2"><label for="nuevaContrasena">Contraseña</label><input id="nuevaContrasena" name="contrasena" type="password" minlength="8" autocomplete="new-password" required></div>
+            <div class="adm-field adm-span-2"><label for="nuevoRol">Rol</label>
+                <select id="nuevoRol" name="rol_id" required>
+                    <option value="">Selecciona un rol</option>
+                    {% for rol_disponible in roles %}<option value="{{ rol_disponible.id }}">{{ rol_disponible.nombre }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+        <p class="adm-dialog-message" id="nuevoUsuarioMensaje" role="alert" aria-live="polite"></p>
+        <footer class="adm-form-actions">
+            <button class="adm-button secondary" type="button" id="cancelarNuevoUsuario">Cancelar</button>
+            <button class="adm-button" type="submit">Crear usuario</button>
+        </footer>
+    </form>
+</dialog>
+<script>
+    const userTabs = document.querySelectorAll('[data-user-tab]');
+    const userPanels = document.querySelectorAll('[data-user-panel]');
+    const userTabField = document.getElementById('usuariosTabField');
+    function activateUserTab(tab) {
+        const selectedTab = tab === 'personal' ? 'personal' : 'clientes';
+        userTabs.forEach((button) => {
+            const selected = button.dataset.userTab === selectedTab;
+            button.setAttribute('aria-selected', selected ? 'true' : 'false');
+            button.tabIndex = selected ? 0 : -1;
+        });
+        userPanels.forEach((panel) => {
+            panel.hidden = panel.dataset.userPanel !== selectedTab;
+        });
+        if (userTabField) userTabField.value = selectedTab;
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('tab', selectedTab);
+        window.history.replaceState(null, '', currentUrl);
+    }
+    userTabs.forEach((button) => {
+        button.addEventListener('click', () => activateUserTab(button.dataset.userTab));
+    });
+    const queryParams = new URLSearchParams(window.location.search);
+    const defaultTab = queryParams.get('tab') || (queryParams.has('personal_page') ? 'personal' : 'clientes');
+    activateUserTab(defaultTab);
+
+    const nuevoUsuarioDialog = document.getElementById('nuevoUsuarioDialog');
+    const formNuevoUsuario = document.getElementById('formNuevoUsuario');
+    const mensajeNuevoUsuario = document.getElementById('nuevoUsuarioMensaje');
+    document.getElementById('abrirNuevoUsuario').addEventListener('click', () => nuevoUsuarioDialog.showModal());
+    document.getElementById('cerrarNuevoUsuario').addEventListener('click', () => nuevoUsuarioDialog.close());
+    document.getElementById('cancelarNuevoUsuario').addEventListener('click', () => nuevoUsuarioDialog.close());
+    formNuevoUsuario.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        mensajeNuevoUsuario.textContent = '';
+        const respuesta = await fetch(window.location.pathname, {
+            method: 'POST',
+            body: new FormData(formNuevoUsuario),
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        }).catch(() => null);
+        if (!respuesta) {
+            mensajeNuevoUsuario.textContent = 'No se pudo conectar con el servidor. Inténtalo nuevamente.';
+            return;
+        }
+        const resultado = await respuesta.json();
+        if (!respuesta.ok || !resultado.ok) {
+            mensajeNuevoUsuario.textContent = Object.values(resultado.errors || {}).join(' ');
+            return;
+        }
+        window.location.reload();
+    });
+</script>
+<script src="{% static 'js/feedback.js' %}?v=1"></script>
+<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+{% load static i18n %}
+{% get_current_language as CURRENT_LANGUAGE %}
+<!DOCTYPE html>
+<html lang="{{ CURRENT_LANGUAGE }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Galería" %} | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/galeria.css' %}?v=9">
+    <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/idiomas.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="galeria-page">
+
+<svg class="icon-library" aria-hidden="true" focusable="false">
+    <symbol id="i-todas" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></symbol>
+    <symbol id="i-imagen" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+    <symbol id="i-expandir" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="i-cerrar" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-anterior" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="i-siguiente" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-estrella" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+    <symbol id="i-cama" viewBox="0 0 24 24"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/></symbol>
+    <symbol id="i-personas" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-restaurante" viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></symbol>
+    <symbol id="i-piscina" viewBox="0 0 24 24"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></symbol>
+    <symbol id="i-exterior" viewBox="0 0 24 24"><path d="m17 14 3 3.3a1 1 0 0 1-.7 1.7H4.7a1 1 0 0 1-.7-1.7L7 14h-.3a1 1 0 0 1-.7-1.7L9 9h-.2A1 1 0 0 1 8 7.3L12 3l4 4.3a1 1 0 0 1-.8 1.7H15l3 3.3a1 1 0 0 1-.7 1.7H17ZM12 22v-3"/></symbol>
+    <symbol id="i-edificio" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/></symbol>
+    <symbol id="i-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></symbol>
+</svg>
+
+<header class="gallery-hero">
+    <img class="gallery-hero-image" src="{% static 'img/imagenes/foto2.png' %}" alt="">
+    <div class="gallery-hero-overlay" aria-hidden="true"></div>
+    {% include 'inc/usuariomenu.html' %}
+    <div class="gallery-hero-copy">
+        <p class="gallery-eyebrow">{% trans "Nuestra galería" %}</p>
+        <h1>{% trans "Galería" %}</h1>
+        <p>{% trans "Descubre la esencia del Caribe Confort a través de nuestras imágenes. Habitaciones, espacios, experiencias y todo lo que hace único tu descanso." %}</p>
+    </div>
+</header>
+
+<main class="gallery-main" id="galeria">
+    <section class="gallery-intro">
+        <div>
+            <span class="gallery-section-eyebrow">{% trans "Colección visual" %}</span>
+            <h2>{% trans "Espacios pensados para el descanso" %}</h2>
+        </div>
+        <p>{% trans "Haz clic en cualquier fotografía para verla en detalle o filtra por ambiente." %}</p>
+    </section>
+
+    <div class="gallery-toolbar">
+        <nav class="gallery-filters" aria-label="{% trans 'Filtrar por categoría' %}">
+            <a href="{{ request.path }}" class="gallery-filter{% if not categoria_activa %} is-active{% endif %}"{% if not categoria_activa %} aria-current="page"{% endif %}>
+                {% trans "Todas" %}<span>{{ total_general }}</span>
+            </a>
+            {% for c in categorias %}
+                <a href="?categoria={{ c.id }}" class="gallery-filter{% if categoria_activa.id == c.id %} is-active{% endif %}"{% if categoria_activa.id == c.id %} aria-current="page"{% endif %}>
+                    {{ c.nombre }}<span>{{ c.total }}</span>
+                </a>
+            {% empty %}
+                <span class="gallery-filter-empty">{% trans "Aún no hay categorías." %}</span>
+            {% endfor %}
+        </nav>
+        <button type="button" class="gallery-fullscreen" id="btnPantalla" {% if not imagenes %}disabled{% endif %}>
+            <svg class="icon"><use href="#i-expandir"/></svg>
+            {% trans "Ver en pantalla completa" %}
+        </button>
+    </div>
+
+    <div class="gallery-grid" id="galeriaGrid">
+        {% for img in imagenes %}
+            <button type="button" class="tile" data-src="{{ img.url_imagen }}" data-titulo="{{ img.titulo|default:img.categoria.nombre }}" data-categoria="{{ img.categoria.nombre }}"{% if not img.url_imagen %} disabled{% endif %}>
+                {% if img.url_imagen %}
+                    <img src="{{ img.url_imagen }}" alt="{{ img.titulo|default:img.categoria.nombre }}" loading="lazy" decoding="async">
+                {% else %}
+                    <span class="tile-image-empty" aria-hidden="true"></span>
+                {% endif %}
+                <span class="tile-etiqueta">
+                    <svg class="icon"><use href="#i-{{ img.categoria.icono }}"/></svg>
+                    {{ img.categoria.nombre }}
+                </span>
+                <span class="tile-open" aria-hidden="true">{% trans "Ver foto" %}</span>
+            </button>
+        {% empty %}
+            <div class="gallery-empty">
+                <svg class="icon"><use href="#i-imagen"/></svg>
+                <strong>{% trans "Aún no hay imágenes" %}</strong>
+                <span>
+                    {% if categoria_activa %}
+                        {% trans "Esta categoría todavía no tiene fotografías." %}
+                    {% else %}
+                        {% trans "Pronto compartiremos aquí lo mejor de Caribe Confort." %}
+                    {% endif %}
+                </span>
+            </div>
+        {% endfor %}
+    </div>
+</main>
+
+<footer class="gallery-footer">
+    © 2026 Hotel Caribe Confort · Av. La Marina #14-28, Riohacha, La Guajira · reservas@caribeconfort.com
+</footer>
+
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="{% trans 'Visor de imágenes' %}" aria-hidden="true">
+    <button type="button" class="lb-btn lb-cerrar" id="lbCerrar" aria-label="{% trans 'Cerrar' %}">
+        <svg class="icon"><use href="#i-cerrar"/></svg>
+    </button>
+    <button type="button" class="lb-btn lb-prev" id="lbPrev" aria-label="{% trans 'Imagen anterior' %}">
+        <svg class="icon"><use href="#i-anterior"/></svg>
+    </button>
+    <figure class="lb-figura">
+        <img id="lbImg" src="" alt="">
+        <figcaption>
+            <strong class="lb-cat" id="lbCat"></strong>
+            <span id="lbTitulo"></span>
+            <em class="lb-pos" id="lbPos"></em>
+        </figcaption>
+    </figure>
+    <button type="button" class="lb-btn lb-next" id="lbNext" aria-label="{% trans 'Imagen siguiente' %}">
+        <svg class="icon"><use href="#i-siguiente"/></svg>
+    </button>
+</div>
+
+<script src="{% static 'js/bootstrap.bundle.js' %}"></script>
+<script src="{% static 'js/galeria.js' %}?v=9"></script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convenios | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=999">
+    <link rel="stylesheet" href="{% static 'css/administrador/convenios.css' %}?v=101">
+</head>
+<body>
+{% include 'inc/admin_header.html' %}
+{% include 'inc/admin_nav.html' %}
+
+<main class="cv-main">
+    <header class="cv-page-head">
+        <div>
+            <p class="cv-eyebrow">ADMINISTRACIÓN COMERCIAL</p>
+            <h1>Convenios y códigos</h1>
+            <p>Administra tipos de descuento, genera códigos y consulta su vigencia.</p>
+        </div>
+        <a class="cv-back" href="/adminreserva">Volver a reservas</a>
+    </header>
+
+    {% if messages %}
+        <div class="cv-messages" role="status">
+            {% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}
+        </div>
+    {% endif %}
+
+    <section class="cv-grid">
+        <article class="cv-card">
+            <h2 id="tituloTipo">Crear tipo de convenio</h2>
+            <form method="post" class="cv-form" id="formTipo">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="tipo">
+                <input type="hidden" name="tipo_id" id="tipoId">
+                <label for="tipoNombre">Nombre</label>
+                <input id="tipoNombre" name="nombre" maxlength="100" required>
+                <label for="tipoDescripcion">Descripción</label>
+                <textarea id="tipoDescripcion" name="descripcion" maxlength="255" rows="3"></textarea>
+                <label for="tipoDescuento">Descuento (%)</label>
+                <input id="tipoDescuento" name="descuento" type="number" min="0.01" max="100" step="0.01" required>
+                <label class="cv-check"><input id="tipoEstado" name="estado" type="checkbox" checked> Tipo activo</label>
+                <div class="cv-actions">
+                    <button class="cv-button" type="submit">Guardar tipo</button>
+                    <button class="cv-button cv-secondary" type="reset" id="btnLimpiarTipo">Limpiar</button>
+                </div>
+            </form>
+        </article>
+
+        <article class="cv-card">
+            <h2>Generar código</h2>
+            <form method="post" class="cv-form">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="codigo">
+                <label for="tipoConvenio">Tipo de convenio</label>
+                <select id="tipoConvenio" name="tipo_convenio" required>
+                    <option value="">Selecciona un tipo activo</option>
+                    {% for tipo in tipos %}
+                        {% if tipo.estado %}
+                            <option value="{{ tipo.id }}">{{ tipo.nombre }} · {{ tipo.PorcentajeDescuento }}%</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                <label for="tipoSujeto">Destinatario</label>
+                <select id="tipoSujeto" name="tiposujeto" required>
+                    <option value="Empresa">Empresa</option>
+                    <option value="Persona Natural">Persona natural</option>
+                </select>
+                <label for="nombreSujeto">Empresa o titular</label>
+                <input id="nombreSujeto" name="nombresujeto" maxlength="150" required>
+                <label for="fechaExpiracion">Fecha de expiración</label>
+                <input id="fechaExpiracion" name="fecha_expiracion" type="date" min="{{ hoy|date:'Y-m-d' }}" required>
+                <button class="cv-button" type="submit">Generar código único</button>
+                <p class="cv-note">El código se marca como usado al aplicarse a una reserva; no se puede reutilizar.</p>
+            </form>
+        </article>
+    </section>
+
+    <section class="cv-card cv-types">
+        <div class="cv-section-head">
+            <div><h2>Tipos registrados</h2><p>Modifica sus datos y estado sin eliminar el historial.</p></div>
+            <span class="cv-count">{{ tipos|length }}</span>
+        </div>
+        <div class="cv-type-grid">
+            {% for tipo in tipos %}
+                <article class="cv-type-item">
+                    <div class="cv-type-title">
+                        <h3>{{ tipo.nombre }}</h3>
+                        <span class="cv-status {% if tipo.estado %}is-active{% else %}is-off{% endif %}">{% if tipo.estado %}Activo{% else %}Inactivo{% endif %}</span>
+                    </div>
+                    <p>{{ tipo.descripcion|default:"Sin descripción" }}</p>
+                    <strong>{{ tipo.PorcentajeDescuento }}% de descuento</strong>
+                    <button type="button" class="cv-button cv-edit-type"
+                            data-id="{{ tipo.id }}" data-nombre="{{ tipo.nombre }}"
+                            data-descripcion="{{ tipo.descripcion|default:'' }}"
+                            data-descuento="{{ tipo.PorcentajeDescuento }}"
+                            data-estado="{{ tipo.estado|yesno:'true,false' }}">Editar tipo</button>
+                </article>
+            {% empty %}
+                <p>Aún no hay tipos de convenio registrados.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="cv-card">
+        <div class="cv-section-head">
+            <div><h2>Códigos generados</h2><p>Los vencidos se actualizan automáticamente al consultar esta página.</p></div>
+            <span class="cv-count">{{ codigos|length }}</span>
+        </div>
+        <div class="cv-table-wrap">
+            <table class="cv-table">
+                <thead><tr><th>Código</th><th>Tipo</th><th>Destinatario</th><th>Generado</th><th>Vence</th><th>Estado</th><th>Acción</th></tr></thead>
+                <tbody>
+                    {% for codigo in codigos %}
+                        <tr>
+                            <td><strong>{{ codigo.Codigo }}</strong></td>
+                            <td>{{ codigo.tipoConvenio.nombre }}</td>
+                            <td>{{ codigo.nombresujeto }}<small>{{ codigo.tiposujeto }}</small></td>
+                            <td>{{ codigo.FechaGeneracion|date:"d/m/Y" }}</td>
+                            <td>{{ codigo.FechaExpiracion|date:"d/m/Y" }}</td>
+                            <td><span class="cv-status {% if codigo.estado == 'Activo' %}is-active{% elif codigo.estado == 'Usado' %}is-used{% else %}is-off{% endif %}">{{ codigo.estado }}</span></td>
+                            <td>
+                                {% if codigo.estado != 'Usado' and codigo.FechaExpiracion >= hoy %}
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="estado">
+                                        <input type="hidden" name="codigo_id" value="{{ codigo.id }}">
+                                        <button class="cv-link-button" type="submit">{% if codigo.estado == 'Activo' %}Desactivar{% else %}Activar{% endif %}</button>
+                                    </form>
+                                {% else %}—{% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="7">No hay códigos generados.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('formTipo');
+    var titulo = document.getElementById('tituloTipo');
+    var campos = {
+        id: document.getElementById('tipoId'),
+        nombre: document.getElementById('tipoNombre'),
+        descripcion: document.getElementById('tipoDescripcion'),
+        descuento: document.getElementById('tipoDescuento'),
+        estado: document.getElementById('tipoEstado')
+    };
+    document.querySelectorAll('.cv-edit-type').forEach(function (button) {
+        button.addEventListener('click', function () {
+            campos.id.value = button.dataset.id;
+            campos.nombre.value = button.dataset.nombre;
+            campos.descripcion.value = button.dataset.descripcion;
+            campos.descuento.value = button.dataset.descuento;
+            campos.estado.checked = button.dataset.estado === 'true';
+            titulo.textContent = 'Editar tipo de convenio';
+            form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    });
+    document.getElementById('btnLimpiarTipo').addEventListener('click', function () {
+        campos.id.value = '';
+        campos.estado.checked = true;
+        titulo.textContent = 'Crear tipo de convenio';
+    });
+});
+</script>
+<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+</body>
+</html>

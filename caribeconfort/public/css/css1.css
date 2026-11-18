@@ -1,0 +1,59 @@
+.hero {
+    position: relative;
+    height: calc(100vh - 28px);   /* 28px = franja de los puntitos */
+    overflow: hidden;
+}
+
+#heroCarousel,
+#heroCarousel .carousel-inner,
+#heroCarousel .carousel-item,
+.hero__img {
+    height: 100%;
+}
+
+.hero__img {
+    background-size: cover;
+    background-position: center;
+}
+
+/* Capas encima del carrusel */
+.hero__nav {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 10;
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hero__booking {
+    position: absolute;
+    left: 50%;
+    bottom: 8%;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+
+/* Puntitos: los saco de la imagen y los hago círculos */
+.hero__dots.carousel-indicators {
+    position: static;
+    margin: 0;
+    height: 28px;
+    background: #f3f3f3;
+    align-items: center;
+}
+
+.hero__dots [data-bs-target] {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    margin: 0 4px;
+    border: 0;
+    border-radius: 50%;
+    box-sizing: border-box;
+    background-color: #bbb;
+    opacity: 1;
+}
+
+.hero__dots .active { background-color: #333; }

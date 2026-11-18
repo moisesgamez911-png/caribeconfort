@@ -1,0 +1,362 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #f4f3ef;
+    color: #233a3b;
+    font-family: 'Segoe UI', Arial, sans-serif !important;
+}
+
+.cv-main {
+    max-width: none;
+    margin: 0;
+    padding: 96px 10px 64px 72px !important;
+}
+
+.cv-page-head,
+.cv-section-head,
+.cv-type-title,
+.cv-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.cv-page-head {
+    margin-bottom: 26px;
+}
+
+.cv-page-head h1,
+.cv-card h2,
+.cv-type-item h3 {
+    margin: 0;
+    color: #16484b;
+    font-family: 'Segoe UI', Arial, sans-serif !important;
+}
+
+.cv-page-head h1 {
+    font-size: clamp(26px, 3vw, 36px);
+}
+
+.cv-page-head p,
+.cv-section-head p,
+.cv-note {
+    margin: 6px 0 0;
+    color: #718184;
+    line-height: 1.55;
+}
+
+.cv-eyebrow {
+    color: #bd9852 !important;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .13em;
+}
+
+.cv-back,
+.cv-button,
+.cv-link-button {
+    border: 0;
+    border-radius: 10px;
+    background: #16484b;
+    color: #fff;
+    cursor: pointer;
+    font: 600 14px 'Segoe UI', Arial, sans-serif;
+    padding: 11px 16px;
+    text-decoration: none;
+    transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+
+.cv-back:hover,
+.cv-button:hover {
+    background: #103b3e;
+    box-shadow: 0 8px 18px #16484b22;
+    transform: translateY(-1px);
+}
+
+.cv-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.cv-card {
+    min-width: 0;
+    margin-bottom: 20px;
+    padding: 24px;
+    border: 1px solid #e8e9e4;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 12px 30px #213d3d0d;
+}
+
+.cv-card h2 {
+    font-size: 20px;
+    margin-bottom: 18px;
+}
+
+.cv-form {
+    display: grid;
+    gap: 10px;
+}
+
+.cv-form label {
+    color: #42595a;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.cv-form input,
+.cv-form select,
+.cv-form textarea {
+    width: 100%;
+    min-width: 0;
+    padding: 11px 12px;
+    border: 1px solid #dce3e0;
+    border-radius: 9px;
+    background: #fcfcfa;
+    color: #253f40;
+    font: 14px 'Segoe UI', Arial, sans-serif;
+}
+
+.cv-form input:focus,
+.cv-form select:focus,
+.cv-form textarea:focus {
+    outline: 0;
+    border-color: #b89a5c;
+    box-shadow: 0 0 0 3px #c6a15b24;
+}
+
+.cv-form .cv-check {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 6px 0;
+}
+
+.cv-check input {
+    width: 17px;
+    height: 17px;
+    accent-color: #16484b;
+}
+
+.cv-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+
+.cv-secondary {
+    background: #eef2f0;
+    color: #16484b;
+}
+
+.cv-note {
+    font-size: 12px;
+}
+
+.cv-messages {
+    margin-bottom: 18px;
+}
+
+.cv-messages p {
+    margin: 0 0 8px;
+    padding: 12px 16px;
+    border: 1px solid #d5e5dd;
+    border-radius: 10px;
+    background: #edf7f1;
+    color: #236043;
+}
+
+.cv-messages .error {
+    border-color: #f0c4bd;
+    background: #fff2ef;
+    color: #a7352d;
+}
+
+.cv-count {
+    min-width: 34px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: #f4f3ef;
+    color: #16484b;
+    font-weight: 800;
+    text-align: center;
+}
+
+.cv-type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.cv-type-item {
+    display: grid;
+    align-content: start;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid #e6ebe7;
+    border-radius: 13px;
+    background: #fbfcfa;
+}
+
+.cv-type-item h3 {
+    font-size: 16px;
+}
+
+.cv-type-item p {
+    margin: 0;
+    color: #718184;
+    font-size: 13px;
+}
+
+.cv-type-item strong {
+    color: #16484b;
+}
+
+.cv-status {
+    display: inline-flex;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: #edf7f1;
+    color: #236043;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.cv-status.is-off {
+    background: #f2f2ef;
+    color: #6b7474;
+}
+
+.cv-status.is-used {
+    background: #fff5df;
+    color: #80621d;
+}
+
+.cv-table-wrap {
+    overflow-x: auto;
+    margin-top: 18px;
+}
+
+.cv-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.cv-table th,
+.cv-table td {
+    padding: 13px 12px;
+    border-bottom: 1px solid #edf0ed;
+    vertical-align: middle;
+}
+
+.cv-table th {
+    color: #708183;
+    font-size: 11px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.cv-table td {
+    color: #3c5253;
+    font-size: 13px;
+}
+
+.cv-table td small {
+    display: block;
+    margin-top: 3px;
+    color: #829091;
+}
+
+.cv-link-button {
+    padding: 7px 10px;
+    background: #edf2ef;
+    color: #16484b;
+    font-size: 12px;
+}
+
+@media (max-width: 900px) {
+    .cv-main {
+        padding: 90px 20px 48px 90px;
+    }
+
+    .cv-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .cv-main {
+        padding: 78px 14px 86px;
+    }
+
+    .cv-page-head,
+    .cv-section-head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .cv-card {
+        padding: 18px;
+    }
+
+    .cv-table th,
+    .cv-table td {
+        padding: 10px 8px;
+    }
+}
+
+@media (max-width: 760px) {
+    .cv-main { padding: 78px 16px 86px; }
+}
+
+body, body *:not([class*='bi-']) { font-family: 'Segoe UI', Arial, sans-serif !important; }
+
+@media (min-width: 761px) {
+    body.menu-abierto .cv-main { padding-left: 260px !important; }
+}
+
+html[data-theme="dark"] body {
+    background: #202626;
+    color: #f0f4f3;
+}
+
+html[data-theme="dark"] .cv-page-head h1,
+html[data-theme="dark"] .cv-card h2,
+html[data-theme="dark"] .cv-type-item h3,
+html[data-theme="dark"] .cv-type-item strong {
+    color: #f0f4f3;
+}
+
+html[data-theme="dark"] .cv-card,
+html[data-theme="dark"] .cv-type-item {
+    border-color: #485252;
+    background: #1e1e1e;
+    color: #f0f4f3;
+}
+
+html[data-theme="dark"] .cv-form label,
+html[data-theme="dark"] .cv-table td {
+    color: #c4cecd;
+}
+
+html[data-theme="dark"] .cv-form input,
+html[data-theme="dark"] .cv-form select,
+html[data-theme="dark"] .cv-form textarea {
+    border-color: #566161;
+    background: #222929;
+    color: #f0f4f3;
+}
+
+html[data-theme="dark"] .cv-table th,
+html[data-theme="dark"] .cv-table td {
+    border-color: #485252;
+}

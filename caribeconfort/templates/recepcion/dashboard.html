@@ -1,0 +1,252 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Recepción | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
+    <link rel="stylesheet" href="{% static 'css/recepcionista/dashboard.css' %}?v=4">
+</head>
+<body>
+{% include 'inc/admin_header.html' %}
+{% include 'inc/admin_nav.html' %}
+{% comment %}
+<header class="reception-header">
+    <a class="reception-brand" href="/recepcion"><img src="{% static 'img/imagenes/LCFFINAL.png' %}" alt="Caribe Confort"><span>Recepción</span></a>
+    <div class="reception-account">
+        <span>{{ nombre }} · {{ rol }}</span>
+        <button type="button" class="ad-theme-toggle" id="adThemeToggle" aria-label="Activar modo oscuro" title="Activar modo oscuro">
+            <svg class="ad-theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+            <svg class="ad-theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.5 8.5 0 1 0 20.5 15.5Z"/></svg>
+        </button>
+        <a href="/logout">Cerrar sesión</a>
+    </div>
+</header>
+
+{% endcomment %}
+<main class="reception-main">
+    <section class="reception-welcome">
+        <div><p class="reception-eyebrow">OPERACIÓN DEL HOTEL</p><h1>Panel de recepción</h1><p>Gestiona las llegadas, salidas y servicios de los huéspedes.</p></div>
+        <time datetime="{{ hoy|date:'Y-m-d' }}">{{ hoy|date:"l, j \d\e F \d\e Y" }}</time>
+    </section>
+
+    {% if messages %}
+    <section class="reception-messages" aria-live="polite">
+        {% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}
+    </section>
+    {% endif %}
+
+    <section class="quick-actions" aria-label="Acciones rápidas">
+        <button type="button" class="quick-action" data-open-dialog="modalHuesped">
+            <span class="quick-icon">+</span><span><strong>Registrar huésped</strong><small>Agregar un nuevo perfil</small></span>
+        </button>
+        <button type="button" class="quick-action" data-open-dialog="modalReserva">
+            <span class="quick-icon">+</span><span><strong>Crear reserva</strong><small>Asignar huésped y habitación</small></span>
+        </button>
+        <button type="button" class="quick-action" data-open-dialog="modalPagoServicio">
+            <span class="quick-icon">$</span><span><strong>Registrar pago / servicio</strong><small>Actualizar una estadía</small></span>
+        </button>
+    </section>
+
+    <section class="reception-tables">
+        <article class="reception-card" id="llegadas">
+            <header class="reception-card-heading"><div><p class="reception-eyebrow">ENTRADAS PROGRAMADAS</p><h2>Llegadas de hoy</h2></div><span class="reception-count">{{ llegadas_hoy|length }}</span></header>
+            <div class="reception-table-wrap">
+                <table>
+                    <thead><tr><th>Huésped</th><th>Habitación</th><th>Salida</th><th>Estado</th><th>Acción</th></tr></thead>
+                    <tbody>
+                        {% for reserva in llegadas_hoy %}
+                        <tr>
+                            <td><strong>{{ reserva.huespedes.nombres }} {{ reserva.huespedes.apellidos }}</strong><small>{{ reserva.huespedes.identificacion }}</small></td>
+                            <td>{% if reserva.habitaciones %}{{ reserva.habitaciones.numero }}{% else %}{{ reserva.planes.nombre|default:"—" }}{% endif %}</td>
+                            <td>{{ reserva.fechasalida|date:"d/m/Y" }}</td>
+                            <td><span class="status-pill confirmed">{{ reserva.estado }}</span></td>
+                            <td><a class="table-action" href="/adminreserva/checkin/{{ reserva.id }}">Check-in</a></td>
+                        </tr>
+                        {% empty %}<tr><td class="table-empty" colspan="5">No hay llegadas confirmadas para hoy.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+
+        <article class="reception-card" id="salidas">
+            <header class="reception-card-heading"><div><p class="reception-eyebrow">SALIDAS PROGRAMADAS</p><h2>Salidas de hoy</h2></div><span class="reception-count">{{ salidas_hoy|length }}</span></header>
+            <div class="reception-table-wrap">
+                <table>
+                    <thead><tr><th>Huésped</th><th>Habitación</th><th>Saldo pendiente</th><th>Estado</th><th>Acción</th></tr></thead>
+                    <tbody>
+                        {% for reserva in salidas_hoy %}
+                        <tr>
+                            <td><strong>{{ reserva.huespedes.nombres }} {{ reserva.huespedes.apellidos }}</strong><small>{{ reserva.huespedes.identificacion }}</small></td>
+                            <td>{% if reserva.habitaciones %}{{ reserva.habitaciones.numero }}{% else %}{{ reserva.planes.nombre|default:"—" }}{% endif %}</td>
+                            <td>${{ reserva.saldo_pendiente|floatformat:2 }}</td>
+                            <td><span class="status-pill in-progress">{{ reserva.estado }}</span></td>
+                            <td><button class="table-action" type="button" data-open-checkout data-id="{{ reserva.id }}" data-nombre="{{ reserva.huespedes.nombres }} {{ reserva.huespedes.apellidos }}" data-saldo="{{ reserva.saldo_pendiente }}">Check-out</button></td>
+                        </tr>
+                        {% empty %}<tr><td class="table-empty" colspan="5">No hay salidas en curso para hoy.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+
+        <article class="reception-card" id="reservas-hotel">
+            <header class="reception-card-heading">
+                <div><p class="reception-eyebrow">GESTIÓN DE ESTADÍAS</p><h2>Todas las Reservas</h2></div>
+                <a class="table-action" href="/adminreserva">Administrar reservas</a>
+            </header>
+            <div class="reception-table-wrap">
+                <table>
+                    <thead><tr><th>Reserva</th><th>Huésped</th><th>Habitación / Plan</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Acción</th></tr></thead>
+                    <tbody>
+                        {% for reserva in reservas_hotel %}
+                        <tr>
+                            <td>CC-{{ reserva.id|stringformat:"04d" }}</td>
+                            <td><strong>{{ reserva.huespedes.nombres }} {{ reserva.huespedes.apellidos }}</strong><small>{{ reserva.huespedes.identificacion }}</small></td>
+                            <td>{% if reserva.habitaciones %}{{ reserva.habitaciones.numero }}{% else %}{{ reserva.planes.nombre|default:"—" }}{% endif %}</td>
+                            <td>{{ reserva.fechaentrada|date:"d/m/Y" }}</td>
+                            <td>{{ reserva.fechasalida|date:"d/m/Y" }}</td>
+                            <td><span class="status-pill {% if reserva.estado == 'En curso' %}in-progress{% else %}confirmed{% endif %}">{{ reserva.estado }}</span></td>
+                            <td>
+                                <a class="table-action" href="/adminreserva">Gestionar</a>
+                                {% if reserva.saldo_favor > 0 %}
+                                <button type="button" class="table-action btn-procesar-reembolso"
+                                        data-id="{{ reserva.id }}"
+                                        data-nombre="{{ reserva.huespedes.nombres }} {{ reserva.huespedes.apellidos }}"
+                                        data-monto="{{ reserva.saldo_favor|floatformat:'2' }}">Procesar reembolso</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}<tr><td class="table-empty" colspan="7">No hay reservas registradas.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+
+        <article class="reception-card" id="servicios-pendientes">
+            <header class="reception-card-heading">
+                <div><p class="reception-eyebrow">CUENTA DE HUÉSPEDES</p><h2>Servicios Pendientes</h2></div>
+                <span class="reception-count">{{ notificaciones_servicios }}</span>
+            </header>
+            <div class="reception-table-wrap">
+                <table>
+                    <thead><tr><th>Huésped</th><th>Reserva</th><th>Servicio</th><th>Cantidad</th><th>Valor</th><th>Acción</th></tr></thead>
+                    <tbody>
+                        {% for item in servicios_pendientes %}
+                        <tr>
+                            <td><strong>{{ item.reservas.huespedes.nombres }} {{ item.reservas.huespedes.apellidos }}</strong><small>{{ item.reservas.huespedes.identificacion }}</small></td>
+                            <td>CC-{{ item.reservas_id|stringformat:"04d" }}</td>
+                            <td>{{ item.servicios.nombre }}</td>
+                            <td>{{ item.cantidad }}</td>
+                            <td>${{ item.valor|floatformat:2 }}</td>
+                            <td>
+                                <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="/recepcion">
+                                    <input type="hidden" name="accion" value="aprobar">
+                                    <select name="metodopago" required aria-label="Método de pago del servicio">
+                                        <option value="Efectivo">Efectivo</option><option value="Tarjeta">Tarjeta</option><option value="Transferencia">Transferencia</option>
+                                    </select>
+                                    <button class="table-action" type="submit">Aprobar pago</button>
+                                </form>
+                                <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar" class="service-reject-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="/recepcion">
+                                    <input type="hidden" name="accion" value="rechazar">
+                                    <input name="motivo" maxlength="500" required placeholder="Motivo del rechazo" aria-label="Motivo del rechazo">
+                                    <button class="table-action service-reject-button" type="submit">Rechazar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}<tr><td class="table-empty" colspan="6">No hay servicios pendientes de pago.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    </section>
+</main>
+
+{% include 'inc/modal_reembolso.html' %}
+
+<dialog class="reception-dialog" id="modalHuesped" aria-labelledby="tituloHuesped">
+    <header class="dialog-heading"><div><p class="reception-eyebrow">REGISTRO DE HUÉSPED</p><h2 id="tituloHuesped">Nuevo huésped</h2></div><button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button></header>
+    <form method="post" action="/recepcion/huesped/crear">
+        {% csrf_token %}
+        <div class="dialog-grid">
+            <label>Tipo de documento<select name="tipodocumento" required><option value="">Selecciona</option><option value="CC">Cédula de ciudadanía</option><option value="CE">Cédula de extranjería</option><option value="Pasaporte">Pasaporte</option><option value="TI">Tarjeta de identidad</option></select></label>
+            <label>Número de documento<input name="identificacion" maxlength="50" required></label>
+            <label>Nombres<input name="nombres" maxlength="100" required></label>
+            <label>Apellidos<input name="apellidos" maxlength="100" required></label>
+            <label>Teléfono<input name="telefono" maxlength="100" required></label>
+            <label>Correo electrónico<input name="correo" type="email" maxlength="100"></label>
+            <label>Dirección<input name="direccion" maxlength="100" required></label>
+            <label>Nacionalidad<input name="nacionalidad" value="Colombiana" maxlength="100" required></label>
+        </div>
+        <footer class="dialog-actions"><button type="button" class="secondary-button" data-close-dialog>Cancelar</button><button type="submit" class="primary-button">Guardar huésped</button></footer>
+    </form>
+</dialog>
+
+<dialog class="reception-dialog" id="modalReserva" aria-labelledby="tituloReserva">
+    <header class="dialog-heading"><div><p class="reception-eyebrow">NUEVA ESTADÍA</p><h2 id="tituloReserva">Crear reserva</h2></div><button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button></header>
+    <form method="post" action="/recepcion/reserva/crear">
+        {% csrf_token %}
+        <div class="dialog-grid">
+            <label class="dialog-span-2">Huésped<select name="huesped_id" required><option value="">Selecciona un huésped</option>{% for huesped in huespedes %}<option value="{{ huesped.id }}">{{ huesped.apellidos }}, {{ huesped.nombres }} · {{ huesped.identificacion }}</option>{% endfor %}</select></label>
+            <label class="dialog-span-2">Habitación<select name="habitacion_id" required><option value="">Selecciona una habitación</option>{% for habitacion in habitaciones_disponibles %}<option value="{{ habitacion.id }}" data-capacidad="{{ habitacion.capacidad }}" data-precio="{{ habitacion.precio }}">Hab. {{ habitacion.numero }} · {{ habitacion.tipohabitacion.nombre|default:"Habitación" }} · capacidad {{ habitacion.capacidad }} · ${{ habitacion.precio|floatformat:0 }}</option>{% endfor %}</select></label>
+            <label>Cantidad de huéspedes<input name="cantidad_huespedes" type="number" min="1" value="1" required></label>
+            <label>Entrada<input name="fechaentrada" type="date" min="{{ hoy|date:'Y-m-d' }}" value="{{ hoy|date:'Y-m-d' }}" required></label>
+            <label>Salida<input name="fechasalida" type="date" min="{{ manana|date:'Y-m-d' }}" value="{{ manana|date:'Y-m-d' }}" required></label>
+            <label>Pago inicial<input id="recepcionMontoInicial" name="monto_pagado" type="number" min="0" step="0.01" value="0" required></label>
+            <label>Método de pago<select id="recepcionMetodoInicial" name="metodopago" disabled><option value="">Selecciona</option><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option></select></label>
+            <div class="dialog-span-2"><strong>Acompañantes</strong><div id="recepcionAcompanantes" class="dialog-grid"></div></div>
+        </div>
+        <p class="dialog-note">La reserva quedará confirmada. El check-in se registra desde la lista de llegadas.</p>
+        <footer class="dialog-actions"><button type="button" class="secondary-button" data-close-dialog>Cancelar</button><button type="submit" class="primary-button">Crear reserva</button></footer>
+    </form>
+</dialog>
+
+<dialog class="reception-dialog" id="modalPagoServicio" aria-labelledby="tituloPagoServicio">
+    <header class="dialog-heading"><div><p class="reception-eyebrow">MOVIMIENTOS DE ESTADÍA</p><h2 id="tituloPagoServicio">Registrar pago o servicio</h2></div><button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button></header>
+    <form method="post" action="/recepcion/pago-servicio">
+        {% csrf_token %}
+        <div class="dialog-grid">
+            <label class="dialog-span-2">Acción<select name="accion" id="accionPagoServicio" required><option value="pago">Registrar pago</option><option value="servicio">Agregar servicio</option></select></label>
+            <label class="dialog-span-2">Reserva en curso<select name="reserva_id" required><option value="">Selecciona una reserva</option>{% for reserva in reservas_activas %}<option value="{{ reserva.id }}">CC-{{ reserva.id|stringformat:"04d" }} · {{ reserva.huespedes.nombres }} {{ reserva.huespedes.apellidos }} · Hab. {{ reserva.habitaciones.numero|default:"—" }}</option>{% endfor %}</select></label>
+            <div class="dialog-span-2" data-pago-fields>
+                <div class="dialog-grid">
+                    <label>Monto recibido<input name="valor" type="number" min="0.01" step="0.01"></label>
+                    <label>Método de pago<select name="metodopago"><option value="">Selecciona</option><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option></select></label>
+                </div>
+            </div>
+            <div class="dialog-span-2" data-servicio-fields hidden>
+                <div class="dialog-grid">
+                    <label>Servicio<select name="servicio_id"><option value="">Selecciona un servicio</option>{% for servicio in servicios_disponibles %}<option value="{{ servicio.id }}">{{ servicio.nombre }} · ${{ servicio.precio|floatformat:2 }}</option>{% endfor %}</select></label>
+                    <label>Cantidad<input name="cantidad" type="number" min="1" max="50" value="1"></label>
+                </div>
+            </div>
+        </div>
+        <footer class="dialog-actions"><button type="button" class="secondary-button" data-close-dialog>Cancelar</button><button type="submit" class="primary-button">Guardar</button></footer>
+    </form>
+</dialog>
+
+<dialog class="reception-dialog checkout-dialog" id="modalCheckout" aria-labelledby="tituloCheckout">
+    <header class="dialog-heading"><div><p class="reception-eyebrow">SALIDA DEL HUÉSPED</p><h2 id="tituloCheckout">Confirmar check-out</h2><p id="checkoutGuest"></p></div><button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button></header>
+    <form method="post" id="formCheckout">
+        {% csrf_token %}
+        <div class="checkout-balance"><span>Saldo pendiente</span><strong id="checkoutBalance">$0,00</strong></div>
+        <div data-checkout-payment hidden>
+            <div class="dialog-grid">
+                <label>Monto recibido<input name="valor" id="checkoutAmount" type="number" min="0.01" step="0.01"></label>
+                <label>Método de pago<select name="metodopago" id="checkoutMethod"><option value="">Selecciona</option><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option></select></label>
+            </div>
+        </div>
+        <p class="dialog-note" id="checkoutNoBalance" hidden>La cuenta está al día. Puedes finalizar el check-out.</p>
+        <footer class="dialog-actions"><button type="button" class="secondary-button" data-close-dialog>Cancelar</button><button type="submit" class="primary-button">Confirmar check-out</button></footer>
+    </form>
+</dialog>
+
+<script src="{% static 'js/reembolso_reserva.js' %}?v=1"></script>
+<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+<script src="{% static 'js/recepcionista/dashboard.js' %}?v=3"></script>
+</body>
+</html>

@@ -1,0 +1,353 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #f4f3ef;
+    font-family: 'Segoe UI', Arial, sans-serif !important;
+    color: #1e3e3b;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 40px 20px;
+}
+
+.pago-wrapper {
+    width: 100%;
+    max-width: 540px;
+}
+
+.pago-container {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 35px;
+    box-shadow: 0 10px 40px rgba(30, 62, 59, 0.08);
+    border: 1px solid #dce3e1;
+}
+
+.pago-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.icono-header {
+    width: 55px;
+    height: 55px;
+    background: #e0f3ea;
+    color: #16484B;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    margin: 0 auto 15px;
+}
+
+.pago-header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #16484B;
+    margin-bottom: 5px;
+}
+
+.pago-header p {
+    font-size: 14px;
+    color: #718587;
+    font-weight: 500;
+}
+
+.resumen-pagos {
+    background: #f7f8f6;
+    border: 1px solid #dce3e1;
+    border-radius: 10px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+}
+
+.fila-resumen {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 14px;
+    color: #718587;
+}
+
+.fila-resumen strong {
+    color: #16484B;
+    font-weight: 600;
+}
+
+.fila-resumen strong.texto-verde {
+    color: #22a879;
+}
+
+.opciones-pago {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.opcion-pago {
+    cursor: pointer;
+}
+
+.opcion-pago input[type="radio"] {
+    display: none;
+}
+
+.opcion-tarjeta {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    border: 2px solid #dce3e1;
+    border-radius: 10px;
+    background: #fff;
+    transition: all 0.2s ease;
+}
+
+.opcion-tarjeta i {
+    font-size: 20px;
+    color: #718587;
+}
+
+.opcion-tarjeta div {
+    display: flex;
+    flex-direction: column;
+}
+
+.opcion-tarjeta strong {
+    font-size: 13px;
+    font-weight: 700;
+    color: #16484B;
+}
+
+.opcion-tarjeta span {
+    font-size: 11px;
+    color: #718587;
+    margin-top: 2px;
+}
+
+.opcion-pago input[type="radio"]:checked + .opcion-tarjeta {
+    border-color: #16484B;
+    background: #f7f8f6;
+    box-shadow: 0 4px 12px rgba(22, 72, 75, 0.08);
+}
+
+.opcion-pago input[type="radio"]:checked + .opcion-tarjeta i {
+    color: #16484B;
+}
+
+.alerta-pago {
+    background: #e0f3ea;
+    color: #16484B;
+    padding: 12px 15px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.total-box {
+    background: linear-gradient(135deg, #16484B, #123B3F);
+    border-radius: 12px;
+    padding: 20px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(22, 72, 75, 0.2);
+}
+
+.total-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.total-label {
+    font-size: 15px;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.total-sub {
+    font-size: 12px;
+    opacity: 0.6;
+    margin-top: 4px;
+}
+
+.total-monto {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.seccion-titulo {
+    border-bottom: 2px solid #dce3e1;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.seccion-titulo h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #16484B;
+}
+
+.formulario-tarjeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.input-group.full {
+    width: 100%;
+}
+
+.input-group.half {
+    width: calc(50% - 7.5px);
+}
+
+.input-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #426B78;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.input-group input {
+    padding: 12px 15px;
+    border: 1.5px solid #dce3e1;
+    border-radius: 8px;
+    font-family: 'Segoe UI', Arial, sans-serif !important;
+    font-size: 14px;
+    color: #16484B;
+    outline: none;
+    transition: all 0.2s;
+    background: #fff;
+}
+
+.input-group input:focus {
+    border-color: #16484B;
+    box-shadow: 0 0 0 3px rgba(22, 72, 75, 0.1);
+}
+
+.input-with-icon {
+    position: relative;
+}
+
+.input-with-icon i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #78939B;
+    font-size: 18px;
+}
+
+.input-with-icon input {
+    width: 100%;
+    padding-left: 45px;
+}
+
+.select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.select-wrapper select {
+    width: 100%;
+    padding: 14px 15px 14px 45px;
+    border: 1.5px solid #16484B;
+    border-radius: 8px;
+    font-family: 'Segoe UI', Arial, sans-serif !important;
+    font-size: 14px;
+    color: #16484B;
+    font-weight: 600;
+    outline: none;
+    background: #f7f8f6;
+    appearance: none;
+    cursor: pointer;
+}
+
+.select-wrapper .icono-izq {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #16484B;
+    font-size: 18px;
+    pointer-events: none;
+}
+
+.select-wrapper .icono-der {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #16484B;
+    font-size: 14px;
+    pointer-events: none;
+}
+
+.btn-pagar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px;
+    background: #22a879;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-pagar:hover {
+    background: #1b8c63;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(34, 168, 121, 0.3);
+}
+
+.btn-pagar:active {
+    transform: translateY(0);
+}
+
+@media (max-width: 600px) {
+    .opciones-pago {
+        grid-template-columns: 1fr;
+    }
+    .input-group.half {
+        width: 100%;
+    }
+    .pago-container {
+        padding: 20px;
+    }
+    .total-box {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
+body, body *:not([class*='bi-']) { font-family: 'Segoe UI', Arial, sans-serif !important; }

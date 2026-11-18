@@ -1,0 +1,83 @@
+# Contexto del proyecto Caribe Confort
+
+## Descripción
+
+Aplicación web para la operación de un hotel en Riohacha. Incluye una experiencia pública para clientes y herramientas de administración y recepción.
+
+## Stack
+
+- Backend: Django y Python.
+- Base de datos: MySQL.
+- Interfaz: templates HTML de Django, CSS y JavaScript.
+- Archivos estáticos y multimedia: carpeta `caribeconfort/public`.
+- Zona horaria: `America/Bogota`.
+
+## Reglas de desarrollo
+
+- No iniciar el servidor (`runserver`) ni usar Playwright para estas tareas; validar con comprobaciones locales.
+- Mantener los estilos en archivos CSS externos, no dentro de los templates.
+- Formatear CSS con el selector en una línea y cada propiedad en su propia línea.
+- La autenticación y los roles de la aplicación usan `request.session`; no usar el modelo `User` de Django para la lógica propia del proyecto.
+- Preservar etiquetas y lógica de Django, formularios, rutas, peticiones y variables de contexto existentes.
+- No guardar credenciales ni datos sensibles en documentación o código nuevo.
+
+## Roles
+
+- **Administrador:** gestión general del hotel, usuarios, habitaciones, reservas, servicios, pagos, convenios, configuración y reportes.
+- **Recepcionista:** atención de huéspedes, reservas, check-in/check-out y registro de pagos.
+- **Cliente:** consulta y creación de reservas, pagos, gestión de perfil y consulta del historial de reservas.
+
+## Diseño
+
+- Tipografías de referencia: `Cormorant Garamond` y `Plus Jakarta Sans`.
+- Colores principales: verde oscuro `#16484B`, dorado `#C6A15B` y fondo claro `#FAF8F5`.
+- Los templates de cliente usan CSS separado en archivos estáticos.
+
+## Funcionalidad existente
+
+- Reservas de habitaciones y planes.
+- Gestión de habitaciones, servicios y planes.
+- Pagos, registro de acompañantes y procesos de check-in/check-out.
+- Paneles separados para administración y recepción.
+- Reportes de operación.
+- Perfil e historial de reservas de clientes.
+- Reseñas vinculadas a reservas finalizadas, mediante token UUID y calificación de 1 a 5.
+- Cambio de idioma español/inglés con el middleware de localización de Django.
+
+## Reseñas
+
+El modelo `Resena` se relaciona uno a uno con `Reservas`; guarda token único, fecha, comentario y calificación. Al completar el check-out se intenta enviar una invitación individual por correo. Las reservas vencidas también se finalizan y se procesan para el envío de invitaciones. El cliente envía la reseña desde la ruta con token.
+
+La migración inicial es `caribeconfort/migrations/0025_resena.py`. Para crear o aplicar migraciones:
+
+```powershell
+python manage.py makemigrations caribeconfort
+python manage.py migrate
+```
+
+## Idiomas
+
+La aplicación tiene español (`es`) como idioma inicial y permite inglés (`en`). `LocaleMiddleware` debe ir después de `SessionMiddleware`. Los templates traducibles se marcan con `{% trans %}` o `{% blocktrans %}`; las traducciones se guardan bajo `locale/<idioma>/LC_MESSAGES/`.
+
+Después de agregar o modificar cadenas:
+
+```powershell
+python manage.py makemessages -l en
+python manage.py compilemessages
+```
+
+En Windows, `compilemessages` necesita las herramientas GNU gettext (`msgfmt`). El catálogo inglés de esta entrega ya está compilado en `locale/en/LC_MESSAGES/django.mo`.
+
+Para comprobar la configuración sin iniciar el servidor:
+
+```powershell
+python manage.py check
+```
+
+## Pendientes conocidos
+
+- Completar y revisar la traducción de todas las vistas de cliente, no solo navegación, portada, registro, inicio de sesión y reseñas.
+- Completar pruebas de comportamiento y revisión responsive en las vistas de cliente.
+- Definir e implementar el flujo de reembolsos.
+- Rediseñar las vistas de administración.
+- Aplicar y verificar migraciones y traducciones en el entorno local antes de desplegar.

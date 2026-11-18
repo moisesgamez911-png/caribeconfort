@@ -1,0 +1,603 @@
+{% load static %}
+{% load static l10n %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Principal | Caribe Confort</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=102">
+    <link rel="stylesheet" href="{% static 'css/administrador/reservas.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
+</head>
+<body>
+
+{% include 'inc/admin_header.html' %}
+{% include 'inc/admin_nav.html' %}
+
+<main class="ad-main">
+
+    <div class="dash-header">
+        <div>
+            <p class="adm-eyebrow">INFORMACIÓN GENERAL DEL HOTEL</p>
+            <h1 class="dash-title">Bienvenido, {{ request.session.usuario_nom|default:"Administrador" }}</h1>
+            <p class="dash-sub">Aquí tienes un resumen general del estado del hotel.</p>
+        </div>
+        <div class="dash-fecha">
+            <div>
+                <strong>{% now "l, j \d\e F \d\e Y" %}</strong>
+                <span>Hotel Caribe Confort - Riohacha, La Guajira</span>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="dash-flash-messages" role="status" aria-live="polite">
+        {% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="dash-kpis-grid">
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <span class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/></svg></span>
+                <span class="kpi-label">Habitaciones totales</span>
+            </div>
+            <div class="kpi-valor">{{ total_habitaciones|default:0 }}</div>
+            <div class="kpi-sub">Todas las habitaciones registradas</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <span class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/></svg></span>
+                <span class="kpi-label">Disponibles</span>
+            </div>
+            <div class="kpi-valor">{{ disponibles }}</div>
+            <div class="kpi-foot verde">↑ Listas para reservar</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <span class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/></svg></span>
+                <span class="kpi-label">Ocupadas</span>
+            </div>
+            <div class="kpi-valor">{{ ocupadas }}</div>
+            <div class="kpi-foot">Actualmente en uso</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <span class="kpi-ico">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                    </svg>
+                </span>
+                <span class="kpi-label">Fuera de servicio</span>
+            </div>
+            <div class="kpi-valor">{{ fuera_servicio|default:0 }}</div>
+            <div class="kpi-foot rojo">En mantenimiento / bloqueadas</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <span class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+                <span class="kpi-label">Reservas activas</span>
+            </div>
+            <div class="kpi-valor">{{ activas }}</div>
+            <div class="kpi-foot verde">↑ Pendientes o confirmadas</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <span class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+                <span class="kpi-label">Reservas del día</span>
+            </div>
+            <div class="kpi-valor">{{ del_dia }}</div>
+            <div class="kpi-foot">Solicitadas hoy</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <span class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>
+                <span class="kpi-label">Huéspedes registrados</span>
+            </div>
+            <div class="kpi-valor">{{ huespedesnumero }}</div>
+            <div class="kpi-foot">En el sistema</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <span class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.2A2.6 2.2 0 0 0 12 8c-1.4 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2a2.6 2.2 0 0 1-2.5-1.2M12 6v2M12 16v2"/></svg></span>
+                <span class="kpi-label">Ingresos del día</span>
+            </div>
+            <div class="kpi-valor">${{ pagosdiarios|floatformat:"0g" }}</div>
+            {% if hoy_vs_ayer3 < 0 %}
+                <div class="kpi-foot rojo">↘ {{ hoy_vs_ayer3|floatformat:"0g"|cut:"-" }}% vs. ayer</div>
+            {% else %}
+                <div class="kpi-foot verde">↗ {{ hoy_vs_ayer3|floatformat:"0g" }}% vs. ayer</div>
+            {% endif %}
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <span class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M7 14h2m3 0h2m3 0h1"/></svg></span>
+                <span class="kpi-label">Ingresos de la semana</span>
+            </div>
+            <div class="kpi-valor">${{ ingresos_semanales|floatformat:"0g" }}</div>
+            <div class="kpi-foot">Semana actual, pagos aprobados</div>
+        </div>
+
+
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <span class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg></span>
+                <span class="kpi-label">Ocupación</span>
+            </div>
+            <div class="kpi-valor">{{ ocupacion }}%</div>
+            <div class="kpi-foot">Del total de habitaciones</div>
+        </div>
+    </div>
+
+    <div class="dash-main-grid">
+        
+        <div class="dash-col-left">
+            <div class="dash-card">
+                <div class="dash-card-head">
+                    <h2 class="dash-card-title">Reservas recientes</h2>
+                    <a href="/adminreserva" class="dash-link">Ver todas →</a>
+                </div>
+                <table class="dash-tabla">
+                    <thead>
+                        <tr><th>#</th><th>Huésped</th><th>Habitación/Plan</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Acciones</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for r in page_obj %}
+                        <tr>
+                            <td>CC-{{ r.id|stringformat:"04d" }}</td>
+                            <td style="font-weight:600;">{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}</td>
+                            <td>{% if r.habitaciones %}Hab. {{ r.habitaciones.numero }}{% else %}Plan: {{ r.planes.nombre }}{% endif %}</td>
+                            <td>{{ r.fechaentrada|date:"d/m/Y" }}</td>
+                            <td>{{ r.fechasalida|date:"d/m/Y" }}</td>
+                            <td>
+                                <span class="badge {% if r.estado == 'Confirmada' %}confirmada{% elif r.estado == 'En curso' %}encurso{% elif r.estado == 'Pagada - Por validar' %}validar{% elif r.estado == 'Cancelada' or r.estado == 'Rechazada' %}cancelada{% elif r.estado == 'Finalizada' %}finalizada{% else %}pendiente{% endif %}">
+                                    {{ r.estado }}
+                                </span>
+                            </td>
+                            <td>
+                       <button type="button" class="btn-acciones-reserva" 
+                                data-id="{{ r.id }}"
+                                data-cliente="{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}"
+                                data-email="{{ r.huespedes.correo }}"
+                                data-telefono="{{ r.huespedes.telefono }}"
+                                data-entrada="{{ r.fechaentrada|date:'d/m/Y' }}"
+                                data-salida="{{ r.fechasalida|date:'d/m/Y' }}"
+                                data-habitacion="{% if r.habitaciones %}Hab. {{ r.habitaciones.numero }} - {{ r.habitaciones.tipohabitacion.nombre }}{% else %}Plan: {{ r.planes.nombre }}{% endif %}"
+                                data-total="${{ r.valortotal|floatformat:'0g' }}"
+                                data-estado="{{ r.estado }}"
+                                data-clase-estado="{% if r.estado == 'Confirmada' or r.estado == 'En curso' %}badge-success{% elif r.estado == 'Pagada - Por validar' %}badge-warning{% elif r.estado == 'Cancelada' or r.estado == 'Rechazada' %}badge-danger{% else %}badge-pending{% endif %}"
+                                style="background:transparent; border:none; color:var(--color-texto-suave); cursor:pointer;">
+                                <img src="{% static 'img/iconos/hacer.png' %}" alt="">
+                        </button>
+                                                    </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" style="text-align:center;">No hay reservas.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="rv-pagination">
+                    <span class="rv-pag-info">
+                        Mostrando {{ page_obj.start_index|default:"0" }} - {{ page_obj.end_index|default:"0" }} de {{ page_obj.paginator.count }} reservas
+                    </span>
+                    <div class="rv-pag-controls">
+                        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}" class="rv-pag-btn">&lt;</a>
+                        {% else %}
+                            <button class="rv-pag-btn" disabled>&lt;</button>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            <a href="?page={{ num }}" class="rv-pag-btn {% if page_obj.number == num %}active{% endif %}">{{ num }}</a>
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}" class="rv-pag-btn">&gt;</a>
+                        {% else %}
+                            <button class="rv-pag-btn" disabled>&gt;</button>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="dash-card">
+                <div class="dash-card-head">
+                    <h2 class="dash-card-title">Reservas próximas</h2>
+                    <button type="button" class="dash-link dash-link-button" id="abrirProximasReservas">Ver todas</button>
+                </div>
+                <ul class="rv-upcoming-list">
+                    {% for r in proximas_reservas_preview %}
+                    <li>
+                        <div class="rv-avatar">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </div>
+                        <div class="rv-up-info">
+                            <strong>{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}</strong>
+                            <span>{% if r.habitaciones %}Hab. {{ r.habitaciones.numero }}{% elif r.planes %}Plan: {{ r.planes.nombre }}{% endif %} | {{ r.fechaentrada|date:"d/m/Y" }} - {{ r.fechasalida|date:"d/m/Y" }}</span>
+                        </div>
+                        <span class="rv-badge-time azul">{{ r.estado }}</span>
+                    </li>
+                    {% empty %}
+                    <li class="rv-upcoming-empty">No hay reservas próximas.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="dash-card dash-services-pending">
+                <div class="dash-card-head">
+                    <h2 class="dash-card-title">Solicitudes de servicio pendientes ({{ notificaciones_servicios }})</h2>
+                    <a href="/recepcion/servicios-pendientes" class="dash-link">Ver solicitudes →</a>
+                </div>
+                <div class="dash-table-scroll">
+                    <table class="dash-tabla">
+                        <thead><tr><th>Huésped</th><th>Reserva</th><th>Servicio</th><th>Cantidad</th><th>Valor</th><th>Acciones</th></tr></thead>
+                        <tbody>
+                            {% for item in servicios_pendientes %}
+                            <tr>
+                                <td>{{ item.reservas.huespedes.nombres }} {{ item.reservas.huespedes.apellidos }}</td>
+                                <td>CC-{{ item.reservas_id|stringformat:"04d" }}</td>
+                                <td>{{ item.servicios.nombre }}</td>
+                                <td>{{ item.cantidad }}</td>
+                                <td>${{ item.valor|floatformat:2 }}</td>
+                                <td>
+                                    <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar" class="dash-service-action">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="/administrador">
+                                        <input type="hidden" name="accion" value="aprobar">
+                                        <select name="metodopago" required aria-label="Método de pago">
+                                            <option value="Efectivo">Efectivo</option>
+                                            <option value="Tarjeta">Tarjeta</option>
+                                            <option value="Transferencia">Transferencia</option>
+                                        </select>
+                                        <button class="dash-service-approve" type="submit">Aprobar</button>
+                                    </form>
+                                    <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar" class="dash-service-reject">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="/administrador">
+                                        <input type="hidden" name="accion" value="rechazar">
+                                        <input name="motivo" maxlength="500" required placeholder="Motivo del rechazo" aria-label="Motivo del rechazo">
+                                        <button type="submit">Rechazar</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="table-empty">No hay solicitudes de servicio pendientes.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="dash-grid-3">
+                <div class="dash-card mini-card">
+                    <h3 class="mini-card-title">Servicios más solicitados</h3>
+                    <ul class="lista-mini">
+                        {% for s in servicios_top %}
+                        <li>
+                            <span class="mini-ico"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20"/></svg></span>
+                            <span class="mini-txt">{{ s.nombre }}</span>
+                            <strong>{{ s.total }}</strong>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="dash-card mini-card">
+                    <h3 class="mini-card-title">Habitaciones por tipo</h3>
+                    <ul class="lista-mini">
+                        {% for t in tipos %}
+                        <li>
+                            <span class="mini-ico"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/></svg></span>
+                            <span class="mini-txt">{{ t.nombre }}</span>
+                            <strong>{{ t.n }}</strong>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="dash-card mini-card">
+                    <h3 class="mini-card-title">Huéspedes por nacionalidad</h3>
+                    <ul class="lista-mini">
+                        {% for n in nacionalidades %}
+                        <li>
+                            <span class="mini-ico" style="font-size:14px;">{{ n.bandera }}</span>
+                            <span class="mini-txt">{{ n.nacionalidad }}</span>
+                            <strong>{{ n.total }}</strong>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="dash-col-mid">
+            
+            <div class="dash-card card-ocupacion">
+                <div class="dash-card-head">
+                    <h2 class="dash-card-title">Ocupación semanal</h2>
+                    <div class="toggle-ocupacion">
+                        <button type="button" class="btn-ocupacion active" data-tipo="real">Real</button>
+                        <button type="button" class="btn-ocupacion" data-tipo="proyectada">Proyección</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="y-axis">
+                        <span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span>
+                    </div>
+                    <div class="chart-bars">
+                        {% for d in datos_ocupacion_semanal %}
+                        <div class="bar-group">
+                             <div class="bar bar-dinamica" 
+                                 title="Real: {{ d.real }}% | Proyección: {{ d.proyectada }}%"
+                                 data-real="{{ d.real }}" 
+                                 data-proyectada="{{ d.proyectada }}" 
+                                 style="height: {{ d.real }}%;">
+                            </div>
+                            <span>{{ d.dia }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% localize off %}
+            <div class="dash-card card-ingresos ing-card-lineal">
+                <div class="dash-card-head">
+                    <h2 class="dash-card-title">Ingresos del mes</h2>
+                    <span class="ing-periodo">Últimos 4 meses</span>
+                </div>
+
+                <div class="ing-line-chart">
+                    <div class="ing-line-y">
+                        {% for tick in ingresos_chart.ticks_y %}
+                        <span>{{ tick }}</span>
+                        {% endfor %}
+                    </div>
+
+                    <div class="ing-line-area">
+                        <div class="ing-svg-wrap">
+                            <div class="ing-chart-badges">
+                                {% for p in ingresos_chart.puntos %}
+                                <span class="ing-badge {% if forloop.last %}dark{% endif %}" 
+                                      style="left: {{ p.x_pct }}%; top: {{ p.y_pct }}%;">
+                                    {{ p.badge }}
+                                </span>
+                                {% endfor %}
+                            </div>
+
+                            <svg class="ing-line-svg" viewBox="0 0 1000 420" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="ingAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#16484B" stop-opacity="0.25"/>
+                                        <stop offset="100%" stop-color="#16484B" stop-opacity="0.0"/>
+                                    </linearGradient>
+                                </defs>
+
+                                <g class="ing-grid-lines">
+                                    <line x1="0" y1="35" x2="1000" y2="35"/>
+                                    <line x1="0" y1="120" x2="1000" y2="120"/>
+                                    <line x1="0" y1="205" x2="1000" y2="205"/>
+                                    <line x1="0" y1="290" x2="1000" y2="290"/>
+                                    <line x1="0" y1="375" x2="1000" y2="375"/>
+                                </g>
+
+                                <path class="ing-area-fill" fill="url(#ingAreaGradient)" d="{{ ingresos_chart.path_area }}"/>
+                                <path class="ing-line-path" fill="none" stroke="#16484B" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="{{ ingresos_chart.path_linea }}"/>
+
+                                <g class="ing-line-points">
+                                    {% for p in ingresos_chart.puntos %}
+                                    <circle cx="{{ p.x }}" cy="{{ p.y }}" r="7"/>
+                                    {% endfor %}
+                                </g>
+                            </svg>
+                        </div>
+
+                        <div class="ing-line-x">
+                            {% for p in ingresos_chart.puntos %}
+                            <span>{{ p.mes }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endlocalize %}
+            
+            <div class="dash-card">
+                <div class="dash-card-head">
+                    <h2 class="dash-card-title">Resumen de caja (hoy)</h2>
+                </div>
+                <div class="caja-resumen">
+                    <div class="caja-item">
+                        <div class="caja-info">
+                            <span class="caja-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+                            <span class="caja-label">Reservas</span>
+                        </div>
+                        <strong class="caja-valor">${{ caja_reservas|floatformat:"0g" }}</strong>
+                    </div>
+                    <div class="caja-item">
+                        <div class="caja-info">
+                            <span class="caja-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>
+                            <span class="caja-label">Servicios extras</span>
+                        </div>
+                        <strong class="caja-valor">${{ caja_servicios|floatformat:"0g" }}</strong>
+                    </div>
+                    <div class="caja-item total">
+                        <div class="caja-info">
+                            <span class="caja-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+                            <span class="caja-label">Total recaudado</span>
+                        </div>
+                        <strong class="caja-valor grande">${{ caja_total|floatformat:"0g" }}</strong>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="dash-col-right">
+            <div class="dash-card estado-hotel-card">
+                <div class="dash-card-head">
+                    <h2 class="dash-card-title">Estado del hotel</h2>
+                </div>
+                <div class="estado-hotel-content">
+                    <div class="estado-info">
+                        <div class="estado-punto"><span class="dot green"></span> Operativo</div>
+                        <strong class="estado-nombre">Hotel Caribe Confort</strong>
+                        <span class="estado-lugar">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> 
+                            Riohacha, La Guajira
+                        </span>
+                    </div>
+                    <div class="estado-img-wrap">
+                        <img src="{% static 'img/imagenes/foto2.png' %}" alt="Hotel Caribe Confort">
+                    </div>
+                </div>
+            </div>
+
+            <div class="dash-card">
+                <div class="dash-card-head">
+                    <h2 class="dash-card-title">Accesos rápidos</h2>
+                </div>
+                <ul class="lista-accesos">
+                    <li><a href="/adminreserva"><span class="acc-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span> Registrar reserva <span class="chevron">›</span></a></li>
+                    <li><a href="/adminhuespedes"><span class="acc-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span> Consultar huéspedes <span class="chevron">›</span></a></li>
+                    <li><a href="/rhabitaciones"><span class="acc-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/></svg></span> Registrar habitación <span class="chevron">›</span></a></li>
+                    <li><a href="/adminreportes/exportar?tipo=reservas"><span class="acc-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg></span> Generar reporte (CSV) <span class="chevron">›</span></a></li>
+                </ul>
+            </div>
+
+            <div class="dash-card">
+                <div class="dash-card-head">
+                    <h2 class="dash-card-title">Últimos movimientos</h2>
+                </div>
+                <ul class="lista-movs">
+                    {% for mov in movs %}
+                    <li>
+                        <span class="mov-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+                        <div class="mov-txt">
+                            <strong>{{ mov.texto }}</strong>
+                            <small>{{ mov.hace }}</small>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<dialog class="rv-upcoming-dialog" id="modalProximasReservas" aria-labelledby="tituloProximasReservas">
+    <header class="rv-modal-header">
+        <div>
+            <h2 id="tituloProximasReservas">Todas las reservas próximas</h2>
+            <p>Reservas pendientes, por validar y confirmadas desde hoy.</p>
+        </div>
+        <button type="button" class="rv-modal-close" id="cerrarProximasReservas" aria-label="Cerrar">&times;</button>
+    </header>
+    <div class="rv-upcoming-dialog-body">
+        <div class="rv-table-wrap">
+            <table class="rv-table">
+                <thead>
+                    <tr><th>Nº Reserva</th><th>Huésped</th><th>Habitación/Plan</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in proximas_reservas %}
+                    <tr>
+                        <td>CC-{{ r.id|stringformat:"04d" }}</td>
+                        <td>{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}</td>
+                        <td>{% if r.habitaciones %}Hab. {{ r.habitaciones.numero }}{% elif r.planes %}Plan: {{ r.planes.nombre }}{% else %}—{% endif %}</td>
+                        <td>{{ r.fechaentrada|date:"d/m/Y" }}</td>
+                        <td>{{ r.fechasalida|date:"d/m/Y" }}</td>
+                        <td>{{ r.estado }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="rv-upcoming-empty">No hay reservas próximas.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</dialog>
+
+<div class="modal-admin-overlay" id="modalReservaAdmin">
+    <div class="modal-admin-box">
+        <header class="modal-admin-header">
+            <div class="modal-header-title">
+                <h2 style="color: aliceblue;">Solicitud de Reserva <span id="modalReservaId" style="font-size: 0.8em; font-weight: normal; opacity: 0.8;"></span></h2>
+            </div>
+            <button type="button" class="modal-admin-close" style="color: aliceblue;" id="cerrarModalAdmin">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </header>
+        <div class="modal-admin-body">
+            <div class="info-group">
+                <div class="info-label"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Cliente:</div>
+                <span id="modalCliente"></span>
+            </div>
+            <div class="info-group">
+                <div class="info-label"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> Email:</div>
+                <span id="modalEmail"></span>
+            </div>
+            <div class="info-group">
+                <div class="info-label"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Teléfono:</div>
+                <span id="modalTelefono"></span>
+            </div>
+            <div class="info-group">
+                <div class="info-label"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Fechas:</div>
+                <span id="modalFechas"></span>
+            </div>
+            <div class="info-group">
+                <div class="info-label"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/></svg> Habitación/Plan:</div>
+                <span id="modalHabitacion"></span>
+            </div>
+            <div class="info-group">
+                <div class="info-label"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> Total:</div>
+                <span id="modalTotal"></span>
+            </div>
+            <div class="info-group" style="border-bottom: none;">
+                <div class="info-label"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Estado actual:</div>
+                <span id="modalEstado" class="badge-estado"></span>
+            </div>
+        </div>
+        <footer class="modal-admin-footer">
+            <button type="button" class="btn-cerrar-modal" id="cerrarModalAdminBtn">Cerrar</button>
+            <button type="button" class="btn-rechazar" id="btnRechazarReserva">
+                Rechazar
+            </button>
+            <button type="button" class="btn-aprobar" id="btnAprobarReserva">
+                Aprobar y Enviar Correo
+            </button>
+        </footer>
+    </div>
+<div style="display:none;">{% csrf_token %}</div>
+</div>
+
+<div class="modal-notificacion-overlay" id="modalNotificacion">
+    <div class="modal-notificacion-box">
+        <div class="notif-icon" id="notifIcon">
+        </div>
+        <h3 class="notif-title" id="notifTitle"></h3>
+        <p class="notif-message" id="notifMessage"></p>
+        <button type="button" class="btn-notif-close" id="btnNotifClose">Entendido</button>
+    </div>
+</div>
+
+<script src="{% static 'js/dashboard.js' %}?v=10002"></script>
+<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+</body>
+</html>

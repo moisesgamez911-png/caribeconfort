@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nueva Contraseña | Caribe Confort</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/cambiar_contraseña.css' %}?v=2">
+</head>
+<body>
+
+    <nav class="navbar-auth">
+        <a href="/home">
+            <img src="{% static 'img/imagenes/LCFFINAL.png' %}" alt="Caribe Confort" class="nav-logo">
+        </a>
+        <div class="nav-actions">
+            <button class="btn-lang">ES | EN</button>
+            <button class="btn-user">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </button>
+        </div>
+    </nav>
+
+    <main class="auth-card">
+        
+        <div class="auth-image">
+            <h2>Bienvenido de nuevo<br>a tu descanso</h2>
+            <span></span>
+        </div>
+
+        <div class="auth-form-container">
+            <div class="auth-eyebrow">SEGURIDAD</div>
+            <h1 class="auth-title">Restablecer contraseña</h1>
+            <p class="auth-subtitle">Revisa tu correo electrónico e ingresa el código de verificación.</p>
+
+            {% if error %}
+                <div class="auth-error">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" class="auth-form">
+                {% csrf_token %}
+                
+                {% if not mostrar_passwords %}
+                    <input type="hidden" name="accion" value="verificar">
+                    <div class="input-group">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <input type="text" name="codigo" class="form-control" placeholder="Código de verificación" required>
+                    </div>
+                    <button type="submit" class="btn-submit">Verificar código</button>
+                {% else %}
+                    <input type="hidden" name="accion" value="actualizar">
+                    <div class="input-group">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <input type="password" name="password_nueva" class="form-control" placeholder="Nueva contraseña" required>
+                    </div>
+                    <div class="input-group">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <input type="password" name="password_confirmar" class="form-control" placeholder="Confirmar contraseña" required>
+                    </div>
+                    <button type="submit" class="btn-submit">Actualizar contraseña</button>
+                {% endif %}
+            </form>
+
+            <div class="auth-footer">
+                <a href="/login">Cancelar y volver al login</a>
+            </div>
+        </div>
+
+    </main>
+
+</body>
+</html>

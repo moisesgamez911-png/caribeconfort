@@ -1,0 +1,69 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Servicios pendientes | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
+    <link rel="stylesheet" href="{% static 'css/recepcionista/dashboard.css' %}?v=4">
+</head>
+<body>
+{% include 'inc/admin_header.html' %}
+{% include 'inc/admin_nav.html' %}
+<main class="reception-main">
+    <section class="reception-welcome">
+        <div><p class="reception-eyebrow">CUENTA DE HUÉSPEDES</p><h1>Servicios pendientes</h1><p>Aprueba los servicios y registra el método de pago recibido.</p></div>
+    </section>
+    {% if messages %}
+    <section class="reception-messages" aria-live="polite">
+        {% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}
+    </section>
+    {% endif %}
+    <article class="reception-card">
+        <div class="reception-table-wrap">
+            <table>
+                <thead><tr><th>Huésped</th><th>Reserva</th><th>Servicio</th><th>Cantidad</th><th>Valor</th><th>Registrar pago</th></tr></thead>
+                <tbody>
+                    {% for item in servicios_pendientes %}
+                    <tr>
+                        <td>
+                            <strong>{{ item.reservas.huespedes.nombres }} {{ item.reservas.huespedes.apellidos }}</strong>
+                            <small>{{ item.reservas.huespedes.identificacion }}</small>
+                            <small>Solicitó: {{ item.solicitado_por|default:item.reservas.huespedes.nombres }}</small>
+                            <small>Pago preferido: {{ item.get_metodo_pago_preferido_display|default:"No indicado" }}</small>
+                        </td>
+                        <td>CC-{{ item.reservas_id|stringformat:"04d" }} · Hab. {{ item.reservas.habitaciones.numero|default:"—" }}</td>
+                        <td>{{ item.servicios.nombre }}</td>
+                        <td>{{ item.cantidad }}</td>
+                        <td>${{ item.valor|floatformat:2 }}</td>
+                        <td>
+                            <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="/recepcion/servicios-pendientes">
+                                <input type="hidden" name="accion" value="aprobar">
+                                <select name="metodopago" required aria-label="Método de pago">
+                                    <option value="Efectivo">Efectivo</option>
+                                    <option value="Tarjeta">Tarjeta</option>
+                                    <option value="Transferencia">Transferencia</option>
+                                </select>
+                                <button class="table-action" type="submit">Aprobar pago</button>
+                            </form>
+                            <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar" class="service-reject-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="/recepcion/servicios-pendientes">
+                                <input type="hidden" name="accion" value="rechazar">
+                                <input name="motivo" maxlength="500" required placeholder="Motivo del rechazo" aria-label="Motivo del rechazo">
+                                <button class="table-action service-reject-button" type="submit">Rechazar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}<tr><td class="table-empty" colspan="6">No hay servicios pendientes de pago.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+</main>
+<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+</body>
+</html>

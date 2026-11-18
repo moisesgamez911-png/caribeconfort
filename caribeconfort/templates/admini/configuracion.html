@@ -1,0 +1,93 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Configuración | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
+</head>
+<body>
+{% include 'inc/admin_header.html' %}
+{% include 'inc/admin_nav.html' %}
+
+<main class="ad-main adm-page">
+    <header class="adm-heading">
+        <div>
+            <p class="adm-eyebrow">DATOS GENERALES</p>
+            <h1>Configuración del hotel</h1>
+            <p>Actualiza la información de contacto que identifica al hotel.</p>
+        </div>
+        <div class="adm-heading-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 10h.01M15 10h.01M9 14h.01M15 14h.01M10 21v-4h4v4"/></svg>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="adm-messages" role="status">
+        {% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}
+    </div>
+    {% endif %}
+
+    <section class="adm-card adm-form-card">
+        <div class="adm-card-heading">
+            <div><h2>Información del hotel</h2><p>Los campos marcados son obligatorios.</p></div>
+            <span class="adm-stat-icon gold"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg></span>
+        </div>
+        <form method="post" class="adm-form">
+            {% csrf_token %}
+            <div class="adm-form-grid">
+                <div class="adm-field">
+                    <label for="hotelNombre">Nombre del hotel <span>*</span></label>
+                    <input id="hotelNombre" name="nombre" maxlength="100" value="{{ hotel.nombre|default:'' }}" required>
+                </div>
+                <div class="adm-field">
+                    <label for="hotelMunicipio">Ciudad / municipio <span>*</span></label>
+                    <input id="hotelMunicipio" name="municipio" maxlength="100" value="{{ hotel.municipio|default:'' }}" required>
+                </div>
+                <div class="adm-field adm-span-2">
+                    <label for="hotelDireccion">Dirección <span>*</span></label>
+                    <input id="hotelDireccion" name="direccion" maxlength="100" value="{{ hotel.direccion|default:'' }}" required>
+                </div>
+                <div class="adm-field">
+                    <label for="hotelTelefono">Teléfono <span>*</span></label>
+                    <input id="hotelTelefono" name="telefono" type="tel" maxlength="20" value="{{ hotel.telefono|default:'' }}" required>
+                </div>
+                <div class="adm-field">
+                    <label for="hotelCorreo">Correo electrónico <span>*</span></label>
+                    <input id="hotelCorreo" name="correo" type="email" maxlength="100" value="{{ hotel.correo|default:'' }}" required>
+                </div>
+                <div class="adm-field adm-span-2">
+                    <label for="hotelDescripcion">Descripción</label>
+                    <textarea id="hotelDescripcion" name="descripcion" rows="4">{{ hotel.descripcion|default:'' }}</textarea>
+                </div>
+                <div class="adm-field adm-span-2">
+                    <label for="hotelFotografias">Ruta o referencia de fotografías</label>
+                    <input id="hotelFotografias" name="fotografias" maxlength="255" value="{{ hotel.fotografias|default:'' }}">
+                </div>
+            </div>
+            <div class="adm-form-actions">
+                <a class="adm-button secondary" href="/administrador">Cancelar</a>
+                <button class="adm-button" type="submit">Guardar configuración</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="adm-card adm-form-card">
+        <div class="adm-card-heading">
+            <div><h2>Apariencia del sistema</h2><p>Elige el tema que se usará en el panel de administración.</p></div>
+        </div>
+        <div class="adm-field">
+            <label for="adThemePreference">Tema</label>
+            <select id="adThemePreference">
+                <option value="light">Claro</option>
+                <option value="dark">Oscuro</option>
+            </select>
+        </div>
+    </section>
+</main>
+<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+{% load i18n static %}
+<nav class="home-navigation nav-transparente">
+    <a class="brand-link" href="/home" aria-label="{% trans 'Caribe Confort, inicio' %}">
+        <span class="brand-mark">
+            <img src="{% static 'img/imagenes/LCFFINAL.png' %}" alt="">
+        </span>
+        <span class="brand-copy">
+            <strong>Caribe Confort</strong>
+            <small>Riohacha · Guajira</small>
+        </span>
+    </a>
+
+    <div class="collapse menu-links" id="menuPrincipal">
+        <a class="menu-link{% if request.path == '/home' or request.path == '/' %} active{% endif %}" href="/home">{% trans "Inicio" %}</a>
+        <a class="menu-link{% if request.path == '/reservas' %} active{% endif %}" href="/reservas">{% trans "Habitaciones/Reservar" %}</a>
+        <a class="menu-link{% if request.path == '/galeria' %} active{% endif %}" href="/galeria">{% trans "Galería" %}</a>
+        <a class="menu-link{% if request.path == '/servicios' %} active{% endif %}" href="/servicios">{% trans "Servicios" %}</a>
+        <a class="menu-link{% if request.path == '/planes' %} active{% endif %}" href="/planes">{% trans "Planes" %}</a>
+    </div>
+
+    <div class="nav-actions">
+        {% include "clientes/idioma_switcher.html" %}
+        {% if request.session.usuario_id %}
+            <div class="user-menu-wrap">
+                <button class="user-menu-button" id="btnUser" type="button" aria-label="{% trans 'Abrir menú de usuario' %}" aria-expanded="false" aria-controls="userMenu">
+                    <span class="menu-account-avatar">{{ request.session.usuario_nom|default:"U"|slice:":1"|upper }}</span>
+                    <span class="menu-account-label">{% trans "Mi cuenta" %}</span>
+                </button>
+                <div class="user-dropdown" id="userMenu">
+                    <div class="user-dropdown-head">
+                        <div>
+                            <p class="user-dropdown-name">{{ request.session.usuario_nom|default:"Usuario" }}</p>
+                            <p class="user-dropdown-role">{{ request.session.rol|default:"Cliente" }}</p>
+                        </div>
+                    </div>
+                    <a href="/perfil" class="user-dropdown-link">{% trans "Mi Perfil" %}</a>
+                    <a href="/mis-reservas" class="user-dropdown-link">{% trans "Mis Reservas" %}</a>
+                    <a href="/logout" class="user-dropdown-link">{% trans "Cerrar sesión" %}</a>
+                </div>
+            </div>
+        {% else %}
+            <a href="/login" class="login-link">{% trans "Iniciar sesión" %}</a>
+        {% endif %}
+        <button class="menu-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal" aria-controls="menuPrincipal" aria-expanded="false" aria-label="{% trans 'Abrir menú' %}">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</nav>

@@ -1,0 +1,282 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Inicio"
+msgstr "Home"
+
+msgid "Habitaciones/Reservar"
+msgstr "Rooms / Booking"
+
+msgid "Habitaciones/Reservas"
+msgstr "Rooms / Bookings"
+
+msgid "Habitaciones / Reservar"
+msgstr "Rooms / Booking"
+
+msgid "Galería"
+msgstr "Gallery"
+
+msgid "Servicios"
+msgstr "Services"
+
+msgid "Planes"
+msgstr "Packages"
+
+msgid "Mi Perfil"
+msgstr "My Profile"
+
+msgid "Mis Reservas"
+msgstr "My Bookings"
+
+msgid "Cerrar sesión"
+msgstr "Log out"
+
+msgid "Iniciar sesión"
+msgstr "Log in"
+
+msgid "Cambiar a español"
+msgstr "Switch to Spanish"
+
+msgid "Switch to English"
+msgstr "Switch to English"
+
+msgid "Caribe Colombiano"
+msgstr "The Colombian Caribbean"
+
+msgid "Tu Refugio en Riohacha"
+msgstr "Your Retreat in Riohacha"
+
+msgid "Calidez guajira, descanso frente al mar y atención personalizada para viajes de placer o negocios."
+msgstr "Guajira warmth, seaside relaxation, and personalized service for leisure or business travel."
+
+msgid "Nuestra esencia"
+msgstr "Our essence"
+
+msgid "Hotel Caribe Confort"
+msgstr "Caribe Confort Hotel"
+
+msgid "El Hotel Caribe Confort es un refugio exclusivo en el corazón de Riohacha, diseñado para brindar una experiencia inigualable que combina la calidez de la hospitalidad guajira con un estándar superior de comodidad. Pensado tanto para quienes viajan por placer como por negocios, nuestro establecimiento cuenta con habitaciones modernas y perfectamente equipadas, amplios espacios de descanso y una atención personalizada orientada a cuidar cada detalle de su estancia."
+msgstr "Caribe Confort Hotel is an exclusive retreat in the heart of Riohacha, designed to deliver an exceptional experience that combines the warmth of Guajira hospitality with outstanding comfort. Ideal for leisure and business travelers, our hotel offers modern, well-equipped rooms, inviting spaces to unwind, and personalized service that takes care of every detail of your stay."
+
+msgid "Ubicado estratégicamente cerca de los principales atractivos turísticos y culturales de la región, ofrecemos el equilibrio perfecto entre descanso, gastronomía local y conveniencia, garantizando que cada huésped viva un hospedaje memorable, seguro y revitalizante frente a la belleza del Caribe colombiano."
+msgstr "Conveniently located near the region's main cultural and tourist attractions, we offer the perfect balance of relaxation, local cuisine, and convenience so every guest can enjoy a memorable, safe, and revitalizing stay amid the beauty of the Colombian Caribbean."
+
+msgid "En el Hotel Caribe Confort ofrecemos servicios pensados para su total comodidad, desde recepción las 24 horas y Wi-Fi de alta velocidad, hasta espacios de descanso al aire libre y asesoría turística en Riohacha."
+msgstr "At Caribe Confort Hotel, our services are designed for your comfort, from 24-hour reception and high-speed Wi-Fi to outdoor relaxation areas and local travel advice in Riohacha."
+
+msgid "Te esperamos con las puertas abiertas"
+msgstr "We look forward to welcoming you"
+
+msgid "Experiencias reales"
+msgstr "Real experiences"
+
+msgid "Lo que dicen nuestros huéspedes"
+msgstr "What our guests say"
+
+msgid "128 reseñas verificadas"
+msgstr "128 verified reviews"
+
+msgid "Octubre 2026"
+msgstr "October 2026"
+
+msgid "La vista al mar desde la terraza y la tranquilidad de la piscina superaron nuestras expectativas. El desayuno guajiro estuvo delicioso y todo el equipo fue muy atento."
+msgstr "The sea view from the terrace and the peaceful pool exceeded our expectations. The Guajira breakfast was delicious, and the whole team was very attentive."
+
+msgid "Septiembre 2026"
+msgstr "September 2026"
+
+msgid "Vine por trabajo y terminé quedándome el fin de semana. El Wi-Fi funciona perfecto, la habitación impecable y caminar por el malecón al atardecer es un lujo."
+msgstr "I came for work and ended up staying for the weekend. The Wi-Fi works perfectly, the room was spotless, and walking along the waterfront at sunset was a treat."
+
+msgid "Agosto 2026"
+msgstr "August 2026"
+
+msgid "Nos ayudaron a organizar el tour a Cabo de la Vela sin complicaciones. Al volver, descansar en las cabañas frente a la playa fue lo mejor del viaje en familia."
+msgstr "They helped us arrange a hassle-free tour to Cabo de la Vela. Afterward, relaxing in the beachfront cabins was the highlight of our family trip."
+
+msgid "Riohacha · La Guajira"
+msgstr "Riohacha · La Guajira"
+
+msgid "Hospitalidad guajira, descanso frente al mar y atención personalizada para cada detalle de tu estancia."
+msgstr "Guajira hospitality, seaside relaxation, and personalized attention to every detail of your stay."
+
+msgid "Ubicación y contacto"
+msgstr "Location and contact"
+
+msgid "Horarios"
+msgstr "Hours"
+
+msgid "Explorar"
+msgstr "Explore"
+
+msgid "Todos los derechos reservados"
+msgstr "All rights reserved"
+
+msgid "BIENVENIDO DE NUEVO"
+msgstr "WELCOME BACK"
+
+msgid "Bienvenido de nuevo"
+msgstr "Welcome back"
+
+msgid "a tu descanso"
+msgstr "to your retreat"
+
+msgid "Ingresa tus datos para continuar con tu experiencia en Caribe Confort."
+msgstr "Enter your details to continue your Caribe Confort experience."
+
+msgid "¡Cuenta creada con éxito! Ya puedes iniciar sesión."
+msgstr "Your account has been created. You can now log in."
+
+msgid "Correo electrónico"
+msgstr "Email address"
+
+msgid "Contraseña"
+msgstr "Password"
+
+msgid "Mostrar contraseña"
+msgstr "Show password"
+
+msgid "¿Olvidó su contraseña?"
+msgstr "Forgot your password?"
+
+msgid "¿No está registrado?"
+msgstr "Not registered yet?"
+
+msgid "Regístrese"
+msgstr "Create an account"
+
+msgid "Crear cuenta"
+msgstr "Create an account"
+
+msgid "Tu próximo descanso"
+msgstr "Your next getaway"
+
+msgid "comienza aquí"
+msgstr "starts here"
+
+msgid "BIENVENIDO"
+msgstr "WELCOME"
+
+msgid "Crear una cuenta"
+msgstr "Create an account"
+
+msgid "Completa los datos para empezar a disfrutar de una experiencia única en Caribe Confort."
+msgstr "Enter your details to start enjoying a unique Caribe Confort experience."
+
+msgid "Nombre"
+msgstr "First name"
+
+msgid "Apellido"
+msgstr "Last name"
+
+msgid "Teléfono"
+msgstr "Phone number"
+
+msgid "Tipo de documento"
+msgstr "Document type"
+
+msgid "Cédula de ciudadanía"
+msgstr "National identity card"
+
+msgid "Cédula de extranjería"
+msgstr "Foreigner identity card"
+
+msgid "Tarjeta de identidad"
+msgstr "Identity card"
+
+msgid "Pasaporte"
+msgstr "Passport"
+
+msgid "NIT"
+msgstr "Tax ID"
+
+msgid "Nacionalidad"
+msgstr "Nationality"
+
+msgid "Contraseña (mínimo 6 caracteres)"
+msgstr "Password (at least 6 characters)"
+
+msgid "Confirmar contraseña"
+msgstr "Confirm password"
+
+msgid "Registrarse"
+msgstr "Sign up"
+
+msgid "¿Ya está registrado?"
+msgstr "Already registered?"
+
+msgid "Inicie sesión"
+msgstr "Log in"
+
+msgid "Por favor ingrese el código que ha sido enviado a su correo electrónico"
+msgstr "Please enter the code sent to your email address"
+
+msgid "Ingresar código"
+msgstr "Enter code"
+
+msgid "Confirmar código"
+msgstr "Confirm code"
+
+msgid "Deja tu reseña"
+msgstr "Leave a review"
+
+msgid "Caribe Confort · Riohacha"
+msgstr "Caribe Confort · Riohacha"
+
+msgid "¡Gracias por compartir tu experiencia!"
+msgstr "Thank you for sharing your experience!"
+
+msgid "Tu reseña fue recibida. Esperamos darte la bienvenida nuevamente."
+msgstr "Your review has been received. We hope to welcome you back soon."
+
+msgid "Tu experiencia importa"
+msgstr "Your experience matters"
+
+msgid "Cuéntanos cómo fue tu estancia"
+msgstr "Tell us about your stay"
+
+msgid "Hola %(nombre)s, comparte tu opinión sobre la reserva CC-%(reserva_id)s."
+msgstr "Hello %(nombre)s, share your feedback about booking CC-%(reserva_id)s."
+
+msgid "Califica tu estancia"
+msgstr "Rate your stay"
+
+msgid "1 estrella"
+msgstr "1 star"
+
+msgid "2 estrellas"
+msgstr "2 stars"
+
+msgid "3 estrellas"
+msgstr "3 stars"
+
+msgid "4 estrellas"
+msgstr "4 stars"
+
+msgid "5 estrellas"
+msgstr "5 stars"
+
+msgid "Tu comentario"
+msgstr "Your comment"
+
+msgid "¿Qué fue lo que más disfrutaste?"
+msgstr "What did you enjoy the most?"
+
+msgid "Enviar reseña"
+msgstr "Submit review"
+
+msgid "Selecciona una calificación de 1 a 5 estrellas."
+msgstr "Choose a rating from 1 to 5 stars."
+
+msgid "Escribe un comentario sobre tu estancia."
+msgstr "Write a comment about your stay."
+
+msgid "El comentario no puede superar los 2000 caracteres."
+msgstr "Your comment cannot exceed 2,000 characters."
+
+msgid "¿Cómo estuvo tu estancia en Caribe Confort?"
+msgstr "How was your stay at Caribe Confort?"

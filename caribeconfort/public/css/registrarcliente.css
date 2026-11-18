@@ -1,0 +1,574 @@
+.registro-body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Arial, sans-serif !important;
+    color: var(--ink);
+    background:
+        linear-gradient(180deg, rgba(15, 40, 40, .55), rgba(15, 40, 40, .75)),
+        url("../img/imagenes/foto2.png") center/cover no-repeat fixed;
+    background-attachment: fixed;
+    overflow-x: hidden;
+}
+
+.btn-lang{
+    background: #fff;
+    color: var(--verde-oscuro);
+    border: none;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.registro-navbar {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 5%;
+    min-height: 62px;
+}
+
+.registro-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: #fff;
+}
+
+.registro-logo {
+    width: 110px;
+    height: 110px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,.4));
+}
+
+.registro-brand-title {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: #fff;
+}
+
+.registro-nav-derecha {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.registro-user-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 2px solid rgba(255,255,255,.85);
+    border-radius: 50%;
+    color: #fff;
+    background: transparent;
+    text-decoration: none;
+    transition: background .2s, transform .2s;
+}
+
+.registro-user-icon:hover {
+    background: rgba(255,255,255,.15);
+    transform: translateY(-1px);
+    color: #fff;
+}
+
+.registro-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 4% 20px;
+    min-height: calc(100vh - 62px);       
+}
+
+.registro-card {
+    width: 100%;
+    max-width: 980px;
+    height: auto;
+    max-height: calc(85vh + 20px);
+    display: grid;
+    grid-template-columns: 38% 62%;
+    background: #f7f3ea;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, .45);
+    animation: rg-entrada .55s ease; 
+    margin-top: -24%;
+    margin-bottom: 24%;
+}
+
+.registro-izq {
+    position: relative;
+    background:
+        linear-gradient(180deg, rgba(15, 55, 55, .35), rgba(15, 55, 55, .75)),
+        url("../img/imagenes/FBAR.jpg") center/cover no-repeat;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 26px;
+}
+
+.registro-izq-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(20, 55, 55, .3), rgba(15, 40, 40, .85));
+    pointer-events: none;
+}
+
+.registro-izq-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+
+.registro-izq-linea {
+    display: block;
+    width: 52px;
+    height: 1px;
+    margin: 18px auto;
+    background: #d9c08a;
+    opacity: .8;
+}
+
+.registro-izq-tagline {
+    margin: 0;
+    font-family: 'Segoe UI', Arial, sans-serif !important;
+    font-size: 24px;
+    line-height: 1.25;
+    color: #fff;
+    opacity: .95;
+}
+
+.registro-der {
+    padding: 4% 40px 4% 40px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(45, 77, 77, .35) transparent;
+    min-height: 0;
+}
+
+.registro-der::-webkit-scrollbar { width: 6px; }
+.registro-der::-webkit-scrollbar-thumb {
+    background: rgba(45, 77, 77, .3);
+    border-radius: 3px;
+}
+
+.registro-header { margin-bottom: 12px; }
+
+.registro-eyebrow {
+    display: block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: #bfa36b;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.registro-title {
+    margin: 0 0 4px;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -.5px;
+    color: #1e3e3b;
+    line-height: 1.15;
+}
+
+.registro-sub {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #6b7f80;
+    max-width: 420px;
+}
+
+.registro-errores {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: #fde7e9;
+    border: 1px solid #f5c2c7;
+    color: #8d0b14;
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+.registro-errores svg { flex-shrink: 0; margin-top: 2px; }
+.registro-errores ul { margin: 0; padding-left: 16px; }
+.registro-errores li { margin-bottom: 2px; }
+
+.registro-exito {
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: #e5efeb;
+    color: #1e3e3b;
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.registro-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rg-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.rg-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #dde2df;
+    border-radius: 10px;
+    padding: 0 12px;
+    transition: border-color .2s, box-shadow .2s;
+    min-height: 42px;
+}
+
+.rg-field:focus-within {
+    border-color: #2d4d4d;
+    box-shadow: 0 0 0 3px rgba(45, 77, 77, .12);
+}
+
+.rg-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #a4b2b0;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.rg-icon svg { width: 16px; height: 16px; }
+
+.rg-field input,
+.rg-field select {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    border: 0;
+    outline: none;
+    background: transparent;
+    font: 400 13px "DM Sans", "Segoe UI", sans-serif;
+    color: #2f4d50;
+    padding: 10px 0;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.rg-field input::placeholder { color: #9eadaa; }
+
+.rg-field select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234d6a6c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 14px;
+    padding-right: 30px;
+}
+
+.rg-field-pass input { padding-right: 36px; }
+
+.rg-toggle {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #8fa0a0;
+    cursor: pointer;
+    transition: color .2s, background .2s;
+}
+
+.rg-toggle:hover { color: #2d4d4d; background: rgba(45, 77, 77, .07); }
+.rg-toggle.activo { color: #2d4d4d; }
+.rg-toggle svg { width: 16px; height: 16px; }
+
+.rg-submit {
+    margin-top: 12px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 20px;                   
+    border: 0;
+    border-radius: 10px;
+    background: linear-gradient(160deg, #2d4d4d 0%, #193b3d 100%);
+    color: #fff;
+    font: 700 14px "DM Sans", sans-serif;
+    letter-spacing: .3px;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .25s, background .25s;
+    box-shadow: 0 8px 20px rgba(25, 59, 61, .28);
+}
+
+.rg-submit svg { transition: transform .25s; }
+
+.rg-submit:hover {
+    background: linear-gradient(160deg, #c6a15b 0%, #bfa36b 100%);
+    color: #1e3e3b;
+    transform: translateY(-1px);
+    box-shadow: 0 12px 26px rgba(198, 161, 91, .4);
+}
+
+.rg-submit:hover svg { transform: translateX(4px); }
+.rg-submit:active { transform: translateY(0); }
+.rg-submit:disabled { opacity: .6; cursor: wait; }
+
+.login-registro {
+    margin: 12px 0 0;
+    text-align: center;
+    font-size: 12.5px;                       
+    color: #6b7f80;                           
+    font-family: 'Segoe UI', Arial, sans-serif !important;
+    font-weight: 400;
+    letter-spacing: 0;
+}
+
+.login-registro a {
+    color: #726f4a;                          
+    font-weight: 400;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 1px;
+    transition: color .2s, border-color .2s;
+    font-family: 'Segoe UI', Arial, sans-serif !important;
+}
+
+.login-registro a:hover {
+    color: #bfa36b;
+    border-color: #bfa36b;
+}
+
+.modal-codigo {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: none;                  
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    animation: modal-fade .25s ease;
+}
+
+.modal-codigo-caja {
+    width: 100%;
+    height: 300px;
+    max-width: 520px;
+    padding: 40px 44px 38px;
+    background: rgba(238, 235, 228, 0.96);  
+    border-radius: 10px;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, .35);
+    text-align: center;
+    animation: modal-pop .3s ease;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+    position: relative;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.modal-codigo-cerrar {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    background: transparent;
+    color: #4a4a4a;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background .2s, color .2s;
+}
+
+.modal-codigo-cerrar:hover {
+    background: rgba(0,0,0,.06);
+    color: #000;
+}
+
+.modal-codigo-titulo {
+    margin: 0 0 28px;
+    font-family: 'Segoe UI', Arial, sans-serif !important;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.5;
+    color: #2b2b2b;
+    letter-spacing: .1px;
+}
+
+.modal-codigo-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+}
+
+.modal-codigo-input {
+    width: 100%;
+    max-width: 320px;
+    padding: 14px 22px;
+    border: 0;
+    border-radius: 10px;
+    background: #fbf7ea;                 
+    color: #c7c5c5;
+    font: 400 15px "DM Sans", "Segoe UI", sans-serif;
+    text-align: center;
+    outline: none;
+    transition: box-shadow .2s;
+}
+
+.modal-codigo-input::placeholder {
+    color: #888;
+    font-weight: 400;
+}
+
+.modal-codigo-input:focus {
+    box-shadow: 0 0 0 3px rgba(129, 111, 92, 0.35);
+}
+
+.modal-codigo-error {
+    margin: 0;
+    font-size: 13px;
+    color: #b61d1d;
+    font-weight: 600;
+}
+
+.modal-codigo-btn {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #2b2b2b;
+    font-family: 'Segoe UI', Arial, sans-serif !important;
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    cursor: pointer;
+    transition: color .2s;
+}
+
+.modal-codigo-btn:hover {
+    color: #8d6f2e;
+}
+
+@keyframes modal-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes modal-pop {
+    from { opacity: 0; transform: translateY(12px) scale(.97); }
+    to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modal-codigo,
+    .modal-codigo-caja {
+        animation: none;
+    }
+}
+
+@media (max-width: 520px) {
+    .modal-codigo-caja {
+        padding: 32px 22px 30px;
+    }
+    .modal-codigo-titulo {
+        font-size: 17px;
+    }
+    .modal-codigo-input {
+        padding: 12px 18px;
+        font-size: 14px;
+    }
+}
+
+@keyframes rg-entrada {
+    from { opacity: 0; transform: translateY(14px) scale(.985); }
+    to   { opacity: 1; transform: none; }
+}
+
+@media (max-height: 850px) and (min-width: 901px) {
+    .registro-der { padding: 3% 35px 3% 35px; }
+    .registro-header { margin-bottom: 10px; }
+    .registro-title { font-size: 22px; }
+    .registro-sub { font-size: 11.5px; }
+    .registro-form { gap: 6px; }
+    .rg-row { gap: 6px; }
+    .rg-field { min-height: 38px; }
+    .rg-field input,
+    .rg-field select { padding: 8px 0; font-size: 12.5px; }
+    .rg-submit { padding: 10px 20px; font-size: 13px; margin-top: 10px; }
+    .login-registro { margin-top: 8px; font-size: 12px; }
+}
+
+@media (max-width: 900px) {
+    .registro-card {
+        grid-template-columns: 1fr;
+        max-width: 520px;
+        max-height: none;                   
+    }
+
+    .registro-izq {
+        min-height: 130px;
+        padding: 24px 20px;
+        border-radius: 20px 20px 0 0;
+    }
+    
+    .registro-izq-overlay {
+        border-radius: 20px 20px 0 0;
+    }
+
+    .registro-izq-tagline { font-size: 20px; }
+    .registro-izq-linea { margin: 12px auto; }
+
+    .registro-der { padding: 24px 24px 22px; }
+    .registro-title { font-size: 23px; }
+    .registro-wrap { padding: 12px 5% 20px; min-height: auto; }
+}
+
+@media (max-width: 520px) {
+    .registro-navbar { padding: 12px 5%; min-height: 56px; }
+    .registro-logo { height: 42px; }
+    .registro-brand-title { font-size: 13px; letter-spacing: 2px; }
+
+    .rg-row { grid-template-columns: 1fr; }
+
+    .registro-der { padding: 20px 18px 20px; }
+    .registro-title { font-size: 21px; }
+    .registro-sub { font-size: 12px; }
+
+    .rg-field { min-height: 44px; }
+    .rg-field input,
+    .rg-field select { padding: 11px 0; font-size: 13px; }
+}
+body, body *:not([class*='bi-']) { font-family: 'Segoe UI', Arial, sans-serif !important; }

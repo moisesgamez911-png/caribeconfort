@@ -1,0 +1,83 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tipos de habitación | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
+</head>
+<body>
+{% include 'inc/admin_header.html' %}
+{% include 'inc/admin_nav.html' %}
+<main class="ad-main adm-page">
+    <header class="adm-heading">
+        <div><p class="adm-eyebrow">INVENTARIO DEL HOTEL</p><h1>Tipos de habitación</h1><p>Consulta las capacidades y tarifas base por tipo.</p></div>
+        <button class="adm-button" type="button" id="abrirTipoHabitacion">+ Crear tipo</button>
+    </header>
+    {% if messages %}<div class="adm-messages" role="status">{% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}</div>{% endif %}
+    <section class="adm-card">
+        <div class="adm-card-heading"><div><h2>Tipos registrados</h2><p>{{ tipos_habitacion|length }} tipos de habitación.</p></div></div>
+        <div class="adm-table-wrap">
+            <table class="adm-table">
+                <thead><tr><th>Nombre</th><th>Capacidad</th><th>Tarifa base</th><th>Acciones</th></tr></thead>
+                <tbody>
+                    {% for tipo in tipos_habitacion %}
+                    <tr>
+                        <td><strong>{{ tipo.nombre }}</strong></td>
+                        <td>{{ tipo.capacidad }} huéspedes</td>
+                        <td>${{ tipo.tarifa|floatformat:2 }}</td>
+                        <td><button class="adm-button secondary" type="button" data-open-tipo="editarTipo{{ tipo.id }}">Editar</button></td>
+                    </tr>
+                    {% empty %}<tr><td class="adm-empty" colspan="4">Aún no hay tipos de habitación registrados.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% for tipo in tipos_habitacion %}
+    <dialog class="adm-dialog" id="editarTipo{{ tipo.id }}" aria-labelledby="tituloEditarTipo{{ tipo.id }}">
+        <header class="adm-dialog-heading"><div><p class="adm-eyebrow">INVENTARIO DEL HOTEL</p><h2 id="tituloEditarTipo{{ tipo.id }}">Editar {{ tipo.nombre }}</h2></div><button class="room-modal-close" type="button" data-close-tipo aria-label="Cerrar">&times;</button></header>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="editar">
+            <input type="hidden" name="tipo_id" value="{{ tipo.id }}">
+            <div class="adm-form-grid">
+                <div class="adm-field adm-span-2"><label for="editarTipoNombre{{ tipo.id }}">Nombre</label><input id="editarTipoNombre{{ tipo.id }}" name="nombre" maxlength="100" value="{{ tipo.nombre }}" required></div>
+                <div class="adm-field"><label for="editarTipoCapacidad{{ tipo.id }}">Capacidad</label><input id="editarTipoCapacidad{{ tipo.id }}" name="capacidad" type="number" min="1" max="100" value="{{ tipo.capacidad }}" required></div>
+                <div class="adm-field"><label for="editarTipoTarifa{{ tipo.id }}">Tarifa</label><input id="editarTipoTarifa{{ tipo.id }}" name="tarifa" type="number" min="0.01" step="0.01" value="{{ tipo.tarifa }}" required></div>
+            </div>
+            <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-tipo>Cancelar</button><button class="adm-button" type="submit">Guardar cambios</button></footer>
+        </form>
+    </dialog>
+    {% endfor %}
+</main>
+<dialog class="adm-dialog" id="crearTipoHabitacion" aria-labelledby="tituloTipoHabitacion">
+    <header class="adm-dialog-heading"><div><p class="adm-eyebrow">INVENTARIO DEL HOTEL</p><h2 id="tituloTipoHabitacion">Crear tipo de habitación</h2></div><button class="room-modal-close" type="button" id="cerrarTipoHabitacion" aria-label="Cerrar">&times;</button></header>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="crear">
+        <div class="adm-form-grid">
+            <div class="adm-field adm-span-2"><label for="tipoNombre">Nombre</label><input id="tipoNombre" name="nombre" maxlength="100" required></div>
+            <div class="adm-field"><label for="tipoCapacidad">Capacidad</label><input id="tipoCapacidad" name="capacidad" type="number" min="1" max="100" required></div>
+            <div class="adm-field"><label for="tipoTarifa">Tarifa</label><input id="tipoTarifa" name="tarifa" type="number" min="0.01" step="0.01" required></div>
+        </div>
+        <footer class="adm-form-actions"><button class="adm-button secondary" type="button" id="cancelarTipoHabitacion">Cancelar</button><button class="adm-button" type="submit">Crear tipo</button></footer>
+    </form>
+</dialog>
+<script>
+    const tipoHabitacionDialog = document.getElementById('crearTipoHabitacion');
+    document.getElementById('abrirTipoHabitacion').addEventListener('click', () => tipoHabitacionDialog.showModal());
+    document.getElementById('cerrarTipoHabitacion').addEventListener('click', () => tipoHabitacionDialog.close());
+    document.getElementById('cancelarTipoHabitacion').addEventListener('click', () => tipoHabitacionDialog.close());
+    document.querySelectorAll('[data-open-tipo]').forEach((button) => {
+        button.addEventListener('click', () => document.getElementById(button.dataset.openTipo).showModal());
+    });
+    document.querySelectorAll('[data-close-tipo]').forEach((button) => {
+        button.addEventListener('click', () => button.closest('dialog').close());
+    });
+</script>
+<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+</body>
+</html>

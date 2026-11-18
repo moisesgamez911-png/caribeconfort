@@ -1,0 +1,77 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Servicios | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
+</head>
+<body>
+{% include 'inc/admin_header.html' %}
+{% include 'inc/admin_nav.html' %}
+<main class="ad-main adm-page">
+    <header class="adm-heading">
+        <div><p class="adm-eyebrow">CATÁLOGO DEL HOTEL</p><h1>Servicios</h1><p>Administra los servicios disponibles y sus tarifas.</p></div>
+        <button class="adm-button" type="button" data-open-dialog="crearServicio">+ Nuevo servicio</button>
+    </header>
+    {% if messages %}<div class="adm-messages" role="status">{% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}</div>{% endif %}
+    <section class="adm-card">
+        <div class="adm-card-heading"><div><h2>Servicios registrados</h2><p>{{ servicios|length }} servicios en el catálogo.</p></div></div>
+        <div class="adm-table-wrap">
+            <table class="adm-table">
+                <thead><tr><th>Nombre</th><th>Descripción</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody>
+                    {% for servicio in servicios %}
+                    <tr>
+                        <td><strong>{{ servicio.nombre }}</strong></td>
+                        <td>{{ servicio.descripcion|default:"—" }}</td>
+                        <td>${{ servicio.precio|floatformat:2 }}</td>
+                        <td><span class="adm-pill {% if servicio.estado %}green{% else %}gray{% endif %}">{% if servicio.estado %}Activo{% else %}Inactivo{% endif %}</span></td>
+                        <td><button class="adm-button secondary" type="button" data-open-dialog="editarServicio{{ servicio.id }}">Editar</button></td>
+                    </tr>
+                    <dialog class="adm-dialog" id="editarServicio{{ servicio.id }}" aria-labelledby="tituloEditarServicio{{ servicio.id }}">
+                        <header class="adm-dialog-heading"><div><p class="adm-eyebrow">CATÁLOGO DEL HOTEL</p><h2 id="tituloEditarServicio{{ servicio.id }}">Editar servicio</h2></div><button class="room-modal-close" type="button" data-close-dialog aria-label="Cerrar">&times;</button></header>
+                        <form method="post">
+                            {% csrf_token %}<input type="hidden" name="accion" value="editar"><input type="hidden" name="servicio_id" value="{{ servicio.id }}">
+                            <div class="adm-form-grid">
+                                <div class="adm-field adm-span-2"><label for="servicioNombre{{ servicio.id }}">Nombre</label><input id="servicioNombre{{ servicio.id }}" name="nombre" maxlength="100" value="{{ servicio.nombre }}" required></div>
+                                <div class="adm-field adm-span-2"><label for="servicioDescripcion{{ servicio.id }}">Descripción</label><textarea id="servicioDescripcion{{ servicio.id }}" name="descripcion" maxlength="255" rows="3">{{ servicio.descripcion }}</textarea></div>
+                                <div class="adm-field"><label for="servicioPrecio{{ servicio.id }}">Precio</label><input id="servicioPrecio{{ servicio.id }}" name="precio" type="number" min="0" step="0.01" value="{{ servicio.precio }}" required></div>
+                                <label class="user-active"><input type="checkbox" name="estado" {% if servicio.estado %}checked{% endif %}> Activo</label>
+                            </div>
+                            <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-dialog>Cancelar</button><button class="adm-button" type="submit">Guardar cambios</button></footer>
+                        </form>
+                    </dialog>
+                    {% empty %}<tr><td class="adm-empty" colspan="5">Aún no hay servicios registrados.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+<dialog class="adm-dialog" id="crearServicio" aria-labelledby="tituloCrearServicio">
+    <header class="adm-dialog-heading"><div><p class="adm-eyebrow">CATÁLOGO DEL HOTEL</p><h2 id="tituloCrearServicio">Nuevo servicio</h2></div><button class="room-modal-close" type="button" data-close-dialog aria-label="Cerrar">&times;</button></header>
+    <form method="post">
+        {% csrf_token %}<input type="hidden" name="accion" value="crear">
+        <div class="adm-form-grid">
+            <div class="adm-field adm-span-2"><label for="nuevoServicioNombre">Nombre</label><input id="nuevoServicioNombre" name="nombre" maxlength="100" required></div>
+            <div class="adm-field adm-span-2"><label for="nuevoServicioDescripcion">Descripción</label><textarea id="nuevoServicioDescripcion" name="descripcion" maxlength="255" rows="3"></textarea></div>
+            <div class="adm-field"><label for="nuevoServicioPrecio">Precio</label><input id="nuevoServicioPrecio" name="precio" type="number" min="0" step="0.01" required></div>
+            <label class="user-active"><input type="checkbox" name="estado" checked> Activo</label>
+        </div>
+        <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-dialog>Cancelar</button><button class="adm-button" type="submit">Crear servicio</button></footer>
+    </form>
+</dialog>
+<script>
+    document.querySelectorAll('[data-open-dialog]').forEach((button) => {
+        button.addEventListener('click', () => document.getElementById(button.dataset.openDialog).showModal());
+    });
+    document.querySelectorAll('[data-close-dialog]').forEach((button) => {
+        button.addEventListener('click', () => button.closest('dialog').close());
+    });
+</script>
+<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+</body>
+</html>

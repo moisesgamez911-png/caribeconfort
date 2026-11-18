@@ -1,0 +1,395 @@
+{% load static i18n %}
+{% get_current_language as CURRENT_LANGUAGE %}
+<!DOCTYPE html>
+<html lang="{{ CURRENT_LANGUAGE }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=999">
+    <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/idiomas.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+</head>
+<body class="home-page">
+
+<nav class="client-navigation">
+    <a class="nav-brand" href="/" aria-label="Caribe Confort, inicio">
+        <img src="{% static 'img/imagenes/LCFFINAL.png' %}" alt="Caribe Confort Logo" class="nav-logo-img">
+    </a>
+
+    <div class="nav-links collapse" id="menuPrincipal">
+        <a href="/home">{% trans "Inicio" %}</a>
+        <a href="/reservas">{% trans "Habitaciones/Reservar" %}</a>
+        <a href="/galeria">{% trans "Galería" %}</a>
+        <a href="/servicios">{% trans "Servicios" %}</a>
+        <a href="/planes">{% trans "Planes" %}</a>
+    </div>
+
+    <div class="nav-actions">
+        {% get_current_language as CURRENT_LANGUAGE %}
+        <form class="language-switcher" method="post" action="{% url 'set_language' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button class="language-switcher-button{% if CURRENT_LANGUAGE == 'es' %} is-active{% endif %}" type="submit" name="language" value="es" aria-label="{% trans 'Cambiar a español' %}">ES</button>
+            <span class="language-switcher-separator" aria-hidden="true">|</span>
+            <button class="language-switcher-button{% if CURRENT_LANGUAGE == 'en' %} is-active{% endif %}" type="submit" name="language" value="en" aria-label="{% trans 'Switch to English' %}">EN</button>
+        </form>
+        {% if request.session.usuario_id %}
+            <div class="nav-user-wrap">
+                <button class="nav-user" id="btnUser" type="button" aria-label="Abrir menú de usuario" aria-expanded="false" aria-controls="userMenu">
+                    <span class="menu-account-avatar">{{ request.session.usuario_nom|default:"U"|slice:":1"|upper }}</span>
+                    <span class="menu-account-label">{% trans "Mi cuenta" %}</span>
+                </button>
+                <div class="nav-user-menu" id="userMenu">
+                    <div class="nav-user-head">
+                        <div class="nav-user-info">
+                            <p class="nav-user-name">{{ request.session.usuario_nom|default:"Usuario" }}</p>
+                            <p class="nav-user-rol">{{ request.session.rol|default:"Cliente" }}</p>
+                        </div>
+                    </div>
+                    <a href="/perfil" class="nav-user-logout">{% trans "Mi Perfil" %}</a>
+                    <a href="/mis-reservas" class="nav-user-logout">{% trans "Mis Reservas" %}</a>
+                    <a href="/logout" class="nav-user-logout">{% trans "Cerrar sesión" %}</a>
+                </div>
+            </div>
+        {% else %}
+            <a class="nav-login" href="/login">{% trans "Iniciar sesión" %}</a>
+        {% endif %}
+        <button class="nav-menu-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal" aria-controls="menuPrincipal" aria-expanded="false" aria-label="Abrir menú">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</nav>
+
+
+    <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img class="hero__img" src="{% static 'img/imagenes/foto1.png' %}" alt="Foto 1">
+            </div>
+            <div class="carousel-item">
+                <img class="hero__img" src="{% static 'img/imagenes/foto2.png' %}" alt="Foto 2">
+            </div>
+            <div class="carousel-item">
+                <img class="hero__img" src="{% static 'img/imagenes/foto3.png' %}" alt="Foto 3">
+            </div>
+            <div class="carousel-item">
+                <img class="hero__img" src="{% static 'img/imagenes/foto4.png' %}" alt="Foto 4">
+            </div>
+        </div>
+    </div>
+
+     <form class="barra-reserva" id="formReserva" method="get" action="/reservas" autocomplete="off">
+
+    
+    <div class="reserva-fechas">
+        <div class="reserva-fecha-caja">
+            <button type="button" class="reserva-fecha" id="btnEntrada">
+                <span class="reserva-etiqueta">Entrada</span>
+                <strong>20</strong>
+                <span class="reserva-mes">Marzo/2026</span>
+            </button>
+            <input type="date" id="entrada" name="entrada" value="{{ fecha_entrada|default:'' }}" required>
+        </div>
+
+        <span class="reserva-flecha" aria-hidden="true"></span>
+
+        <div class="reserva-fecha-caja">
+            <button type="button" class="reserva-fecha" id="btnSalida">
+                <span class="reserva-etiqueta">Salida</span>
+                <strong>21</strong>
+                <span class="reserva-mes">Marzo/2026</span>
+            </button>
+            <input type="date" id="salida" name="salida" value="{{ fecha_salida|default:'' }}" required>
+        </div>
+    </div>
+
+   
+    <div class="reserva-bloque reserva-ocupacion-bloque">
+    <span class="reserva-etiqueta">Ocupación</span>
+    <button type="button" class="reserva-ocupacion" id="btnOcupacion"
+            aria-label="Elegir ocupación">
+        <span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="5"/><path d="M2 22c0-5.5 4.5-9 10-9s10 3.5 10 9z"/></svg>
+            <b id="verAdultos">1</b>
+        </span>
+        <span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="8" r="3.5"/><circle cx="17" cy="8" r="3.5"/><path d="M0 21c0-4 3-7 7-7s7 3 7 7zM10 21c0-4 3-7 7-7s7 3 7 7z"/></svg>
+            <b id="verNinos">0</b>
+        </span>
+    </button>
+
+    <input type="hidden" name="adultos" id="inAdultos" value="1">
+    <input type="hidden" name="ninos" id="inNinos" value="0">
+</div>
+
+    
+    <div class="reserva-bloque reserva-promocion-bloque">
+        <label class="reserva-etiqueta reserva-promo-label" for="codigo">Promoción</label>
+        <div class="reserva-codigo-input-group">
+            <input type="text" class="reserva-codigo" name="codigo" id="codigo" placeholder="Código" maxlength="20">
+            <button type="submit" class="reserva-aplicar">Aplicar</button>
+        </div>
+    </div>
+
+    <div class="reserva-bloque">
+        <label class="reserva-etiqueta" for="tipoHabitacion">Tipo de habitación</label>
+        <select class="reserva-tipo" name="tipo" id="tipoHabitacion">
+            <option value="">Todas</option>
+            {% for tipo in tipos %}
+                <option value="{{ tipo.nombre }}">{{ tipo.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <button type="submit" class="reserva-boton">Reservar</button>
+</form>
+
+
+    <div class="carousel-indicators hero__dots">
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-label="Foto 1"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1" aria-label="Foto 2"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2" aria-label="Foto 3"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="3" aria-label="Foto 4"></button>
+    </div>
+
+<div class="containernuevo1 home-content-shell">
+    <div class="row h-100">
+        <div class="col-md-6 containernuevo2 animar-izquierda home-content-column">
+            <h1 class="quienessomos1 fw-normal">
+                El Hotel Caribe Confort es un refugio exclusivo en el corazón de Riohacha, 
+                diseñado para brindar una experiencia inigualable que combina la calidez de la hospitalidad
+                guajira con un estándar superior de comodidad. Pensado tanto para quienes viajan por placer como por 
+                negocios, nuestro establecimiento cuenta con habitaciones modernas y perfectamente equipadas, amplios 
+                espacios de descanso y una atención personalizada orientada a cuidar cada detalle de su estancia.
+                Ubicado estratégicamente cerca de los principales atractivos turísticos y culturales de la región, ofrecemos el equilibrio 
+                perfecto entre descanso, gastronomía local y conveniencia, garantizando que cada huésped viva un hospedaje memorable, seguro y 
+                revitalizante frente a la belleza del Caribe colombiano.
+            </h1>
+        </div>
+        <div class="col-md-6 containernuevo3 animar-derecha"></div>
+    </div>
+        <div class="containernuevo6">
+            <h1 class="quienessomos2 fw-normal">
+                En el Hotel Caribe Confort ofrecemos servicios pensados para su total comodidad,
+                desde recepción las 24 horas y Wi-Fi de alta velocidad, hasta atención de minibar, lavandería y salón de eventos. 
+                Nuestras habitaciones, tanto individuales como múltiples, cuentan con aire acondicionado, 
+                televisión por cable y acabados modernos diseñados para garantizar un descanso 
+                perfecto. Lo invitamos a explorar nuestra galería de imágenes y descubrir la combinación ideal de confort, 
+                elegancia y hospitalidad guajira que le espera en Riohacha.
+            </h1>
+        </div>
+    <div class="tarjetas-servicios">
+        <div class="tarjeta-servicio">
+            <img src="{% static 'img/iconos/wifi.png' %}" alt="Productos" class="">
+            <p>Wi-Fi de Alta<br>Velocidad</p>
+        </div>
+
+        <div class="tarjeta-servicio">
+            <img src="{% static 'img/iconos/aire-acondicionado.png' %}" alt="">
+            <p>Aire<br>Acondicionado</p>
+        </div>
+
+        <div class="tarjeta-servicio">
+             <img src="{% static 'img/iconos/conserje-de-campana.png' %}" alt="Productos" class="">
+            <p><br>Recepción 24/7</p>
+        </div>
+
+        <div class="tarjeta-servicio">
+            <img src="{% static 'img/iconos/estacionamiento.png' %}" alt="Productos" class="">
+            <p>Parqueadero<br>Privado</p>
+        </div>
+         <div class="tarjeta-servicio">
+            <img src="{% static 'img/iconos/piscina.png' %}" alt="Productos" class="">
+            <p>Picina<br>24/7</p>
+        </div>
+    </div>
+        <div class="containernuevo5_1">
+
+    <div class="galeria-encabezado">
+        <h2 class="galeria-titulo">Te esperamos con las billeteras abiertas</h2>
+        <p class="galeria-subtitulo"></p>
+    </div>
+
+    <div class="galeria-track" id="galeriaTrack">
+        <div class="galeria-item">
+            <img src="{% static 'img/imagenes/foto1.png' %}" alt="Foto 1">
+        </div>
+        <div class="galeria-item">
+            <img src="{% static 'img/imagenes/foto2.png' %}" alt="Foto 2">
+        </div>
+        <div class="galeria-item">
+            <img src="{% static 'img/imagenes/foto3.png' %}" alt="Foto 3">
+        </div>
+        <div class="galeria-item">
+            <img src="{% static 'img/imagenes/foto4.png' %}" alt="Foto 4">
+        </div>
+        <div class="galeria-item">
+            <img src="{% static 'img/imagenes/BASO.jpg' %}" alt="Foto 5">
+        </div>
+        <div class="galeria-item">
+            <img src="{% static 'img/imagenes/FBAR.jpg' %}" alt="Foto 6">
+        </div>
+    </div>
+
+    <div class="galeria-controles">
+        <button type="button" class="galeria-btn" id="btnPrev" aria-label="Anterior">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <button type="button" class="galeria-btn" id="btnNext" aria-label="Siguiente">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="galeria-red">
+        <a href="https://instagram.com/" target="_blank" class="galeria-red-btn">
+            @CARIBECONFORT_
+        </a>
+    </div>
+
+</div>
+</div>
+
+<div class="containernuevo7">
+    <footer class="footer-caribe">
+    <div class="footer-contenedor">
+
+    
+        <div class="footer-col footer-col-logo">
+            <div class="footer-redes">
+                <a href="#" aria-label="Instagram">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <rect x="2" y="2" width="20" height="20" rx="5"/>
+                        <circle cx="12" cy="12" r="4"/>
+                        <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+                    </svg>
+                </a>
+                <a href="#" aria-label="Facebook">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M22 12a10 10 0 1 0-11.5 9.9v-7H8v-3h2.5V9.5c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.3c-1.2 0-1.6.8-1.6 1.6V12H16l-.4 3h-2.1v7A10 10 0 0 0 22 12z"/>
+                    </svg>
+                </a>
+            </div>
+            <p class="footer-siguenos">Síganos:</p>
+            <div class="footer-logo">
+                <span class="footer-logo-text">Caribe<br>Confort</span>
+            </div>
+            <p class="footer-idioma">ES &nbsp;|&nbsp; EN</p>
+        </div>
+
+
+        <div class="footer-col">
+            <h4>DATOS DE CONTACTO</h4>
+            <p>Calle 12 # 7-45, Barrio Centro – Riohacha, La Guajira</p>
+            <p><a href="mailto:reservas@caribeconfort.com">reservas@caribeconfort.com</a></p>
+            <p>+57 300 000 0000</p>
+            <p><a href="#">Políticas y manuales de reglamento</a></p>
+        </div>
+
+
+        <div class="footer-col">
+            <h4>POLÍTICAS</h4>
+            <p><a href="#">Política de privacidad</a></p>
+            <p><a href="#">Política de cookies</a></p>
+            <p><a href="#">Mapa del sitio</a></p>
+            <p><a href="#">Configuración de cookies</a></p>
+        </div>
+
+    
+        <div class="footer-col footer-col-marca">
+            <p class="footer-rnt">RNT–187034</p>
+            <div class="footer-marca">
+                <span class="footer-marca-nombre">Caribe</span>
+                <span class="footer-marca-sub">HOTEL &amp; VILLAS</span>
+            </div>
+        </div>
+
+    </div>
+
+
+    <button type="button" class="footer-top" id="btnTop" aria-label="Volver arriba">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 15l-6-6-6 6"/>
+        </svg>
+    </button>
+</footer>
+</div>
+
+
+
+
+
+
+<div class="lightbox" id="lightbox">
+    <button type="button" class="lb-cerrar" id="lbCerrar" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+    </button>
+
+    <button type="button" class="lb-btn lb-prev" id="lbPrev" aria-label="Anterior">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+    </button>
+
+    <img class="lb-img" id="lbImg" src="" alt="">
+
+    <button type="button" class="lb-btn lb-next" id="lbNext" aria-label="Siguiente">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+    </button>
+</div>
+
+
+<div class="modal-ocupacion" id="modalOcupacion">
+    <div class="modal-ocupacion-caja">
+        <button type="button" class="modal-ocupacion-cerrar" id="cerrarOcupacion" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+        </button>
+
+        <h3 class="modal-ocupacion-titulo">Ocupación</h3>
+
+        <div class="modal-ocupacion-fila">
+            <span>Adultos</span>
+            <div class="reserva-contador">
+                <button type="button" data-contador="adultos" data-paso="-1" aria-label="Quitar un adulto">−</button>
+                <output id="cantAdultos">1</output>
+                <button type="button" data-contador="adultos" data-paso="1" aria-label="Agregar un adulto">+</button>
+            </div>
+        </div>
+
+        <div class="modal-ocupacion-fila">
+            <span>Niños</span>
+            <div class="reserva-contador">
+                <button type="button" data-contador="ninos" data-paso="-1" aria-label="Quitar un niño">−</button>
+                <output id="cantNinos">0</output>
+                <button type="button" data-contador="ninos" data-paso="1" aria-label="Agregar un niño">+</button>
+            </div>
+        </div>
+
+        <button type="button" class="modal-ocupacion-aplicar" id="aplicarOcupacion">Aplicar</button>
+    </div>
+</div>
+
+<script src="{% static 'js/bootstrap.bundle.js' %}"></script>
+<script src="{% static 'js/caribe.js' %}"></script>
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,277 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil | Caribe Confort</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/perfil.css' %}?v=6">
+</head>
+<body>
+
+    <main class="page-container">
+
+        <header class="page-heading">
+            <div class="heading-left">
+                <div class="heading-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+                <div class="heading-text">
+                    <h1>Mi Perfil</h1>
+                    <p>Consulta y gestiona la información de tu cuenta.</p>
+                </div>
+            </div>
+            <a href="/home" class="back-button" style="text-decoration: none;">
+                <span">Volver al inicio</span>
+            </a>
+        </header>
+
+        {% if messages %}
+        <div style="margin-bottom: 20px;">
+            {% for message in messages %}
+                <div style="padding: 12px; border-radius: 8px; margin-bottom: 8px; font-weight: bold; font-size: 13px; 
+                    {% if message.tags == 'error' %} background: #fff5f5; color: #c53030; border: 1px solid #fed7d7;
+                    {% else %} background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; {% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <section class="profile-layout">
+            <aside class="profile-card">
+                <div class="profile-cover">
+                    <div class="avatar">{{ usuario.nombre|slice:":1"|upper }}{{ usuario.apellido|slice:":1"|upper }}</div>
+                    <h2 id="profileFullName">{{ usuario.nombre }} {{ usuario.apellido }}</h2>
+                    <span class="status-badge">
+                        <span class="status-dot"></span>
+                        Cliente activo
+                    </span>
+                </div>
+
+                <div class="profile-contact">
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                        </div>
+                        <div class="contact-text">
+                            <span>Correo electrónico</span>
+                            <p id="profileEmail">{{ usuario.correo }}</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        </div>
+                        <div class="contact-text">
+                            <span>Documento de identidad</span>
+                            <p id="profileDocument">{{ huesped.tipodocumento }} {{ huesped.identificacion }}</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
+                        </div>
+                        <div class="contact-text">
+                            <span>Nacionalidad</span>
+                            <p id="profileNationality">{{ huesped.nacionalidad }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="frequent-client">
+                    <div class="frequent-logo">
+                        <svg viewBox="0 0 48 48" fill="none"><path d="M5 24C13 12 22 13 30 21C35 26 40 26 44 20C41 32 32 35 23 28C16 23 11 21 5 24Z" fill="#249B79"/><path d="M5 30C13 24 20 25 27 30C32 34 38 33 42 29C37 39 28 40 20 35C14 31 10 29 5 30Z" fill="#43B997"/><path d="M25 40C27 37 29 36 32 36C31 40 28 42 25 40Z" fill="#249B79"/></svg>
+                    </div>
+                    <div>
+                        <strong>Cliente frecuente</strong>
+                        <p>Ha realizado <span id="frequentReservations">{{ total_reservas }}</span> reservas en el hotel.</p>
+                    </div>
+                </div>
+            </aside>
+
+            <section class="details-card">
+                <nav class="tabs" aria-label="Información del cliente">
+                    <button type="button" class="tab active" data-tab="general">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span>Información general</span>
+                    </button>
+                    <button type="button" class="tab" data-tab="reservations">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                        <span>Historial de reservas</span>
+                    </button>
+                    <button type="button" class="tab" data-tab="notes">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <span>Seguridad</span>
+                    </button>
+                </nav>
+
+                <div class="tab-panel active" id="panel-general">
+                    <form id="customerForm" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="datos">
+                        
+                        <div class="section-heading">
+                            <h3>Datos personales</h3>
+                            <button type="button" class="edit-button" id="editButton">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                <span>Editar</span>
+                            </button>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="firstName">Nombres</label>
+                                <input id="firstName" name="nombres" value="{{ usuario.nombre }}" readonly>
+                            </div>
+                            <div class="field">
+                                <label for="lastName">Apellidos</label>
+                                <input id="lastName" name="apellidos" value="{{ usuario.apellido }}" readonly>
+                            </div>
+                            <div class="field">
+                                <label for="email">Correo electrónico</label>
+                                <input id="email" name="correo" type="email" value="{{ usuario.correo }}" readonly>
+                            </div>
+                            <div class="field">
+                                <label for="document">Documento de identidad</label>
+                                <input id="document" value="{{ huesped.tipodocumento }} {{ huesped.identificacion }}" readonly disabled>
+                            </div>
+                            <div class="field full-width">
+                                <label for="nationality">Nacionalidad</label>
+                                <input id="nationality" value="{{ huesped.nacionalidad }}" readonly disabled>
+                            </div>
+                        </div>
+
+                        <div class="section-divider"></div>
+
+                        <div class="section-heading additional-heading">
+                            <h3>Información adicional</h3>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="phone">Teléfono</label>
+                                <input id="phone" name="telefono" type="tel" value="{{ huesped.telefono }}" readonly>
+                            </div>
+                            <div class="field">
+                                <label for="address">Dirección</label>
+                                <input id="address" name="direccion" value="{{ huesped.direccion }}" readonly>
+                            </div>
+                        </div>
+
+                        <div class="form-actions" id="formActions">
+                            <button type="button" class="cancel-button" id="cancelButton">Cancelar</button>
+                            <button type="submit" class="save-button">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                Guardar cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="tab-panel" id="panel-reservations">
+                    <div class="section-heading">
+                        <h3>Historial de reservas</h3>
+                        <span class="reservation-count">{{ total_reservas }} reservas</span>
+                    </div>
+                    <div class="reservation-list">
+                        {% for r in reservas %}
+                        <article class="reservation-item">
+                            <div class="reservation-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            </div>
+                            <div class="reservation-info">
+                                <strong>Reserva #CC-{{ r.id|stringformat:"04d" }}</strong>
+                                <p>{{ r.fechasolicitud|date:"d M Y" }} · {% if r.habitaciones %}Hab. {{ r.habitaciones.numero }}{% else %}Plan{% endif %}</p>
+                            </div>
+                            <span class="reservation-status" style="{% if r.estado == 'Cancelada' %}background:#ffe4e6; color:#be123c;{% endif %}">{{ r.estado }}</span>
+                        </article>
+                        {% empty %}
+                        <p style="font-size: 13px; color: #718587;">No tienes reservas registradas.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="tab-panel" id="panel-notes">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="password">
+                        <div class="section-heading">
+                            <h3>Cambiar contraseña</h3>
+                        </div>
+                        <div class="form-grid">
+                            <div class="field full-width">
+                                <label>Contraseña actual</label>
+                                <input type="password" name="password_actual" required>
+                            </div>
+                            <div class="field">
+                                <label>Nueva contraseña</label>
+                                <input type="password" name="password_nueva" required>
+                            </div>
+                            <div class="field">
+                                <label>Confirmar contraseña</label>
+                                <input type="password" name="password_confirmar" required>
+                            </div>
+                        </div>
+                        <div class="form-actions visible" style="margin-top: 20px;">
+                            <button type="submit" class="save-button">Actualizar contraseña</button>
+                        </div>
+                    </form>
+                </div>
+
+            </section>
+
+            <aside class="right-column">
+                <section class="summary-card">
+                    <h3 class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Resumen del cliente
+                    </h3>
+                    <div class="summary-row">
+                        <div class="summary-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        </div>
+                        <span class="summary-label">Estado</span>
+                        <span class="summary-value"><span class="summary-status">Activo</span></span>
+                    </div>
+                    <div class="summary-row">
+                        <div class="summary-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                        </div>
+                        <span class="summary-label">Total de reservas</span>
+                        <strong class="summary-value">{{ total_reservas }}</strong>
+                    </div>
+                    <div class="summary-row">
+                        <div class="summary-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </div>
+                        <span class="summary-label">Última reserva</span>
+                        <strong class="summary-value">{{ fecha_ultima }}</strong>
+                    </div>
+                </section>
+
+                <section class="quick-actions-card">
+                    <h3 class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        Acciones rápidas
+                    </h3>
+                    <a href="/reservas" class="action-button primary-action" style="text-decoration: none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="19" y1="16" x2="19" y2="22"/><line x1="16" y1="19" x2="22" y2="19"/></svg>
+                        <span>Nueva reserva</span>
+                    </a>
+                    <a href="/mis-reservas" class="action-button">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6M2 18h20"/></svg>
+                        <span>Ver historial completo</span>
+                    </a>
+                </section>
+            </aside>
+
+        </section>
+    </main>
+</body>
+
+<script src="{% static 'js/perfil.js' %}?v=5" defer></script>
+
+</html>

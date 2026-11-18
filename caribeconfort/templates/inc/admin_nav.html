@@ -1,0 +1,59 @@
+{% load static %}
+<nav class="ad-rail" id="adRail" aria-label="Menú de administración">
+    <button class="ad-item ad-toggle" type="button" id="adToggle" aria-expanded="false" data-tip="Menú">
+        <span class="ad-ico"><img src="{% static 'img/iconos/capas.png' %}" alt=""></span>
+        <span class="ad-txt">Menú</span>
+    </button>
+    <a class="ad-item {% if request.path == '/administrador' or request.path == '/recepcion' %}activo{% endif %}" href="{% if rol == 'Recepcionista' %}/recepcion{% else %}/administrador{% endif %}" data-tip="Panel" {% if request.path == '/administrador' or request.path == '/recepcion' %}aria-current="page"{% endif %}>
+        <span class="ad-ico"><img src="{% static 'img/iconos/grafico-pastel-alt.png' %}" alt=""></span><span class="ad-txt">Panel</span>
+    </a>
+    <a class="ad-item {% if request.path == '/adminreserva' %}activo{% endif %}" href="/adminreserva" data-tip="Reservas" {% if request.path == '/adminreserva' %}aria-current="page"{% endif %}>
+        <span class="ad-ico"><img src="{% static 'img/iconos/mesa-de-reserva.png' %}" alt="">{% if notificaciones_pendientes %}<span class="ad-notificacion ad-notificacion-count">{{ notificaciones_pendientes }}</span>{% endif %}</span><span class="ad-txt">Reservas</span>
+    </a>
+    {% if rol == 'Recepcionista' %}
+    <a class="ad-item {% if request.path == '/recepcion/servicios-pendientes' %}activo{% endif %}" href="/recepcion/servicios-pendientes" data-tip="Servicios pendientes">
+        <span class="ad-ico"><img src="{% static 'img/iconos/servicio-de-habitaciones.png' %}" alt="">{% if notificaciones_servicios %}<span class="ad-notificacion ad-notificacion-count">{{ notificaciones_servicios }}</span>{% endif %}</span><span class="ad-txt">Servicios pendientes</span>
+    </a>
+    {% endif %}
+    {% if rol != 'Recepcionista' %}
+    <a class="ad-item {% if request.path == '/adminhabitaciones' %}activo{% endif %}" href="/adminhabitaciones" data-tip="Habitaciones" {% if request.path == '/adminhabitaciones' %}aria-current="page"{% endif %}>
+        <span class="ad-ico"><img src="{% static 'img/iconos/litera.png' %}" alt=""></span><span class="ad-txt">Habitaciones</span>
+    </a>
+    <a class="ad-item {% if request.path == '/admintiposhabitacion' %}activo{% endif %}" data-secondary-menu="true" href="/admintiposhabitacion" data-tip="Tipos de habitación" {% if request.path == '/admintiposhabitacion' %}aria-current="page"{% endif %}>
+        <span class="ad-ico"><img src="{% static 'img/iconos/cama-alternativa.png' %}" alt=""></span><span class="ad-txt">Tipos de habitación</span>
+    </a>
+    <a class="ad-item {% if request.path == '/adminservicios' %}activo{% endif %}" href="/adminservicios" data-tip="Servicios" {% if request.path == '/adminservicios' %}aria-current="page"{% endif %}>
+        <span class="ad-ico"><img src="{% static 'img/iconos/servicio-de-habitaciones.png' %}" alt="">{% if notificaciones_servicios %}<span class="ad-notificacion ad-notificacion-count">{{ notificaciones_servicios }}</span>{% endif %}</span><span class="ad-txt">Servicios</span>
+    </a>
+    <a class="ad-item {% if request.path == '/adminpagos' %}activo{% endif %}" href="/adminpagos" data-tip="Pagos" {% if request.path == '/adminpagos' %}aria-current="page"{% endif %}>
+        <span class="ad-ico"><img src="{% static 'img/iconos/tarjeta-de-credito.png' %}" alt=""></span><span class="ad-txt">Pagos</span>
+    </a>
+    <a class="ad-item {% if request.path == '/adminhuespedes' or request.path == '/adminhuéspedes' %}activo{% endif %}" data-secondary-menu="true" href="/adminhuespedes" data-tip="Huéspedes" {% if request.path == '/adminhuespedes' or request.path == '/adminhuéspedes' %}aria-current="page"{% endif %}>
+        <span class="ad-ico"><img src="{% static 'img/iconos/usuarios.png' %}" alt=""></span><span class="ad-txt">Huéspedes</span>
+    </a>
+    <a class="ad-item {% if request.path == '/adminreportes' %}activo{% endif %}" data-secondary-menu="true" href="/adminreportes" data-tip="Reportes" {% if request.path == '/adminreportes' %}aria-current="page"{% endif %}>
+        <span class="ad-ico"><img src="{% static 'img/iconos/analisis-de-macrodatos.png' %}" alt=""></span><span class="ad-txt">Reportes</span>
+    </a>
+    <a class="ad-item {% if request.path == '/adminconvenios' %}activo{% endif %}" data-secondary-menu="true" href="/adminconvenios" data-tip="Convenios" {% if request.path == '/adminconvenios' %}aria-current="page"{% endif %}>
+        <span class="ad-ico"><img src="{% static 'img/iconos/codigo-de-mensaje.png' %}" alt=""></span><span class="ad-txt">Convenios</span>
+    </a>
+    <a class="ad-item {% if request.path == '/adminreglas-descuento' %}activo{% endif %}" data-secondary-menu="true" href="/adminreglas-descuento" data-tip="Descuentos por estancia" {% if request.path == '/adminreglas-descuento' %}aria-current="page"{% endif %}>
+        <span class="ad-ico"><img src="{% static 'img/iconos/codigo-de-mensaje.png' %}" alt=""></span><span class="ad-txt">Descuentos por estancia</span>
+    </a>
+    <a class="ad-item {% if request.path == '/admingaleria' %}activo{% endif %}" data-secondary-menu="true" href="/admingaleria" data-tip="Galería" {% if request.path == '/admingaleria' %}aria-current="page"{% endif %}>
+        <span class="ad-ico"><img src="{% static 'img/iconos/diseno-fluido.png' %}" alt=""></span><span class="ad-txt">Galería</span>
+    </a>
+    <a class="ad-item {% if request.path == '/adminusuarios' %}activo{% endif %}" data-secondary-menu="true" href="/adminusuarios" data-tip="Usuarios" {% if request.path == '/adminusuarios' %}aria-current="page"{% endif %}>
+        <span class="ad-ico"><img src="{% static 'img/iconos/circulo-de-usuario.png' %}" alt=""></span><span class="ad-txt">Usuarios</span>
+    </a>
+    <a class="ad-item ad-ajustes {% if request.path == '/adminconfiguracion' %}activo{% endif %}" data-secondary-menu="true" href="/adminconfiguracion" data-tip="Configuración" {% if request.path == '/adminconfiguracion' %}aria-current="page"{% endif %}>
+        <span class="ad-ico"><img src="{% static 'img/iconos/ajustes.png' %}" alt=""></span><span class="ad-txt">Configuración</span>
+    </a>
+    {% endif %}
+    {% if rol != 'Recepcionista' %}
+    <button class="ad-item ad-compact-toggle" type="button" id="adCompactToggle" aria-expanded="true" data-tip="Mostrar menos opciones">
+        <span class="ad-ico"><img src="{% static 'img/iconos/capas.png' %}" alt=""></span>
+        <span class="ad-txt">Mostrar menos opciones</span>
+    </button>
+    {% endif %}
+</nav>

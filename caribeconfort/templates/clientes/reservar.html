@@ -1,0 +1,309 @@
+{% load static i18n %}
+{% get_current_language as CURRENT_LANGUAGE %}
+<!DOCTYPE html>
+<html lang="{{ CURRENT_LANGUAGE }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Habitaciones y reservas" %} | Caribe Confort</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/reservar.css' %}?v=105">
+    <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/idiomas.css' %}">
+</head>
+<body class="reservas-page">
+
+<header class="hero">
+    {% include 'inc/usuariomenu.html' %}
+</header>
+
+<main class="contenedor-reservas">
+    {% if codigo_error %}
+    <div class="codigo-aplicado codigo-error" role="alert">{{ codigo_error }}</div>
+    {% elif codigo %}
+    <div class="codigo-aplicado">
+        {% trans "Código" %} {{ codigo }} {% trans "aplicado:" %} <strong>{{ descuento_convenio|floatformat:"0" }}% {% trans "de descuento" %}</strong>
+    </div>
+    {% endif %}
+
+    <form class="search-panel" id="bookingForm">
+        <div class="field">
+            <label for="entrada">{% trans "Llegada" %}</label>
+            <input type="date" id="entrada" name="entrada" value="{{ fecha_entrada|default:'' }}" min="{% now 'Y-m-d' %}" required>
+        </div>
+        <div class="field">
+            <label for="salida">{% trans "Salida" %}</label>
+            <input type="date" id="salida" name="salida" value="{{ fecha_salida|default:'' }}" min="{% now 'Y-m-d' %}" required>
+        </div>
+        <div class="field">
+            <label for="adultos">{% trans "Huéspedes" %}</label>
+            <div class="guest-selects">
+                <select id="adultos" name="adultos" aria-label="Cantidad de adultos">
+                    <option value="1" {% if adultos == '1' %}selected{% endif %}>1 {% trans "adulto" %}</option>
+                    <option value="2" {% if adultos == '2' %}selected{% endif %}>2 {% trans "adultos" %}</option>
+                    <option value="3" {% if adultos == '3' %}selected{% endif %}>3 {% trans "adultos" %}</option>
+                    <option value="4" {% if adultos == '4' %}selected{% endif %}>4 {% trans "adultos" %}</option>
+                </select>
+                 <select id="ninos" name="ninos" aria-label="Cantidad de niños">
+                    <option value="0" {% if ninos == '0' %}selected{% endif %}>0 {% trans "niños" %}</option>
+                    <option value="1" {% if ninos == '1' %}selected{% endif %}>1 {% trans "niño" %}</option>
+                    <option value="2" {% if ninos == '2' %}selected{% endif %}>2 {% trans "niños" %}</option>
+                </select>
+            </div>
+        </div>
+        <div class="field field-codigo">
+            <label for="codigoConvenio">{% trans "Convenio" %}</label>
+            <div class="codigo-input-group">
+                 <input type="text" id="codigoConvenio" name="codigo" value="{{ codigo }}"
+                        data-descuento="{{ descuento_convenio|default:'0' }}" maxlength="20"
+                        placeholder="{% trans 'Código' %}">
+                 <button type="button" id="btnAplicarCodigo">{% trans "Aplicar" %}</button>
+            </div>
+        </div>
+        <div class="field">
+           <label for="tipoHabitacion">{% trans "Tipo de habitación" %}</label>
+            <select id="tipoHabitacion" name="tipo">
+                <option value="" {% if not tipo %}selected{% endif %}>{% trans "Todas" %}</option>
+                {% for t in tipos %}
+                    <option value="{{ t.nombre }}" {% if tipo == t.nombre %}selected{% endif %}>{{ t.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% if not request.session.usuario_id %}
+        <div class="field search-submit">
+            <a href="/login" class="reserva-boton">{% trans "Reservar" %}</a>
+        </div>
+        {% else %}
+        <div class="field search-submit">
+            <button class="reserva-boton" type="button" id="btnReservarGlobal">{% trans "Reservar" %}</button>
+        </div>
+         {% endif %}
+    </form>
+
+    <a class="back-home" href="/home">‹ {% trans "Volver al inicio" %}</a>
+    <div id="mensajeReserva" class="notice"></div>
+
+    <section id="habitaciones">
+        <div class="section-head">
+            <div>
+                <p class="section-eyebrow">{% trans "Descanso frente al Caribe" %}</p>
+                <h1>{% trans "Nuestras habitaciones" %}</h1>
+            </div>
+            <span class="section-note">{% trans "Comodidad, naturaleza y el mejor servicio" %}</span>
+        </div>
+
+        <div class="rooms-wrap">
+            <div class="rooms" id="rooms">
+                {% for t in tipos %}
+                    {% cycle 'BASO.jpg' 'pexels-bertellifotografia-9056663.jpg' as habitacion_imagen silent %}
+                    {% cycle 'pexels-bertellifotografia-12513475.jpg' 'pexels-muhammedtarikkahraman-17395984.jpg' as habitacion_foto_uno silent %}
+                    {% cycle 'pexels-manuel-aldana-321951004-13893887.jpg' 'pexels-quang-nguyen-vinh-222549-14025904.jpg' as habitacion_foto_dos silent %}
+                    {% cycle 'pexels-quang-nguyen-vinh-222549-14025907.jpg' 'pexels-rebornfilmes-27638193.jpg' as habitacion_foto_tres silent %}
+                    {% cycle 'pexels-muhammedtarikkahraman-17395984.jpg' 'pexels-bertellifotografia-9056663.jpg' as habitacion_foto_cuatro silent %}
+                    <article class="room-card" data-tipo="{{ t.nombre }}">
+                        <div class="room-card-head">
+                            <div class="room-heading">
+                                <p class="room-kicker">{% trans "Caribe Confort · Riohacha" %}</p>
+                                <h2>{% trans "Habitación" %} {{ t.nombre }}</h2>
+                                <div class="room-availability">
+                                    {% if t.cant_disponibles <= 0 %}
+                                        <span class="tag tag-agotado">{% trans "Agotado" %}</span>
+                                    {% elif t.cant_disponibles <= 3 %}
+                                        <span class="tag tag-pocos"><span class="tag-dot"></span> {% trans "Últimas" %} {{ t.cant_disponibles }}</span>
+                                    {% else %}
+                                        <span class="tag">{{ t.cant_disponibles }} {% trans "disponibles" %}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="room-top-actions">
+                                <div class="price">
+                                    <strong>${{ t.tarifa|floatformat:"0g" }}</strong>
+                                    <em>{% trans "por noche" %}</em>
+                                </div>
+                                {% if t.cant_disponibles > 0 %}
+                                    <button class="reserve btn-anadir" type="button" data-nombre="{{ t.nombre }}" data-precio="{{ t.tarifa }}" data-ids="{{ t.ids_disponibles|join:',' }}">{% trans "Añadir" %}</button>
+                                {% else %}
+                                    <button class="reserve" type="button" disabled>{% trans "Agotado" %}</button>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="room-gallery">
+                            <figure class="room-gallery-main">
+                                <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
+                                    {% if t.imagen %}
+                                        <img src="{% static 'img/imagenes/' %}{{ t.imagen }}" alt="{% trans 'Habitación' %} {{ t.nombre }}" loading="lazy">
+                                    {% else %}
+                                        <img src="{% static 'img/imagenes/' %}{{ habitacion_imagen }}" alt="{% trans 'Habitación' %} {{ t.nombre }}" loading="lazy">
+                                    {% endif %}
+                                </button>
+                            </figure>
+                            <figure class="room-gallery-photo">
+                                <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
+                                    <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_uno }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy">
+                                </button>
+                            </figure>
+                            <figure class="room-gallery-photo">
+                                <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
+                                    <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_dos }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy">
+                                </button>
+                            </figure>
+                            <figure class="room-gallery-photo">
+                                <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
+                                    <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_tres }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy">
+                                </button>
+                            </figure>
+                            <figure class="room-gallery-photo room-gallery-last">
+                                <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
+                                    <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_cuatro }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy">
+                                </button>
+                                <button class="room-gallery-more" type="button" data-gallery-open aria-haspopup="dialog">{% trans "Ver todas las fotos" %}</button>
+                            </figure>
+                        </div>
+
+                        <div class="room-tabs" role="tablist" aria-label="{% trans 'Información de la habitación' %}">
+                            <button id="tab-description-{{ t.pk }}" class="room-tab-active" type="button" role="tab" aria-selected="true" aria-controls="panel-description-{{ t.pk }}" tabindex="0" data-room-tab="description">{% trans "Descripción" %}</button>
+                            <button id="tab-reviews-{{ t.pk }}" type="button" role="tab" aria-selected="false" aria-controls="panel-reviews-{{ t.pk }}" tabindex="-1" data-room-tab="reviews">{% trans "Reseñas" %} <span class="room-tab-count">({{ t.total_resenas }})</span></button>
+                        </div>
+
+                        <section class="room-tab-panel" id="panel-description-{{ t.pk }}" role="tabpanel" aria-labelledby="tab-description-{{ t.pk }}" data-room-panel="description">
+                            <div class="room-details">
+                                <div class="room-description">
+                                    <p class="desc">{{ t.descripcion }}</p>
+                                    <div class="amenities">
+                                        {% if t.tipo_cama %}
+                                            <span class="amenity">{{ t.tipo_cama }}</span>
+                                        {% endif %}
+                                        <span class="amenity">{{ t.capacidad }} {% trans "huéspedes" %}</span>
+                                        {% if t.wifi %}
+                                            <span class="amenity">{% trans "Wi-Fi gratis" %}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                {% if t.precio_desayuno > 0 %}
+                                    <div class="breakfast-option">
+                                        <label>
+                                            <input type="checkbox" class="breakfast-check" data-precio="{{ t.precio_desayuno }}">
+                                            <span>{% trans "Agregar desayuno" %} (+ ${{ t.precio_desayuno|floatformat:"0g" }})</span>
+                                        </label>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </section>
+
+                        <section class="room-tab-panel room-reviews-panel" id="panel-reviews-{{ t.pk }}" role="tabpanel" aria-labelledby="tab-reviews-{{ t.pk }}" data-room-panel="reviews" hidden>
+                            {% if t.total_resenas %}
+                                <div class="room-review-summary">
+                                    <strong>{{ t.promedio_resenas|floatformat:1 }} <span aria-hidden="true">★</span></strong>
+                                    <span>{{ t.total_resenas }} {% trans "reseñas de huéspedes" %}</span>
+                                </div>
+                                <div class="room-reviews-list">
+                                    {% for resena in t.resenas %}
+                                        <article class="room-review">
+                                            <div class="room-review-header">
+                                                <strong>{{ resena.reserva.huespedes.nombres }} {{ resena.reserva.huespedes.apellidos|slice:":1"|upper }}.</strong>
+                                                <time datetime="{{ resena.fecha|date:'c' }}">{{ resena.fecha|date:"d/m/Y" }}</time>
+                                            </div>
+                                            <div class="room-review-stars" role="img" aria-label="{{ resena.calificacion_habitacion }} {% trans 'de 5 estrellas' %}">
+                                                {% for estrella in "12345" %}
+                                                    <span class="{% if forloop.counter <= resena.calificacion_habitacion %}star-filled{% else %}star-empty{% endif %}" aria-hidden="true">★</span>
+                                                {% endfor %}
+                                            </div>
+                                            <p>{{ resena.comentario }}</p>
+                                        </article>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="room-reviews-empty">{% trans "Aún no hay reseñas para esta habitación." %}</p>
+                            {% endif %}
+                        </section>
+                    </article>
+                {% empty %}
+                    <p class="empty-rooms">{% trans "No hay habitaciones disponibles." %}</p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+</main>
+<div class="room-gallery-modal" id="roomGalleryModal" role="dialog" aria-modal="true" aria-labelledby="roomGalleryTitle" aria-hidden="true" hidden>
+    <div class="room-gallery-dialog">
+        <div class="room-gallery-dialog-header">
+            <h2 id="roomGalleryTitle"></h2>
+            <button type="button" class="room-gallery-close" id="btnCerrarGaleria" aria-label="{% trans 'Cerrar galería' %}">×</button>
+        </div>
+        <div class="room-gallery-modal-grid" id="roomGalleryImages"></div>
+        <div class="room-gallery-navigation" id="roomGalleryNavigation">
+            <button type="button" class="room-gallery-nav" id="roomGalleryPrev" aria-label="{% trans 'Foto anterior' %}">‹</button>
+            <span class="room-gallery-position" id="roomGalleryPosition" aria-live="polite"></span>
+            <button type="button" class="room-gallery-nav" id="roomGalleryNext" aria-label="{% trans 'Foto siguiente' %}">›</button>
+        </div>
+    </div>
+</div>
+<footer class="booking-footer" id="servicios">
+    © 2026 Hotel Caribe Confort · Av. La Marina #14-28, Riohacha, La Guajira · reservas@caribeconfort.com
+</footer>
+
+<script src="{% static 'js/bootstrap.bundle.js' %}"></script>
+<script src="{% static 'js/feedback.js' %}?v=1"></script>
+<script src="{% static 'js/reservas.js' %}?v=33"></script>
+
+<div class="modal-reserva" id="miModalReserva">
+    <div class="modal-caja">
+        <div class="modal-header">
+            <div class="modal-logo">
+                <img src="{% static 'img/imagenes/LCFFINAL.png' %}" alt="Caribe Confort">
+                <div><strong>CARIBE CONFORT</strong><span>HOTEL</span></div>
+            </div>
+            <button type="button" class="btn-cerrar-modal" id="btnCerrarModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <h2 class="modal-titulo">{% trans "Confirmar reserva" %}</h2>
+        <p class="modal-subtitulo">{% trans "Revisa la información antes de confirmar." %}</p>
+        <div class="modal-info-lista"> 
+            <div class="m-info-fila"><span class="m-info-label">{% trans "Nombre" %}</span><strong class="m-info-valor">{{ request.session.usuario_nom|default:"Huésped" }}</strong></div>
+            <div class="m-info-fila"><span class="m-info-label">{% trans "Entrada" %}</span><strong class="m-info-valor" id="txtEntrada">--</strong></div>
+            <div class="m-info-fila"><span class="m-info-label">{% trans "Salida" %}</span><strong class="m-info-valor" id="txtSalida">--</strong></div>
+            <div class="m-info-fila"><span class="m-info-label">{% trans "Noches" %}</span><strong class="m-info-valor" id="txtNoches">0</strong></div>
+            <div class="m-info-fila"><span class="m-info-label">{% trans "Adultos" %}</span><strong class="m-info-valor" id="txtAdultos">1</strong></div>
+            <div class="m-info-fila"><span class="m-info-label">{% trans "Niños" %}</span><strong class="m-info-valor" id="txtNinos">0</strong></div>
+            <div class="m-info-fila"><span class="m-info-label">{% trans "Habitaciones" %}</span><strong class="m-info-valor" id="txtHabNumero">--</strong></div>
+            <div class="m-info-fila" id="filaDesayuno" hidden><span class="m-info-label">{% trans "Desayuno" %}</span><strong class="m-info-valor" id="txtDesayuno">$ 0</strong></div>
+            <div class="m-info-fila" id="filaDescuento" hidden><span class="m-info-label">{% trans "Descuento convenio" %}</span><strong class="m-info-valor" id="txtDescuento"></strong></div>
+        </div>
+        <div class="modal-total-caja">
+            <span class="m-total-label">{% trans "Total a pagar" %}</span>
+            <strong class="m-total-valor" id="txtTotal">$ 0</strong>
+        </div>
+        <form id="formularioReserva">
+            {% csrf_token %}
+        </form>
+        <div class="modal-botones">
+            <button type="button" class="btn-cancelar" id="btnCancelarModal">{% trans "Cancelar" %}</button>
+            <button type="button" class="btn-confirmar" id="btnConfirmarReserva">{% trans "Confirmar" %}</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-alerta" id="modalErrorReserva">
+    <div class="modal-alerta-caja">
+        <svg class="modal-alerta-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <h2 class="modal-alerta-titulo">{% trans "Falta información" %}</h2>
+        <p class="modal-alerta-detalle">{% trans "Debes completar las fechas y seleccionar al menos una habitación." %}</p>
+        <button type="button" class="modal-alerta-btn" id="btnCerrarError">{% trans "Entendido" %}</button>
+    </div>
+</div>
+
+<div class="modal-alerta" id="modalErrorServidor">
+    <div class="modal-alerta-caja">
+        <svg class="modal-alerta-icono" viewBox="0 0 24 24" fill="none" stroke="#d9534f" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <h2 class="modal-alerta-titulo">{% trans "Aviso" %}</h2>
+        <p class="modal-alerta-detalle" id="textoErrorServidor"></p>
+        <button type="button" class="modal-alerta-btn" id="btnCerrarErrorServidor">{% trans "Entendido" %}</button>
+    </div>
+</div>
+</body>
+</html>

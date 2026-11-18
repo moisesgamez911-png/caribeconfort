@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
+    <link rel="stylesheet" href="{% static 'css/administrador/reportes.css' %}?v=1">
+</head>
+<body>
+{% include 'inc/admin_header.html' %}
+{% include 'inc/admin_nav.html' %}
+
+<main class="rp-main">
+    <header class="rp-heading">
+        <div>
+            <p class="rp-eyebrow">ANÁLISIS DEL HOTEL</p>
+            <h1>Reportes operativos y contables</h1>
+            <p>Selecciona un periodo y descarga los datos en CSV para revisarlos o compartirlos.</p>
+        </div>
+        <a href="/administrador" class="rp-back">Volver al panel</a>
+    </header>
+
+    {% if messages %}
+        <div class="rp-messages" role="status">{% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}</div>
+    {% endif %}
+
+    <section class="rp-card">
+        <h2>Configurar reporte</h2>
+        <form action="/adminreportes/exportar" method="get" class="rp-form">
+            <div class="rp-field">
+                <label for="tipoReporte">Tipo de reporte</label>
+                <select id="tipoReporte" name="tipo" required>
+                    <option value="reservas">Reservas</option>
+                    <option value="ocupacion">Ocupación</option>
+                    <option value="ingresos">Ingresos y saldos</option>
+                    <option value="huespedes">Huéspedes e historial</option>
+                </select>
+            </div>
+            <div class="rp-field">
+                <label for="desde">Desde</label>
+                <input id="desde" name="desde" type="date" value="{{ hoy|date:'Y-m-d' }}" required>
+            </div>
+            <div class="rp-field">
+                <label for="hasta">Hasta</label>
+                <input id="hasta" name="hasta" type="date" value="{{ hoy|date:'Y-m-d' }}" required>
+            </div>
+            <div class="rp-field">
+                <label for="estadoReserva">Estado (reservas)</label>
+                <select id="estadoReserva" name="estado">
+                    <option value="">Todos</option>
+                    {% for valor, etiqueta in estados %}
+                        <option value="{{ valor }}">{{ etiqueta }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="rp-field">
+                <label for="habitacion">Habitación</label>
+                <select id="habitacion" name="habitacion">
+                    <option value="">Todas</option>
+                    {% for habitacion in habitaciones %}
+                        <option value="{{ habitacion.id }}">{{ habitacion.numero }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="rp-field">
+                <label for="huesped">Nombre del huésped (reservas)</label>
+                <input id="huesped" name="huesped" maxlength="200" placeholder="Buscar por nombre o apellido">
+            </div>
+            <div class="rp-submit">
+                <button type="submit">Descargar CSV</button>
+                <span>El reporte se genera con los filtros seleccionados.</span>
+            </div>
+        </form>
+    </section>
+
+    <section class="rp-grid" aria-label="Contenido de cada reporte">
+        <article class="rp-card">
+            <span class="rp-icon">01</span>
+            <h2>Reservas</h2>
+            <p>Filtra por fecha de entrada, estado, habitación y huésped. Incluye total, pagos, saldo y código de convenio.</p>
+        </article>
+        <article class="rp-card">
+            <span class="rp-icon">02</span>
+            <h2>Ocupación</h2>
+            <p>Lista habitaciones y reservas confirmadas o en curso que se superponen con el periodo elegido.</p>
+        </article>
+        <article class="rp-card">
+            <span class="rp-icon">03</span>
+            <h2>Ingresos y saldos</h2>
+            <p>Detalla los pagos recibidos dentro del periodo y el saldo pendiente asociado a cada reserva.</p>
+        </article>
+        <article class="rp-card">
+            <span class="rp-icon">04</span>
+            <h2>Huéspedes</h2>
+            <p>Consulta los huéspedes registrados y el número de reservas cuya entrada está dentro del periodo.</p>
+        </article>
+    </section>
+</main>
+<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+</body>
+</html>

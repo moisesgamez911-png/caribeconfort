@@ -1,0 +1,23 @@
+<div class="refund-modal-overlay" id="modalReembolso" aria-hidden="true">
+    <section class="refund-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalReembolso">
+        <button type="button" class="refund-modal-close" id="cerrarModalReembolso" aria-label="Cerrar">&times;</button>
+        <p class="refund-eyebrow">GESTIÓN DE REEMBOLSOS</p>
+        <h2 id="tituloModalReembolso">Confirmar devolución</h2>
+        <p id="reembolsoHuesped"></p>
+        <p>Reserva <strong id="reembolsoReserva"></strong></p>
+        <p class="refund-amount" id="reembolsoMonto"></p>
+        <form id="formReembolso">
+            {% csrf_token %}
+            <label for="metodoReembolsoReserva">Método de devolución</label>
+            <select id="metodoReembolsoReserva" name="metodo" required>
+                <option value="Efectivo">Efectivo</option>
+                <option value="Transferencia">Transferencia</option>
+            </select>
+            <p class="refund-feedback" id="reembolsoFeedback" role="status" aria-live="polite"></p>
+            <footer>
+                <button type="button" class="refund-cancel" id="cancelarModalReembolso">Cancelar</button>
+                <button type="submit" class="refund-confirm" id="confirmarReembolso">Confirmar reembolso</button>
+            </footer>
+        </form>
+    </section>
+</div>

@@ -1,0 +1,186 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Habitaciones | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
+</head>
+<body>
+{% include 'inc/admin_header.html' %}
+{% include 'inc/admin_nav.html' %}
+
+<main class="ad-main adm-page">
+    <header class="adm-heading">
+        <div>
+            <p class="adm-eyebrow">INVENTARIO DEL HOTEL</p>
+            <h1>Habitaciones</h1>
+            <p>Administra tipos, tarifas, disponibilidad e imágenes de cada habitación.</p>
+        </div>
+        <a class="adm-button room-add-button" href="/rhabitaciones">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Registrar habitación
+        </a>
+    </header>
+
+    {% if messages %}
+    <div class="adm-messages" role="status">
+        {% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}
+    </div>
+    {% endif %}
+
+    <section class="room-stats" aria-label="Resumen de habitaciones">
+        <article class="room-stat">
+            <span class="room-stat-icon teal"><svg viewBox="0 0 24 24"><path d="M3 19V6m0 9h18v4M3 11h18v4m-2-4V8a2 2 0 0 0-2-2h-4v5"/></svg></span>
+            <div><span>Total de habitaciones</span><strong>{{ conteo_habitaciones.total }}</strong></div>
+            <small>Inventario registrado</small>
+        </article>
+        <article class="room-stat">
+            <span class="room-stat-icon green"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span>
+            <div><span>Disponibles</span><strong>{{ conteo_habitaciones.disponibles }}</strong></div>
+            <small>Listas para reservar</small>
+        </article>
+        <article class="room-stat">
+            <span class="room-stat-icon blue"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+            <div><span>Ocupadas</span><strong>{{ conteo_habitaciones.ocupadas }}</strong></div>
+            <small>Con huéspedes actualmente</small>
+        </article>
+        <article class="room-stat">
+            <span class="room-stat-icon gold"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg></span>
+            <div><span>Bloqueadas / servicio</span><strong>{{ conteo_habitaciones.bloqueadas }}</strong></div>
+            <small>No disponibles para reservar</small>
+        </article>
+    </section>
+
+    <section class="room-list-section">
+        <div class="adm-section-heading">
+            <div><h2>Habitaciones registradas</h2><p>Selecciona una tarjeta para editar sus datos.</p></div>
+            <form method="get" class="adm-search">
+                <label class="sr-only" for="buscarHabitacion">Buscar habitación</label>
+                <input id="buscarHabitacion" type="search" name="q" value="{{ busqueda }}" placeholder="Número, tipo o estado">
+                <button class="adm-button" type="submit">Buscar</button>
+                {% if busqueda %}<a class="adm-button secondary" href="/adminhabitaciones">Limpiar</a>{% endif %}
+            </form>
+        </div>
+
+        <div class="room-grid">
+            {% for habitacion in habitaciones %}
+            <article class="room-card">
+                <div class="room-card-photo">
+                    {% if habitacion.imagen_admin_url %}
+                    <img src="{{ habitacion.imagen_admin_url }}" alt="Habitación {{ habitacion.numero }}" loading="lazy">
+                    {% else %}
+                    <div class="room-photo-placeholder" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 19V6m0 13h18M3 11h18v5H3m14-5V8a2 2 0 0 0-2-2h-4v5"/></svg></div>
+                    {% endif %}
+                    <span class="room-status {% if habitacion.estado == 'Disponible' %}available{% elif habitacion.estado == 'Ocupada' %}occupied{% elif habitacion.estado == 'Bloqueada' %}blocked{% else %}maintenance{% endif %}">
+                        {{ habitacion.get_estado_display }}
+                    </span>
+                </div>
+                <div class="room-card-body">
+                    <div class="room-card-title">
+                        <div><span>HABITACIÓN</span><h3>{{ habitacion.numero }}</h3></div>
+                        <span class="room-capacity"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1m2-9a3 3 0 0 0 0-6m1 9a5 5 0 0 1 3 5"/></svg>{{ habitacion.capacidad }} huéspedes</span>
+                    </div>
+                    <p class="room-type">{{ habitacion.tipohabitacion.nombre|default:"Sin tipo asignado" }}</p>
+                    <div class="room-price"><strong>${{ habitacion.precio|floatformat:0 }}</strong><span>por noche</span></div>
+                    <button class="adm-button room-edit-button" type="button" data-modal="editarHabitacion{{ habitacion.id }}">
+                        <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
+                        Editar habitación
+                    </button>
+                </div>
+            </article>
+
+            <div class="room-modal" id="editarHabitacion{{ habitacion.id }}" aria-hidden="true">
+                <div class="room-modal-panel" role="dialog" aria-modal="true" aria-labelledby="tituloHabitacion{{ habitacion.id }}">
+                    <header class="room-modal-header">
+                        <div><span>INVENTARIO DEL HOTEL</span><h2 id="tituloHabitacion{{ habitacion.id }}">Editar habitación {{ habitacion.numero }}</h2></div>
+                        <button class="room-modal-close" type="button" data-close-modal aria-label="Cerrar">&times;</button>
+                    </header>
+                    <form method="post" enctype="multipart/form-data" class="adm-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="editar">
+                        <input type="hidden" name="habitacion_id" value="{{ habitacion.id }}">
+                        <div class="adm-form-grid">
+                            <div class="adm-field">
+                                <label for="numero{{ habitacion.id }}">Número</label>
+                                <input id="numero{{ habitacion.id }}" name="numero" maxlength="20" value="{{ habitacion.numero }}" required>
+                            </div>
+                            <div class="adm-field">
+                                <label for="tipo{{ habitacion.id }}">Tipo</label>
+                                <select id="tipo{{ habitacion.id }}" name="tipohabitacion" required>
+                                    {% for tipo in tipos_habitacion %}
+                                    <option value="{{ tipo.id }}" {% if habitacion.tipohabitacion_id == tipo.id %}selected{% endif %}>{{ tipo.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="adm-field">
+                                <label for="capacidad{{ habitacion.id }}">Capacidad</label>
+                                <input id="capacidad{{ habitacion.id }}" name="capacidad" type="number" min="1" max="100" value="{{ habitacion.capacidad }}" required>
+                            </div>
+                            <div class="adm-field">
+                                <label for="precio{{ habitacion.id }}">Precio por noche</label>
+                                <input id="precio{{ habitacion.id }}" name="precio" type="number" min="0.01" max="99999999.99" step="0.01" value="{{ habitacion.precio }}" required>
+                            </div>
+                            <div class="adm-field">
+                                <label for="estado{{ habitacion.id }}">Estado</label>
+                                <select id="estado{{ habitacion.id }}" name="estado" required>
+                                    {% for valor, etiqueta in estados_habitacion %}
+                                    <option value="{{ valor }}" {% if habitacion.estado == valor %}selected{% endif %} {% if valor == 'Ocupada' and habitacion.estado != valor %}disabled{% endif %}>{{ etiqueta }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="adm-field">
+                                <label for="imagen{{ habitacion.id }}">Cambiar imagen</label>
+                                <input id="imagen{{ habitacion.id }}" name="imagen" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif">
+                            </div>
+                        </div>
+                        {% if habitacion.tiene_estadia_actual %}<p class="room-note">La habitación tiene una estadía en curso: no se puede cambiar su estado ni reducir su capacidad por debajo de los huéspedes actuales.</p>{% endif %}
+                        <div class="adm-form-actions">
+                            <button class="adm-button secondary" type="button" data-close-modal>Cancelar</button>
+                            <button class="adm-button" type="submit">Guardar cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <div class="adm-card adm-empty">No hay habitaciones que coincidan con la búsqueda.</div>
+            {% endfor %}
+        </div>
+    </section>
+</main>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-modal]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var modal = document.getElementById(button.dataset.modal);
+            if (modal) {
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+            }
+        });
+    });
+    document.querySelectorAll('[data-close-modal]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var modal = button.closest('.room-modal');
+            if (modal) {
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+        });
+    });
+    document.querySelectorAll('.room-modal').forEach(function (modal) {
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) {
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+        });
+    });
+});
+</script>
+<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+</body>
+</html>

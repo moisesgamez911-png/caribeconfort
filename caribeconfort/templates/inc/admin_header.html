@@ -1,0 +1,29 @@
+{% load static %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+<header class="ad-top">
+    <a href="{% if rol == 'Recepcionista' or request.session.rol == 'Recepcionista' %}/recepcion{% else %}/administrador{% endif %}" class="ad-logo">
+        Caribe Confort
+    </a>
+    <div class="ad-top-der">
+        <button type="button" class="ad-theme-toggle" id="adThemeToggle" aria-label="Activar modo oscuro" title="Activar modo oscuro">
+            <svg class="ad-theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+            <svg class="ad-theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.5 8.5 0 1 0 20.5 15.5Z"/></svg>
+        </button>
+        <span class="ad-fecha" id="adFecha"></span>
+        <div class="ad-usuario">
+            <button type="button" id="adUsuarioBtn" aria-expanded="false" aria-controls="adUsuarioMenu">
+                <span class="ad-avatar">{{ nombre|default:request.session.usuario_nom|default:"A"|slice:":1"|upper }}</span>
+                <span class="ad-usuario-txt">{{ nombre|default:request.session.usuario_nom|default:"Administrador" }}</span>
+                <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="ad-usuario-menu" id="adUsuarioMenu">
+                <p>{{ nombre|default:request.session.usuario_nom|default:"Administrador" }}<small>{{ rol|default:request.session.rol|default:"Administrador" }}</small></p>
+                <a href="/home">Ver sitio del hotel</a>
+                <a href="/logout" class="salir">Cerrar sesión</a>
+            </div>
+        </div>
+    </div>
+</header>
+<script src="{% static 'js/feedback.js' %}?v=1" defer></script>

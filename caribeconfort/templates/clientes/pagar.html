@@ -1,0 +1,116 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagar Reserva | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/pagar.css' %}?v=6">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body>
+
+<div class="pago-wrapper">
+    <div class="pago-container" id="pagoContainer" data-total="{{ reserva.valortotal|floatformat:'0' }}" data-pagado="{{ pagos_realizados|default:'0'|floatformat:'0' }}">
+        
+        <div class="pago-header">
+            <div class="icono-header">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <h1>Registrar pago</h1>
+            <p>Reserva #CC-{{ reserva.id|stringformat:"04d" }}</p>
+        </div>
+
+        <form action="/procesar-pago/{{ reserva.id }}/" method="POST" class="pago-form">
+            {% csrf_token %}
+
+            <div class="resumen-pagos">
+                <div class="fila-resumen">
+                    <span>Valor total de la estancia</span>
+                    <strong>$ {{ reserva.valortotal|floatformat:"0g" }}</strong>
+                </div>
+                
+                {% if pagos_realizados > 0 %}
+                <div class="fila-resumen">
+                    <span>Pagado previamente</span>
+                    <strong class="texto-verde">-$ {{ pagos_realizados|floatformat:"0g" }}</strong>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if not pagos_realizados or pagos_realizados == 0 %}
+            <div class="opciones-pago">
+                <label class="opcion-pago">
+                    <input type="radio" name="tipo_pago" value="50">
+                    <div class="opcion-tarjeta">
+                        <i class="bi bi-wallet2"></i>
+                        <div>
+                            <strong>Abono (50%)</strong>
+                            <span>Paga el resto al llegar</span>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="opcion-pago">
+                    <input type="radio" name="tipo_pago" value="100" checked>
+                    <div class="opcion-tarjeta">
+                        <i class="bi bi-credit-card-2-front"></i>
+                        <div>
+                            <strong>Pago Total (100%)</strong>
+                            <span>Sin saldos pendientes</span>
+                        </div>
+                    </div>
+                </label>
+            </div>
+            {% else %}
+            <input type="hidden" name="tipo_pago" value="100">
+            <div class="alerta-pago">
+                <i class="bi bi-info-circle-fill"></i> Estás pagando el saldo restante de tu reserva.
+            </div>
+            {% endif %}
+
+            <div class="total-box">
+                <div class="total-info">
+                    <span class="total-label">Total a pagar ahora</span>
+                    <span class="total-sub">Monto calculado para esta solicitud</span>
+                </div>
+                <div class="total-monto" id="txtMontoAbono">
+                    $ {{ saldo_pendiente|default:"0"|floatformat:"0g" }}
+                </div>
+            </div>
+
+            <div class="seccion-titulo">
+                <h2>Información de pago</h2>
+            </div>
+
+            <div class="formulario-tarjeta">
+                <div class="input-group full">
+                    <label>Método de pago</label>
+                    <div class="select-wrapper">
+                        <i class="bi bi-wallet2 icono-izq"></i>
+                        <select name="metodo_pago" id="metodoPago">
+                            <option value="Tarjeta">Tarjeta</option>
+                            <option value="Transferencia">Transferencia / Nequi</option>
+                            <option value="Efectivo">Efectivo</option>
+                        </select>
+                        <i class="bi bi-chevron-down icono-der"></i>
+                    </div>
+                </div>
+
+                <div class="alerta-pago">
+                    <i class="bi bi-info-circle-fill"></i>
+                    Este formulario registra el pago para verificación del hotel; no realiza cargos bancarios ni almacena datos de tarjetas.
+                </div>
+            </div>
+
+            <button type="submit" class="btn-pagar">
+                <i class="bi bi-check-circle"></i> Registrar pago
+            </button>
+        </form>
+
+    </div>
+</div>
+
+<script src="{% static 'js/pagar.js' %}?v=101"></script>
+</body>
+</html>

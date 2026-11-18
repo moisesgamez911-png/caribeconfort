@@ -1,0 +1,70 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pagos | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=102">
+    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}?v=2">
+</head>
+<body>
+{% include 'inc/admin_header.html' %}
+{% include 'inc/admin_nav.html' %}
+<main class="ad-main adm-page">
+    <header class="adm-heading">
+        <div><p class="adm-eyebrow">MOVIMIENTOS DEL HOTEL</p><h1>Pagos</h1><p>Historial de pagos registrados para las reservas.</p></div>
+        <div class="adm-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+    </header>
+    <section class="adm-card">
+        <div class="adm-card-heading"><div><h2>Historial de pagos</h2><p>Movimientos registrados para reservas, servicios y reembolsos.</p></div></div>
+        <nav class="payments-tabs" role="tablist" aria-label="Tipo de movimiento">
+            <button type="button" class="user-tab {% if tab_activa == 'reservas' %}active{% endif %}" role="tab" aria-selected="{% if tab_activa == 'reservas' %}true{% else %}false{% endif %}" data-payment-tab="reservas">Pagos de Reservas</button>
+            <button type="button" class="user-tab {% if tab_activa == 'servicios' %}active{% endif %}" role="tab" aria-selected="{% if tab_activa == 'servicios' %}true{% else %}false{% endif %}" data-payment-tab="servicios">Pagos de Servicios</button>
+            <button type="button" class="user-tab {% if tab_activa == 'reembolsos' %}active{% endif %}" role="tab" aria-selected="{% if tab_activa == 'reembolsos' %}true{% else %}false{% endif %}" data-payment-tab="reembolsos">Reembolsos</button>
+        </nav>
+        <section class="payments-panel" data-payment-panel="reservas" {% if tab_activa != 'reservas' %}hidden{% endif %}>
+            <div class="adm-table-wrap"><table class="adm-table">
+                <thead><tr><th>Fecha</th><th>Huésped</th><th>Reserva</th><th>Valor</th><th>Método</th></tr></thead>
+                <tbody>{% for pago in pagos_reservas %}
+                    <tr><td>{{ pago.fecha|date:"d/m/Y H:i" }}</td><td><strong>{{ pago.reservas.huespedes.nombres }} {{ pago.reservas.huespedes.apellidos }}</strong></td><td>CC-{{ pago.reservas_id|stringformat:"04d" }}</td><td>${{ pago.valor|floatformat:2 }}</td><td><span class="adm-pill {% if pago.metodopago == 'Pendiente' %}gray{% else %}green{% endif %}">{{ pago.metodopago }}</span></td></tr>
+                {% empty %}<tr><td class="adm-empty" colspan="5">Aún no hay pagos de reservas.</td></tr>{% endfor %}</tbody>
+            </table></div>
+        </section>
+        <section class="payments-panel" data-payment-panel="servicios" {% if tab_activa != 'servicios' %}hidden{% endif %}>
+            <div class="adm-table-wrap"><table class="adm-table">
+                <thead><tr><th>Fecha</th><th>Huésped</th><th>Reserva</th><th>Valor</th><th>Método</th></tr></thead>
+                <tbody>{% for pago in pagos_servicios %}
+                    <tr><td>{{ pago.fecha|date:"d/m/Y H:i" }}</td><td><strong>{{ pago.reservas.huespedes.nombres }} {{ pago.reservas.huespedes.apellidos }}</strong></td><td>CC-{{ pago.reservas_id|stringformat:"04d" }}</td><td>${{ pago.valor|floatformat:2 }}</td><td><span class="adm-pill {% if pago.metodopago == 'Pendiente' %}gray{% else %}green{% endif %}">{{ pago.metodopago }}</span></td></tr>
+                {% empty %}<tr><td class="adm-empty" colspan="5">Aún no hay pagos de servicios.</td></tr>{% endfor %}</tbody>
+            </table></div>
+        </section>
+        <section class="payments-panel" data-payment-panel="reembolsos" {% if tab_activa != 'reembolsos' %}hidden{% endif %}>
+            <div class="adm-table-wrap"><table class="adm-table">
+                <thead><tr><th>Fecha</th><th>Huésped</th><th>Reserva</th><th>Valor</th><th>Método</th></tr></thead>
+                <tbody>{% for pago in reembolsos %}
+                    <tr><td>{{ pago.fecha|date:"d/m/Y H:i" }}</td><td><strong>{{ pago.reservas.huespedes.nombres }} {{ pago.reservas.huespedes.apellidos }}</strong></td><td>CC-{{ pago.reservas_id|stringformat:"04d" }}</td><td class="refund-value">-$ {{ pago.valor|stringformat:"s"|cut:"-" }}</td><td>{{ pago.metodopago }}</td></tr>
+                {% empty %}<tr><td class="adm-empty" colspan="5">Aún no hay reembolsos registrados.</td></tr>{% endfor %}</tbody>
+            </table></div>
+        </section>
+    </section>
+</main>
+<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+<script>
+document.querySelectorAll('[data-payment-tab]').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+        var target = tab.dataset.paymentTab;
+        document.querySelectorAll('[data-payment-tab]').forEach(function (button) {
+            button.classList.toggle('active', button === tab);
+            button.setAttribute('aria-selected', button === tab ? 'true' : 'false');
+        });
+        document.querySelectorAll('[data-payment-panel]').forEach(function (panel) {
+            panel.hidden = panel.dataset.paymentPanel !== target;
+        });
+        history.replaceState(null, '', '?tab=' + encodeURIComponent(target));
+    });
+});
+</script>
+</body>
+</html>
