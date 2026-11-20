@@ -1,246 +1,40 @@
-:root {
-    --verde-oscuro: #1e3e3b;
-    --beige: #f8f5ed;
-    --dorado: #c6a15b;
-    --texto-oscuro: #2d3748;
-    --texto-gris: #718096;
+.auth-reference-page .login-story {
+    min-height: 440px;
 }
 
-* {
-    box-sizing: border-box;
+.auth-reference-page .login-story h1 {
+    font-size: 1.875rem;
+    line-height: 1.15;
 }
 
-body {
-    margin: 0;
-    font-family: 'Segoe UI', Arial, sans-serif !important;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: url('../img//imagenes/foto2.png') center/cover no-repeat;
-    position: relative;
+.auth-reference-page .login-story-description {
+    max-width: 20rem;
 }
 
-body::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: rgba(13, 42, 42, 0.6);
-    z-index: -1;
+.auth-reference-page .login-intro {
+    margin-top: .5rem;
+    line-height: 1.65;
 }
 
-.navbar-auth {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    padding: 20px 40px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 10;
+.auth-reference-page .login-form {
+    gap: 1.25rem;
+    margin-top: 1.5rem;
 }
 
-.nav-logo {
-    height: 70px;
-    object-fit: contain;
+.auth-reference-page .login-submit {
+    margin-top: 0;
 }
 
-.nav-actions {
-    display: flex;
-    align-items: center;
-    gap: 20px;
+.auth-reference-page .auth-footer-link {
+    margin-top: 1.5rem;
 }
 
-.btn-lang {
-    background: #fff;
-    color: var(--verde-oscuro);
-    border: none;
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 12px;
-    cursor: pointer;
-}
+@media (max-width: 767px) {
+    .auth-reference-page .login-story {
+        min-height: 260px;
+    }
 
-.btn-user {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border: 2px solid #fff;
-    background: transparent;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
+    .auth-reference-page .login-story h1 {
+        font-size: 1.875rem;
+    }
 }
-
-.btn-user svg {
-    width: 20px;
-    height: 20px;
-}
-
-.auth-card {
-    display: flex;
-    width: 100%;
-    max-width: 950px;
-    background: var(--beige);
-    border-radius: 24px;
-    overflow: hidden;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-    z-index: 1;
-}
-
-.auth-image {
-    width: 42%;
-    background: linear-gradient(rgba(30, 62, 59, 0.7), rgba(30, 62, 59, 0.8)), url('../img/imagenes/pexels-30nudos-adicora-164429726-11452052.jpg') center/cover;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-    text-align: center;
-    color: #fff;
-    font-family: 'Segoe UI', Arial, sans-serif !important;
-}
-
-.auth-image span {
-    width: 40px;
-    height: 1px;
-    background: var(--dorado);
-    margin: 15px 0;
-}
-
-.auth-image h2 {
-    font-family: 'Segoe UI', Arial, sans-serif !important;
-    font-size: 38px;
-    font-weight: 400;
-    line-height: 1.2;
-    margin: 0;
-}
-
-.auth-form-container {
-    width: 58%;
-    padding: 30px 60px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.auth-eyebrow {
-    color: var(--dorado);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-}
-
-.auth-title {
-    font-family: 'Segoe UI', Arial, sans-serif !important;
-    font-size: 36px;
-    color: var(--texto-oscuro);
-    margin: 0 0 10px;
-}
-
-.auth-subtitle {
-    font-size: 14px;
-    color: var(--texto-gris);
-    line-height: 1.6;
-    margin: 0 0 30px;
-}
-
-.auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.input-group {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-}
-
-.input-icon {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #a0aec0;
-    width: 20px;
-    height: 20px;
-}
-
-.form-control {
-    width: 100%;
-    padding: 16px 16px 16px 48px;
-    border: 1px solid transparent;
-    border-radius: 10px;
-    background: #fff;
-    font-family: 'Segoe UI', Arial, sans-serif !important;
-    font-size: 14px;
-    color: var(--texto-oscuro);
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.form-control:focus {
-    border-color: var(--dorado);
-    box-shadow: 0 0 0 3px rgba(198, 161, 91, 0.15);
-}
-
-.btn-submit {
-    background: var(--verde-oscuro);
-    color: #fff;
-    border: none;
-    padding: 16px;
-    border-radius: 10px;
-    font-family: 'Segoe UI', Arial, sans-serif !important;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.2s, transform 0.1s;
-    margin-top: 10px;
-}
-
-.btn-submit:hover {
-    background: #152e2b;
-}
-
-.auth-footer {
-    text-align: center;
-    margin-top: 25px;
-    font-size: 14px;
-    color: var(--texto-gris);
-}
-
-.auth-footer a {
-    color: var(--dorado);
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.auth-footer a:hover {
-    text-decoration: underline;
-}
-
-.auth-error {
-    background: #fff5f5;
-    color: #c53030;
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    margin-bottom: 20px;
-    border: 1px solid #fed7d7;
-}
-
-@media (max-width: 850px) {
-    .auth-card { flex-direction: column; max-width: 450px; margin: 20px; }
-    .auth-image { display: none; }
-    .auth-form-container { width: 100%; padding: 40px 30px; }
-    .navbar-auth { padding: 15px 20px; }
-    .nav-logo { height: 50px; }
-}
-body, body *:not([class*='bi-']) { font-family: 'Segoe UI', Arial, sans-serif !important; }

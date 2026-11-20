@@ -1044,3 +1044,293 @@ html[data-theme="dark"] .refund-modal footer .refund-cancel {
         padding-left: 14px;
     }
 }
+
+.ad-top {
+    height: 64px;
+    padding: 0 24px 0 78px;
+    border-bottom: 1px solid #E1E5EA;
+    background: rgba(255, 255, 255, .98);
+    box-shadow: 0 1px 5px rgba(17, 24, 39, .06);
+    color: #111827;
+}
+
+.ad-logo {
+    min-width: 250px;
+    gap: 10px;
+    color: #111827;
+    font-family: 'Segoe UI', Arial, sans-serif !important;
+    font-size: 13px;
+    letter-spacing: 0;
+}
+
+.ad-brand-mark {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 7px;
+    background: #183D3D;
+    color: #fff;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.ad-brand-copy,
+.ad-brand-line {
+    display: flex;
+    min-width: 0;
+}
+
+.ad-brand-copy {
+    flex-direction: column;
+    gap: 3px;
+}
+
+.ad-brand-line {
+    align-items: center;
+    gap: 8px;
+}
+
+.ad-brand-name {
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ad-brand-badge {
+    flex: none;
+    padding: 2px 6px;
+    border: 1px solid rgba(24, 61, 61, .2);
+    border-radius: 5px;
+    background: rgba(24, 61, 61, .06);
+    color: #183D3D;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.ad-brand-caption {
+    color: #6B7280;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0;
+}
+
+.ad-top-der {
+    gap: 10px;
+}
+
+.ad-top .language-switcher {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin: 0;
+}
+
+.ad-top .language-switcher-button {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    padding: 0;
+    border: 1px solid #E1E5EA;
+    border-radius: 6px;
+    background: #fff;
+    color: #4B5563;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.ad-top .language-switcher-button:hover,
+.ad-top .language-switcher-button:focus-visible,
+.ad-top .language-switcher-button.is-active {
+    border-color: #183D3D;
+    background: #183D3D;
+    color: #fff;
+}
+
+.ad-top .language-switcher-separator {
+    display: none;
+}
+
+.ad-header-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid #E1E5EA;
+    border-radius: 6px;
+    background: #F9FAFB;
+    color: #4B5563;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.ad-header-date svg,
+.ad-header-notification svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ad-header-date svg {
+    color: #183D3D;
+}
+
+.ad-header-notification {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid #E1E5EA;
+    border-radius: 6px;
+    color: #6B7280;
+}
+
+.ad-header-notification:hover {
+    background: #F9FAFB;
+    color: #183D3D;
+}
+
+.ad-header-notification-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    display: grid;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    place-items: center;
+    border: 2px solid #fff;
+    border-radius: 999px;
+    background: #D6383D;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.ad-header-divider {
+    width: 1px;
+    height: 30px;
+    margin: 0 2px;
+    background: #E1E5EA;
+}
+
+.ad-usuario button {
+    gap: 8px;
+    padding: 0 2px;
+    color: #111827;
+}
+
+.ad-avatar {
+    width: 34px;
+    height: 34px;
+    background: #183D3D;
+    color: #fff;
+    font-size: 12px;
+}
+
+.ad-user-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+}
+
+.ad-user-copy small {
+    color: #6B7280;
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.ad-user-chevron {
+    width: 14px;
+    height: 14px;
+    color: #6B7280;
+}
+
+[data-theme="dark"] .ad-top {
+    border-color: #394443;
+    background: #202827;
+    color: #F3F4F6;
+}
+
+[data-theme="dark"] .ad-brand-name,
+[data-theme="dark"] .ad-usuario button {
+    color: #F3F4F6;
+}
+
+[data-theme="dark"] .ad-brand-badge,
+[data-theme="dark"] .ad-header-date,
+[data-theme="dark"] .ad-header-notification,
+[data-theme="dark"] .ad-top .language-switcher-button {
+    border-color: #485252;
+    background: #283130;
+    color: #D1D5DB;
+}
+
+[data-theme="dark"] .ad-header-notification:hover,
+[data-theme="dark"] .ad-top .language-switcher-button.is-active {
+    background: #557d78;
+    color: #fff;
+}
+
+[data-theme="dark"] .ad-brand-caption,
+[data-theme="dark"] .ad-user-copy small {
+    color: #A7B2B0;
+}
+
+@media (max-width: 760px) {
+    .ad-top {
+        height: 60px;
+        padding: 0 12px;
+    }
+
+    .ad-logo {
+        min-width: 0;
+        gap: 7px;
+    }
+
+    .ad-brand-mark {
+        width: 32px;
+        height: 32px;
+    }
+
+    .ad-brand-caption,
+    .ad-header-date,
+    .ad-header-divider,
+    .ad-user-copy,
+    .ad-user-chevron {
+        display: none;
+    }
+
+    .ad-top-der {
+        gap: 5px;
+    }
+
+    .ad-top .language-switcher-button {
+        width: 29px;
+        height: 29px;
+        min-width: 29px;
+    }
+
+    .ad-header-notification,
+    .ad-theme-toggle {
+        width: 30px;
+        height: 30px;
+    }
+}

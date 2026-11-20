@@ -61,15 +61,33 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     // --------------------------------------------------
 
-    if (roomsContainer && btnPrev && btnNext) {
-        btnNext.addEventListener("click", function(e) {
-            e.preventDefault();
-            roomsContainer.scrollBy({ left: 520, behavior: 'smooth' });
-        });
-        btnPrev.addEventListener("click", function(e) {
-            e.preventDefault();
-            roomsContainer.scrollBy({ left: -520, behavior: 'smooth' });
-        });
+    if (roomsContainer) {
+        const roomCards = Array.from(roomsContainer.querySelectorAll(".room-card"));
+        let roomIndex = 0;
+
+        const mostrarHabitacion = (index) => {
+            if (!roomCards.length) return;
+            roomIndex = (index + roomCards.length) % roomCards.length;
+            roomCards.forEach((card, cardIndex) => {
+                card.classList.toggle("is-room-hidden", cardIndex !== roomIndex);
+                card.setAttribute("aria-hidden", cardIndex === roomIndex ? "false" : "true");
+            });
+        };
+
+        mostrarHabitacion(0);
+
+        if (btnNext) {
+            btnNext.addEventListener("click", function(e) {
+                e.preventDefault();
+                mostrarHabitacion(roomIndex + 1);
+            });
+        }
+        if (btnPrev) {
+            btnPrev.addEventListener("click", function(e) {
+                e.preventDefault();
+                mostrarHabitacion(roomIndex - 1);
+            });
+        }
     }
 
     function aplicarFiltros() {

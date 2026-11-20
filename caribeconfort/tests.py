@@ -34,11 +34,13 @@ from caribeconfort.views import (
     _descifrar_contrasena_smtp,
     _enviar_invitacion_resena,
     _enviar_correo_hotel,
+    buscar_disponibilidad,
     configuracionadmin,
     descargar_certificado_pagos,
     descargar_factura_reserva,
     dejar_resena,
     galeria,
+    galeriaadmin,
     home,
     procesar_reembolso,
     servir_logo_hotel,
@@ -230,10 +232,77 @@ class PublicGalleryCategoryTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         context = render_view.call_args.args[2]
-        self.assertEqual(len(context['categorias']), 1)
-        self.assertEqual(context['categorias'][0].total, 2)
+        categorias_exteriores = [
+            categoria for categoria in context['categorias']
+            if categoria.nombre.strip().casefold() == 'exteriores'
+        ]
+        self.assertEqual(len(categorias_exteriores), 1)
+        self.assertEqual(categorias_exteriores[0].total, 2)
         self.assertEqual(context['categoria_activa'].pk, categoria_uno.pk)
         self.assertEqual(len(context['imagenes']), 2)
+
+
+class AdminGalleryImageUpdateTests(TestCase):
+    def test_replacing_an_image_updates_the_public_gallery_url(self):
+        categoria = CategoriaGaleria.objects.create(nombre='Interiores')
+        imagen = ImagenGaleria.objects.create(
+            categoria=categoria,
+            titulo='Imagen anterior',
+            imagen='uploads/galeria/anterior.png',
+            seccion='carrusel',
+        )
+        archivo_imagen = BytesIO()
+        Image.new('RGB', (12, 12), color='#c6a15b').save(archivo_imagen, format='PNG')
+        archivo = SimpleUploadedFile(
+            'reemplazo.png',
+            archivo_imagen.getvalue(),
+            content_type='image/png',
+        )
+        request = RequestFactory().post('/admingaleria', {
+            'accion': 'editar',
+            'imagen_id': str(imagen.pk),
+            'titulo': 'Imagen actualizada',
+            'seccion': 'carrusel',
+            'estado': 'on',
+            'archivo': archivo,
+        })
+        request.session = {'rol': 'Administrador'}
+        request._messages = Mock()
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            response = galeriaadmin(request)
+            self.assertEqual(response.status_code, 302)
+            imagen.refresh_from_db()
+            self.assertNotEqual(imagen.imagen, 'uploads/galeria/anterior.png')
+            self.assertTrue(Path(media_root, imagen.imagen).is_file())
+
+            with patch(
+                'caribeconfort.views.render',
+                return_value=HttpResponse(),
+            ) as render_view:
+                galeria(RequestFactory().get('/galeria'))
+
+            imagenes_publicas = render_view.call_args.args[2]['imagenes']
+            imagen_publica_actualizada = next(
+                imagen_publica for imagen_publica in imagenes_publicas
+                if imagen_publica.pk == imagen.pk
+            )
+            self.assertEqual(
+                imagen_publica_actualizada.url_imagen,
+                f'/media/{imagen.imagen}',
+            )
+
+
+class BookingDateDefaultsTests(TestCase):
+    @patch('caribeconfort.views.render', return_value=HttpResponse())
+    def test_search_defaults_to_today_and_the_following_day(self, render_view):
+        response = buscar_disponibilidad(RequestFactory().get('/reservas'))
+
+        self.assertEqual(response.status_code, 200)
+        context = render_view.call_args.args[2]
+        today = timezone.localdate()
+        self.assertEqual(context['fecha_entrada'], today.isoformat())
+        self.assertEqual(context['fecha_salida'], (today + timedelta(days=1)).isoformat())
 
 
 class HomeHotelMapTests(TestCase):

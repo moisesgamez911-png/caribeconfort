@@ -5,134 +5,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% trans "Iniciar sesión" %} | Caribe Confort</title>
+    <title>{% trans "Iniciar sesión" %} — Caribe Confort</title>
 
-    <link rel="stylesheet" href="{% static 'css/reservas.css' %}?v=7">
-    <link rel="stylesheet" href="{% static 'css/login.css' %}?v=3">
-    <link rel="stylesheet" href="{% static 'css/registrarcliente.css' %}?v=2">
-    <link rel="stylesheet" href="{% static 'css/idiomas.css' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/idiomas.css' %}">
+    <link rel="stylesheet" href="{% static 'css/login.css' %}?v=5">
 </head>
 
-<body class="registro-body">
+<body class="login-page">
+    <img class="login-background" src="{% static 'img/imagenes/foto1.png' %}" alt="" aria-hidden="true">
+    <div class="login-background-overlay" aria-hidden="true"></div>
 
-<nav class="registro-navbar">
-    <a class="registro-brand" href="/home">
-        <img src="{% static 'img/imagenes/LCFFINAL.png' %}" alt="Caribe Confort" class="registro-logo">
-        <div class="registro-brand-txt">
-            <span class="registro-brand-title">CARIBE CONFORT</span>
-        </div>
-    </a>
+    <div class="login-layout">
+        <nav class="login-navbar" aria-label="{% trans 'Navegación principal' %}">
+            <a class="login-brand" href="/home">
+                <span class="login-brand-logo">
+                    <img src="{% static 'img/imagenes/logo-caribeconfort-default.png' %}" alt="">
+                </span>
+                <span class="login-brand-copy">
+                    <span class="login-brand-name">Caribe Confort</span>
+                    <span class="login-brand-location">{% trans "Riohacha — La Guajira" %}</span>
+                </span>
+            </a>
 
-    <div class="registro-nav-derecha">
-        {% include "clientes/idioma_switcher.html" %}
-        <a href="/registrarcliente" class="registro-user-icon" aria-label="Crear cuenta">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
-                <circle cx="12" cy="8" r="4"/>
-                <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>
-            </svg>
-        </a>
-    </div>
-</nav>
-
-<main class="registro-wrap">
-
-    <div class="login-card registro-card-login">
-
-        <aside class="registro-izq">
-            <div class="registro-izq-overlay"></div>
-
-            <div class="registro-izq-content">
-                <span class="registro-izq-linea"></span>
-
-                <p class="registro-izq-tagline">
-                    {% trans "Bienvenido de nuevo" %}<br>{% trans "a tu descanso" %}
-                </p>
+            <div class="login-navbar-actions">
+                {% include "clientes/idioma_switcher.html" %}
+                <a class="login-home-link" href="/home">{% trans "Volver al inicio" %}</a>
             </div>
-        </aside>
+        </nav>
 
-        <section class="registro-der" style="padding-top: 12%;">
+        <main class="login-main">
+            <div class="login-card">
+                <section class="login-story" aria-label="{% trans 'Caribe Colombiano' %}">
+                    <img class="login-story-image" src="{% static 'img/imagenes/FBAR.jpg' %}" alt="" aria-hidden="true">
+                    <div class="login-story-overlay" aria-hidden="true"></div>
+                    <div class="login-story-copy">
+                        <span class="login-story-rule" aria-hidden="true"></span>
+                        <p class="login-story-eyebrow">{% trans "Caribe Colombiano" %}</p>
+                        <h1>{% trans "Bienvenido de nuevo a tu descanso" %}</h1>
+                        <p class="login-story-description">
+                            {% trans "Gestiona tus reservas, consulta tus planes y disfruta de una atención personalizada frente al mar." %}
+                        </p>
+                    </div>
+                </section>
 
-            <header class="registro-header">
-                <span class="registro-eyebrow">{% trans "BIENVENIDO DE NUEVO" %}</span>
-                <h1 class="registro-title">{% trans "Iniciar sesión" %}</h1>
-                <p class="registro-sub">
-                    {% trans "Ingresa tus datos para continuar con tu experiencia en Caribe Confort." %}
-                </p>
-            </header>
+                <section class="login-form-panel">
+                    <p class="login-eyebrow">{% trans "Bienvenido de nuevo" %}</p>
+                    <h2 class="login-title">{% trans "Iniciar sesión" %}</h2>
+                    <p class="login-intro">
+                        {% trans "Ingresa tus datos para continuar con tu experiencia en Caribe Confort." %}
+                    </p>
 
-            {% if error %}
-                <div class="registro-errores">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="8" x2="12" y2="12"/>
-                        <line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </svg>
-                    <ul>
-                        <li>{{ error }}</li>
-                    </ul>
-                </div>
-            {% endif %}
+                    {% if error %}
+                        <div class="login-error" role="alert">{{ error }}</div>
+                    {% endif %}
 
-            {% if request.GET.registro == 'ok' %}
-                <div class="registro-exito">
-                    {% trans "¡Cuenta creada con éxito! Ya puedes iniciar sesión." %}
-                </div>
-            {% endif %}
+                    {% if request.GET.registro == 'ok' %}
+                        <div class="login-success" role="status">
+                            {% trans "¡Cuenta creada con éxito! Ya puedes iniciar sesión." %}
+                        </div>
+                    {% endif %}
 
+                    <form class="registro-form login-form" method="POST" novalidate>
+                        {% csrf_token %}
 
-            <form class="registro-form" style="display: flex; align-items: center; justify-content: center;" method="POST" novalidate>
-                {% csrf_token %}
+                        <div class="login-form-group">
+                            <label class="login-label" for="login-email">{% trans "Correo electrónico" %}</label>
+                            <div class="login-input-wrap">
+                                <svg class="login-input-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                                <input id="login-email" type="email" name="correo" autocomplete="email"
+                                       placeholder="{% trans 'tucorreo@ejemplo.com' %}" required autofocus
+                                       value="{{ correo_ingresado|default:'' }}">
+                            </div>
+                        </div>
 
-                <label class="rg-field rg-field-full">
-                    <span class="rg-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="18" height="18">
-                            <rect x="2" y="4" width="20" height="16" rx="2"/>
-                            <path d="m22 6-10 7L2 6"/>
-                        </svg>
-                    </span>
-                    <input type="email" name="correo" placeholder="{% trans 'Correo electrónico' %}" required autofocus
-                           value="{{ correo_ingresado|default:'' }}">
-                </label>
+                        <div class="login-form-group">
+                            <div class="login-password-heading">
+                                <label class="login-label" for="rgPassword">{% trans "Contraseña" %}</label>
+                                <a class="login-forgot-link" href="/recuperar-password">
+                                    {% trans "¿Olvidó su contraseña?" %}
+                                </a>
+                            </div>
+                            <div class="login-input-wrap">
+                                <svg class="login-input-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                                <input id="rgPassword" type="password" name="clave" autocomplete="current-password"
+                                       placeholder="••••••••" required>
+                                <button type="button" class="rg-toggle login-password-toggle" data-toggle="rgPassword"
+                                        aria-label="{% trans 'Mostrar contraseña' %}">
+                                    <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
 
-                <label class="rg-field rg-field-full rg-field-pass">
-                    <span class="rg-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="18" height="18">
-                            <rect x="4" y="10" width="16" height="11" rx="2"/>
-                            <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
-                        </svg>
-                    </span>
-                    <input type="password" name="clave" id="rgPassword"
-                           placeholder="{% trans 'Contraseña' %}" required>
-                    <button type="button" class="rg-toggle" data-toggle="rgPassword" aria-label="{% trans 'Mostrar contraseña' %}">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="18" height="18">
-                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
-                            <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                    </button>
-                </label>
+                        <button class="login-submit rg-submit2" type="submit">
+                            {% trans "Iniciar sesión" %}
+                        </button>
+                    </form>
 
-                <a href="/recuperar-password" class="registro-olvido" style="margin-left: -1%; margin-right: 1%;">{% trans "¿Olvidó su contraseña?" %}</a>
+                    <p class="login-register-prompt">
+                        {% trans "¿No está registrado?" %}
+                        <a href="/registrarcliente">{% trans "Regístrese" %}</a>
+                    </p>
+                </section>
+            </div>
+        </main>
 
-                <button type="submit" class="rg-submit2">
-                    {% trans "Iniciar sesión" %}
-                </button>
-
-            </form>
-
-            <p class="login-registro">
-                {% trans "¿No está registrado?" %} <a href="/registrarcliente">{% trans "Regístrese" %}</a>
-            </p>
-
-        </section>
-
+        <footer class="login-footer">
+            © 2026 {% trans "Hotel Caribe Confort · Riohacha, La Guajira" %}
+        </footer>
     </div>
 
-</main>
-
-
-<script src="{% static 'js/login.js' %}?v=2"></script>
-
+    <script src="{% static 'js/login.js' %}?v=3"></script>
 </body>
 </html>

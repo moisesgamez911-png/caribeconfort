@@ -1,61 +1,92 @@
-{% load static %}
+{% load static i18n %}
+{% get_current_language as CURRENT_LANGUAGE %}
 <!DOCTYPE html>
-<html lang="es">
+<html lang="{{ CURRENT_LANGUAGE }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recuperar Contraseña | Caribe Confort</title>
+    <title>{% trans "Recuperar contraseña" %} — Caribe Confort</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/recuperar.css' %}?v=2">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/idiomas.css' %}">
+    <link rel="stylesheet" href="{% static 'css/login.css' %}?v=6">
+    <link rel="stylesheet" href="{% static 'css/recuperar.css' %}?v=4">
 </head>
-<body>
 
-    <nav class="navbar-auth">
-        <a href="/home">
-            <img src="{% static 'img/imagenes/LCFFINAL.png' %}" alt="Caribe Confort" class="nav-logo">
-        </a>
-        <div class="nav-actions">
-            <button class="btn-lang">ES | EN</button>
-            <button class="btn-user">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            </button>
-        </div>
-    </nav>
+<body class="login-page auth-reference-page auth-recovery-page">
+    <img class="login-background" src="{% static 'img/imagenes/foto1.png' %}" alt="" aria-hidden="true">
+    <div class="login-background-overlay" aria-hidden="true"></div>
 
-    <main class="auth-card">
-        
-        <div class="auth-image"> 
-            <h2>Bienvenido de nuevo<br>a tu descanso</h2>
-            <span></span>
-        </div>
-
-        <div class="auth-form-container">
-            <div class="auth-eyebrow">RECUPERAR ACCESO</div>
-            <h1 class="auth-title">¿Olvidaste tu contraseña?</h1>
-            <p class="auth-subtitle">Ingresa tu correo electrónico y te enviaremos un código de verificación para restablecer tu cuenta.</p>
-
-            {% if error %}
-                <div class="auth-error">{{ error }}</div>
-            {% endif %}
-
-            <form method="POST" class="auth-form">
-                {% csrf_token %}
-                
-                <div class="input-group">
-                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-                    <input type="email" name="correo" class="form-control" placeholder="Correo electrónico" value="{{ correo|default:'' }}" required>
-                </div>
-
-                <button type="submit" class="btn-submit">Enviar código</button>
-            </form>
-
-            <div class="auth-footer">
-                <a href="/login">Volver al inicio de sesión</a>
+    <div class="login-layout">
+        <nav class="login-navbar" aria-label="{% trans 'Navegación principal' %}">
+            <a class="login-brand" href="/home">
+                <span class="login-brand-logo">
+                    <img src="{% static 'img/imagenes/logo-caribeconfort-default.png' %}" alt="">
+                </span>
+                <span class="login-brand-copy">
+                    <span class="login-brand-name">Caribe Confort</span>
+                    <span class="login-brand-location">{% trans "Riohacha — La Guajira" %}</span>
+                </span>
+            </a>
+            <div class="login-navbar-actions">
+                {% include "clientes/idioma_switcher.html" %}
+                <a class="login-home-link" href="/home">{% trans "Volver al inicio" %}</a>
             </div>
-        </div>
+        </nav>
 
-    </main>
+        <main class="login-main">
+            <div class="login-card">
+                <section class="login-story" aria-label="{% trans 'Caribe Colombiano' %}">
+                    <img class="login-story-image" src="{% static 'img/imagenes/FBAR.jpg' %}" alt="" aria-hidden="true">
+                    <div class="login-story-overlay" aria-hidden="true"></div>
+                    <div class="login-story-copy">
+                        <span class="login-story-rule" aria-hidden="true"></span>
+                        <p class="login-story-eyebrow">{% trans "Caribe Colombiano" %}</p>
+                        <h1>{% trans "Bienvenido de nuevo a tu descanso" %}</h1>
+                        <p class="login-story-description">
+                            {% trans "Recupera el acceso a tu cuenta en pocos pasos para seguir gestionando tus reservas frente al mar." %}
+                        </p>
+                    </div>
+                </section>
 
+                <section class="login-form-panel">
+                    <p class="login-eyebrow">{% trans "Recuperar acceso" %}</p>
+                    <h2 class="login-title">{% trans "¿Olvidaste tu contraseña?" %}</h2>
+                    <p class="login-intro auth-intro">
+                        {% trans "Ingresa tu correo electrónico y te enviaremos un código de verificación para restablecer tu cuenta." %}
+                    </p>
+
+                    {% if error %}
+                        <div class="login-error" role="alert">{{ error }}</div>
+                    {% endif %}
+
+                    <form class="login-form" method="POST">
+                        {% csrf_token %}
+                        <div class="login-form-group">
+                            <label class="login-label" for="recovery-email">{% trans "Correo electrónico" %}</label>
+                            <div class="login-input-wrap">
+                                <svg class="login-input-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                                <input id="recovery-email" type="email" name="correo" autocomplete="email"
+                                       placeholder="{% trans 'Correo electrónico' %}" value="{{ correo|default:'' }}" required autofocus>
+                            </div>
+                        </div>
+                        <button class="login-submit" type="submit">{% trans "Enviar código" %}</button>
+                    </form>
+
+                    <p class="login-register-prompt auth-footer-link">
+                        <a href="/login">{% trans "Volver al inicio de sesión" %}</a>
+                    </p>
+                </section>
+            </div>
+        </main>
+
+        <footer class="login-footer">
+            © 2026 {% trans "Hotel Caribe Confort · Riohacha, La Guajira" %}
+        </footer>
+    </div>
 </body>
 </html>

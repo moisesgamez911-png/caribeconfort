@@ -6,7 +6,7 @@
         </span>
         <span class="brand-copy">
             <strong>{{ nombre_hotel }}</strong>
-            <small>Riohacha · Guajira</small>
+            <small>{{ municipio_hotel|default:"Riohacha" }} · {% trans "Guajira" %}</small>
         </span>
     </a>
 

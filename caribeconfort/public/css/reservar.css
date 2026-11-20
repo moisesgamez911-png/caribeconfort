@@ -2514,8 +2514,51 @@ html[data-theme="dark"] .cc-feedback-actions .cc-feedback-accept {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 24px;
-    overflow: visible;
+    overflow: hidden;
     padding: 0;
+}
+
+.reservas-page .room-carousel-arrow {
+    position: absolute;
+    top: 50%;
+    z-index: 30;
+    display: inline-flex;
+    width: 46px;
+    height: 46px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, .85);
+    border-radius: 50%;
+    background: rgba(24, 61, 61, .92);
+    box-shadow: 0 8px 24px rgba(23, 40, 41, .22);
+    color: #fff;
+    font-family: Georgia, serif;
+    font-size: 34px;
+    line-height: 1;
+    cursor: pointer;
+    transform: translateY(-50%);
+    transition: background .2s ease, transform .2s ease;
+}
+
+.reservas-page .room-carousel-arrow:hover {
+    background: #2d4d4d;
+    transform: translateY(-50%) scale(1.04);
+}
+
+.reservas-page .room-carousel-prev {
+    left: -23px;
+}
+
+.reservas-page .room-carousel-next {
+    right: -23px;
+}
+
+.reservas-page #rooms .room-card {
+    display: block;
+}
+
+.reservas-page #rooms .room-card.is-room-hidden {
+    display: none !important;
 }
 
 .reservas-page .room-card {

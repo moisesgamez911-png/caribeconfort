@@ -53,11 +53,11 @@
     </article>
     <article class="service-highlight">
         <span class="highlight-icon"><svg class="icon"><use href="#i-reloj"/></svg></span>
-        <span><strong>{% trans "Recepción 24/7" %}</strong><small>{% trans "Asistencia permanente" %}</small></span>
+        <span><strong>{% blocktrans %}Recepción {{ recepcion_hotel }}{% endblocktrans %}</strong><small>{% trans "Asistencia permanente" %}</small></span>
     </article>
     <article class="service-highlight">
         <span class="highlight-icon"><svg class="icon"><use href="#i-restaurante"/></svg></span>
-        <span><strong>{% trans "Desayuno Caribeño" %}</strong><small>{% trans "6:30 AM – 10:00 AM" %}</small></span>
+        <span><strong>{% trans "Desayuno" %}</strong><small>{{ desayuno_hotel }}</small></span>
     </article>
     <article class="service-highlight">
         <span class="highlight-icon"><svg class="icon"><use href="#i-parqueadero"/></svg></span>

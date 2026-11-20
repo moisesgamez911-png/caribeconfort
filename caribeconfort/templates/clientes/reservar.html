@@ -31,11 +31,11 @@
     <form class="search-panel" id="bookingForm">
         <div class="field">
             <label for="entrada">{% trans "Llegada" %}</label>
-            <input type="date" id="entrada" name="entrada" value="{{ fecha_entrada|default:'' }}" min="{% now 'Y-m-d' %}" required>
+            <input type="date" id="entrada" name="entrada" value="{{ fecha_entrada }}" min="{% now 'Y-m-d' %}" required>
         </div>
         <div class="field">
             <label for="salida">{% trans "Salida" %}</label>
-            <input type="date" id="salida" name="salida" value="{{ fecha_salida|default:'' }}" min="{% now 'Y-m-d' %}" required>
+            <input type="date" id="salida" name="salida" value="{{ fecha_salida }}" min="{% now 'Y-m-d' %}" required>
         </div>
         <div class="field">
             <label for="adultos">{% trans "Huéspedes" %}</label>
@@ -95,6 +95,7 @@
         </div>
 
         <div class="rooms-wrap">
+            <button type="button" class="room-carousel-arrow room-carousel-prev" id="prev" aria-label="{% trans 'Habitación anterior' %}">‹</button>
             <div class="rooms" id="rooms">
                 {% for t in tipos %}
                     {% cycle 'BASO.jpg' 'pexels-bertellifotografia-9056663.jpg' as habitacion_imagen silent %}
@@ -226,6 +227,7 @@
                     <p class="empty-rooms">{% trans "No hay habitaciones disponibles." %}</p>
                 {% endfor %}
             </div>
+            <button type="button" class="room-carousel-arrow room-carousel-next" id="next" aria-label="{% trans 'Siguiente habitación' %}">›</button>
         </div>
     </section>
 

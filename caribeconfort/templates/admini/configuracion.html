@@ -1,11 +1,12 @@
-{% load static %}
+{% load static i18n %}
+{% get_current_language as CURRENT_LANGUAGE %}
 <!DOCTYPE html>
-<html lang="es">
+<html lang="{{ CURRENT_LANGUAGE }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Configuración | {{ nombre_hotel }}</title>
-    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=105">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
 </head>
@@ -58,6 +59,26 @@
                 <div class="adm-field">
                     <label for="hotelCorreo">Correo electrónico <span>*</span></label>
                     <input id="hotelCorreo" name="correo" type="email" maxlength="100" value="{{ hotel.correo|default:'' }}" required>
+                </div>
+                <div class="adm-field">
+                    <label for="hotelWhatsapp">WhatsApp</label>
+                    <input id="hotelWhatsapp" name="whatsapp" maxlength="30" value="{{ hotel.whatsapp|default:'' }}" placeholder="+57 300 000 0000">
+                </div>
+                <div class="adm-field">
+                    <label for="hotelCheckin">Hora de check-in</label>
+                    <input id="hotelCheckin" name="checkin" maxlength="30" value="{{ hotel.checkin|default:'3:00 PM' }}" placeholder="3:00 PM">
+                </div>
+                <div class="adm-field">
+                    <label for="hotelCheckout">Hora de check-out</label>
+                    <input id="hotelCheckout" name="checkout" maxlength="30" value="{{ hotel.checkout|default:'12:00 PM' }}" placeholder="12:00 PM">
+                </div>
+                <div class="adm-field">
+                    <label for="hotelRecepcion">Recepción</label>
+                    <input id="hotelRecepcion" name="recepcion" maxlength="100" value="{{ hotel.recepcion|default:'24 horas' }}" placeholder="24 horas">
+                </div>
+                <div class="adm-field">
+                    <label for="hotelDesayuno">Horario de desayuno</label>
+                    <input id="hotelDesayuno" name="desayuno" maxlength="100" value="{{ hotel.desayuno|default:'7:00 AM - 10:00 AM' }}" placeholder="7:00 AM - 10:00 AM">
                 </div>
                 <div class="adm-field adm-span-2">
                     <label for="hotelDescripcion">Descripción</label>

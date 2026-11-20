@@ -1,27 +1,43 @@
-{% load static %}
+{% load static i18n %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
 <header class="ad-top">
-    <a href="{% if rol == 'Recepcionista' or request.session.rol == 'Recepcionista' %}/recepcion{% else %}/administrador{% endif %}" class="ad-logo">
-        {{ nombre_hotel }}
+    <a href="{% if rol == 'Recepcionista' or request.session.rol == 'Recepcionista' %}/recepcion{% else %}/administrador{% endif %}" class="ad-logo" aria-label="{% trans 'Caribe Confort, inicio del panel' %}">
+        <span class="ad-brand-mark" aria-hidden="true">C</span>
+        <span class="ad-brand-copy">
+            <span class="ad-brand-line">
+                <span class="ad-brand-name">{{ nombre_hotel|default:"Caribe Confort" }}</span>
+                <span class="ad-brand-badge">{% if rol == 'Recepcionista' or request.session.rol == 'Recepcionista' %}{% trans "Recepción" %}{% else %}{% trans "Administración" %}{% endif %}</span>
+            </span>
+            <span class="ad-brand-caption">{% trans "Riohacha, La Guajira · Sistema de Gestión Hotelera" %}</span>
+        </span>
     </a>
     <div class="ad-top-der">
-        <button type="button" class="ad-theme-toggle" id="adThemeToggle" aria-label="Activar modo oscuro" title="Activar modo oscuro">
+        {% include "clientes/idioma_switcher.html" %}
+        <span class="ad-header-date"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span id="adFecha"></span></span>
+        <a class="ad-header-notification" href="/adminreserva" aria-label="{% trans 'Ver reservas pendientes' %}" title="{% trans 'Ver reservas pendientes' %}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+            {% if notificaciones_pendientes %}<span class="ad-header-notification-count">{{ notificaciones_pendientes }}</span>{% endif %}
+        </a>
+        <button type="button" class="ad-theme-toggle" id="adThemeToggle" aria-label="{% trans 'Activar modo oscuro' %}" title="{% trans 'Activar modo oscuro' %}">
             <svg class="ad-theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
             <svg class="ad-theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.5 8.5 0 1 0 20.5 15.5Z"/></svg>
         </button>
-        <span class="ad-fecha" id="adFecha"></span>
+        <span class="ad-header-divider" aria-hidden="true"></span>
         <div class="ad-usuario">
             <button type="button" id="adUsuarioBtn" aria-expanded="false" aria-controls="adUsuarioMenu">
                 <span class="ad-avatar">{{ nombre|default:request.session.usuario_nom|default:"A"|slice:":1"|upper }}</span>
-                <span class="ad-usuario-txt">{{ nombre|default:request.session.usuario_nom|default:"Administrador" }}</span>
-                <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                <span class="ad-user-copy">
+                    <span class="ad-usuario-txt">{{ nombre|default:request.session.usuario_nom|default:"Administrador" }}</span>
+                    <small>{{ rol|default:request.session.rol|default:"Administrador" }}</small>
+                </span>
+                <svg class="ic ad-user-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
             </button>
             <div class="ad-usuario-menu" id="adUsuarioMenu">
                 <p>{{ nombre|default:request.session.usuario_nom|default:"Administrador" }}<small>{{ rol|default:request.session.rol|default:"Administrador" }}</small></p>
-                <a href="/home">Ver sitio del hotel</a>
-                <a href="/logout" class="salir">Cerrar sesión</a>
+                <a href="/home">{% trans "Ver sitio del hotel" %}</a>
+                <a href="/logout" class="salir">{% trans "Cerrar sesión" %}</a>
             </div>
         </div>
     </div>

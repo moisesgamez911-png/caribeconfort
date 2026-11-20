@@ -299,7 +299,7 @@ def galeria(request):
     categorias_bd = CategoriaGaleria.objects.filter(
         estado=True,
         imagengaleria__estado=True,
-        imagengaleria__seccion='galeria',
+        imagengaleria__seccion__in=SECCIONES_GALERIA_PUBLICA,
     ).distinct().order_by('orden')
     grupos_categorias = {}
     for categoria in categorias_bd:
@@ -316,13 +316,13 @@ def galeria(request):
         categoria.total = ImagenGaleria.objects.filter(
             categoria_id__in=grupo['ids'],
             estado=True,
-            seccion='galeria',
+            seccion__in=SECCIONES_GALERIA_PUBLICA,
         ).count()
         categorias.append(categoria)
 
     imagenes = ImagenGaleria.objects.filter(
         estado=True,
-        seccion='galeria',
+        seccion__in=SECCIONES_GALERIA_PUBLICA,
     ).select_related('categoria')
     categoria_activa = None
 
@@ -341,7 +341,10 @@ def galeria(request):
     for imagen in imagenes:
         imagen.url_imagen = _url_imagen_local(imagen.imagen)
 
-    total_general = ImagenGaleria.objects.filter(estado=True, seccion='galeria').count()
+    total_general = ImagenGaleria.objects.filter(
+        estado=True,
+        seccion__in=SECCIONES_GALERIA_PUBLICA,
+    ).count()
 
     context = {
         'categorias': categorias,
@@ -3069,6 +3072,7 @@ SECCION_CATEGORIA_GALERIA = {
     'servicio': ('Servicios', 'estrella'),
     'galeria': ('Galería', 'imagen'),
 }
+SECCIONES_GALERIA_PUBLICA = ('carrusel', 'galeria')
 EXTENSIONES_IMAGEN_PERMITIDAS = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
 
 
@@ -3306,11 +3310,18 @@ def configuracionadmin(request):
                         'municipio': request.POST.get('municipio', '').strip(),
                         'telefono': request.POST.get('telefono', '').strip(),
                         'correo': request.POST.get('correo', '').strip(),
+                        'whatsapp': request.POST.get('whatsapp', '').strip(),
+                        'checkin': request.POST.get('checkin', '').strip(),
+                        'checkout': request.POST.get('checkout', '').strip(),
+                        'recepcion': request.POST.get('recepcion', '').strip(),
+                        'desayuno': request.POST.get('desayuno', '').strip(),
                         'fotografias': request.POST.get('fotografias', '').strip(),
                     }
                     limites = {
                         'nombre': 100, 'direccion': 100, 'municipio': 100,
                         'telefono': 20, 'correo': 100, 'fotografias': 255,
+                        'whatsapp': 30, 'checkin': 30, 'checkout': 30,
+                        'recepcion': 100, 'desayuno': 100,
                     }
                     if not all(campos[key] for key in ('nombre', 'direccion', 'municipio', 'telefono', 'correo')):
                         messages.error(request, 'Completa los campos obligatorios del hotel.')
@@ -3371,8 +3382,9 @@ def registrarservicio(request):
     return render(request, 'admini/registrarservicio.html')
 
 def buscar_disponibilidad(request):
-    fecha_entrada = request.GET.get('entrada', '')
-    fecha_salida  = request.GET.get('salida', '')
+    hoy = timezone.localdate()
+    fecha_entrada = request.GET.get('entrada') or hoy.isoformat()
+    fecha_salida  = request.GET.get('salida') or (hoy + timedelta(days=1)).isoformat()
     adultos       = request.GET.get('adultos') or '2'
     ninos         = request.GET.get('ninos')   or '0'
     habitaciones_n = request.GET.get('habitaciones') or '1'

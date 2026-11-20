@@ -102,7 +102,7 @@
 </main>
 
 <footer class="gallery-footer">
-    © 2026 Hotel Caribe Confort · Av. La Marina #14-28, Riohacha, La Guajira · reservas@caribeconfort.com
+    © 2026 {{ nombre_hotel }} · {{ direccion_hotel|default:"Av. La Marina #14-28, Riohacha, La Guajira" }} · {{ correo_hotel|default:"reservas@caribeconfort.com" }}
 </footer>
 
 <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="{% trans 'Visor de imágenes' %}" aria-hidden="true">

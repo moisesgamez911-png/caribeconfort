@@ -1,20 +1,21 @@
 {% load static %}
-{% load static l10n %}
+{% load static l10n i18n %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Principal | Caribe Confort</title>
+    <title>{% trans "Panel Principal" %} | Caribe Confort</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     
-    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=104">
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=105">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=102">
     <link rel="stylesheet" href="{% static 'css/administrador/reservas.css' %}?v=2">
     <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin-panel-general.css' %}?v=1">
 </head>
-<body>
+<body class="admin-dashboard-page">
 
 {% include 'inc/admin_header.html' %}
 {% include 'inc/admin_nav.html' %}
@@ -23,14 +24,20 @@
 
     <div class="dash-header">
         <div>
-            <p class="adm-eyebrow">INFORMACIÓN GENERAL DEL HOTEL</p>
-            <h1 class="dash-title">Bienvenido, {{ request.session.usuario_nom|default:"Administrador" }}</h1>
-            <p class="dash-sub">Aquí tienes un resumen general del estado del hotel.</p>
+            <p class="adm-eyebrow">{% trans "INFORMACIÓN GENERAL DEL HOTEL" %}</p>
+            <h1 class="dash-title">{% trans "Bienvenido" %}, {{ nombre|default:"Administrador" }}</h1>
+            <p class="dash-sub">{% trans "Resumen ejecutivo del estado y las operaciones del hotel." %}</p>
         </div>
-        <div class="dash-fecha">
-            <div>
-                <strong>{% now "l, j \d\e F \d\e Y" %}</strong>
-                <span>Hotel Caribe Confort - Riohacha, La Guajira</span>
+        <div class="dash-header-meta">
+            <div class="dash-fecha">
+                <div>
+                    <strong>{% now "l, j \d\e F \d\e Y" %}</strong>
+                    <span>{% trans "Hotel Caribe Confort · Riohacha, La Guajira" %}</span>
+                </div>
+            </div>
+            <div class="dash-header-actions">
+                <a class="dash-action-secondary" href="/adminreportes/exportar?tipo=reservas">{% trans "Exportar reporte" %}</a>
+                <a class="dash-action-primary" href="/adminreserva">{% trans "Nueva reserva" %}</a>
             </div>
         </div>
     </div>
@@ -101,6 +108,9 @@
             <div class="kpi-foot">Solicitadas hoy</div>
         </div>
 
+    </div>
+
+    <div class="dash-kpis-secondary">
         <div class="kpi-card">
             <div class="kpi-top">
                 <span class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>
@@ -326,6 +336,7 @@
             </div>
         </div>
 
+        <div class="dash-support-grid">
         <div class="dash-col-mid">
             
             <div class="dash-card card-ocupacion">
@@ -496,6 +507,7 @@
                     {% endfor %}
                 </ul>
             </div>
+        </div>
         </div>
 
     </div>

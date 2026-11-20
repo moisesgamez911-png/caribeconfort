@@ -116,6 +116,126 @@ msgstr "Explore"
 msgid "Todos los derechos reservados"
 msgstr "All rights reserved"
 
+msgid "Habitaciones y reservas"
+msgstr "Rooms and bookings"
+
+msgid "Llegada"
+msgstr "Check-in"
+
+msgid "Salida"
+msgstr "Check-out"
+
+msgid "Convenio"
+msgstr "Agreement"
+
+msgid "Código"
+msgstr "Code"
+
+msgid "aplicado"
+msgstr "applied"
+
+msgid "de descuento"
+msgstr "discount"
+
+msgid "Nuestras habitaciones"
+msgstr "Our rooms"
+
+msgid "Descanso frente al Caribe"
+msgstr "Relaxation facing the Caribbean"
+
+msgid "Comodidad, naturaleza y el mejor servicio"
+msgstr "Comfort, nature, and the best service"
+
+msgid "Habitación anterior"
+msgstr "Previous room"
+
+msgid "Siguiente habitación"
+msgstr "Next room"
+
+msgid "Añadir"
+msgstr "Add"
+
+msgid "Añadida"
+msgstr "Added"
+
+msgid "Descripción"
+msgstr "Description"
+
+msgid "Reseñas"
+msgstr "Reviews"
+
+msgid "Agregar desayuno"
+msgstr "Add breakfast"
+
+msgid "Ver todas las fotos"
+msgstr "View all photos"
+
+msgid "Confirmar reserva"
+msgstr "Confirm booking"
+
+msgid "Revisa la información antes de confirmar."
+msgstr "Review the information before confirming."
+
+msgid "Entrada"
+msgstr "Check-in"
+
+msgid "Noches"
+msgstr "Nights"
+
+msgid "Descuento convenio"
+msgstr "Agreement discount"
+
+msgid "Total a pagar"
+msgstr "Total to pay"
+
+msgid "Falta información"
+msgstr "Missing information"
+
+msgid "Debes completar las fechas y seleccionar al menos una habitación."
+msgstr "Complete the dates and select at least one room."
+
+msgid "Entendido"
+msgstr "Got it"
+
+msgid "RECUPERAR ACCESO"
+msgstr "RECOVER ACCESS"
+
+msgid "¿Olvidaste tu contraseña?"
+msgstr "Forgot your password?"
+
+msgid "Ingresa tu correo electrónico y te enviaremos un código de verificación para restablecer tu cuenta."
+msgstr "Enter your email address and we will send you a verification code to reset your account."
+
+msgid "Enviar código"
+msgstr "Send code"
+
+msgid "Volver al inicio de sesión"
+msgstr "Back to login"
+
+msgid "SEGURIDAD"
+msgstr "SECURITY"
+
+msgid "Restablecer contraseña"
+msgstr "Reset password"
+
+msgid "Revisa tu correo electrónico e ingresa el código de verificación."
+msgstr "Check your email and enter the verification code."
+
+msgid "Código de verificación"
+msgstr "Verification code"
+
+msgid "Verificar código"
+msgstr "Verify code"
+
+msgid "Nueva contraseña"
+msgstr "New password"
+
+msgid "Actualizar contraseña"
+msgstr "Update password"
+
+msgid "Cancelar y volver al login"
+msgstr "Cancel and return to login"
+
 msgid "BIENVENIDO DE NUEVO"
 msgstr "WELCOME BACK"
 
