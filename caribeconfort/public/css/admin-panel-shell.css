@@ -1,0 +1,470 @@
+body:not(.admin-dashboard-page) {
+    min-height: 100vh;
+    background: #F3F4F6;
+    color: #111827;
+}
+
+body:not(.admin-dashboard-page),
+body:not(.admin-dashboard-page) *:not([class*="bi-"]):not([class^="fa-"]):not([class*=" fa-"]):not([class*="material-icons"]):not([class*="material-symbols"]) {
+    font-family: "Segoe UI", Arial, sans-serif !important;
+}
+
+body:not(.admin-dashboard-page) .ad-main,
+body:not(.admin-dashboard-page) .rp-main,
+body:not(.admin-dashboard-page) .cv-main {
+    width: 100%;
+    max-width: 1920px;
+    margin: 0 auto;
+    padding: 88px clamp(18px, 2.2vw, 36px) 48px 80px;
+}
+
+body.menu-abierto:not(.admin-dashboard-page) .ad-main,
+body.menu-abierto:not(.admin-dashboard-page) .rp-main,
+body.menu-abierto:not(.admin-dashboard-page) .cv-main {
+    padding-left: 270px;
+}
+
+body:not(.admin-dashboard-page) .reception-main {
+    width: 100%;
+    max-width: 1920px;
+    margin: 0 auto 60px;
+    padding: 84px clamp(18px, 2.2vw, 36px) 48px 80px;
+}
+
+body.menu-abierto:not(.admin-dashboard-page) .reception-main {
+    padding-left: 270px;
+}
+
+body:not(.admin-dashboard-page) .adm-page {
+    width: 100%;
+    max-width: 1840px;
+    margin: 0 auto;
+}
+
+body:not(.admin-dashboard-page) .adm-heading {
+    margin-bottom: 16px;
+}
+
+body:not(.admin-dashboard-page) .adm-eyebrow,
+body:not(.admin-dashboard-page) .cv-eyebrow,
+body:not(.admin-dashboard-page) .rp-eyebrow,
+body:not(.admin-dashboard-page) .reception-eyebrow {
+    margin-bottom: 5px;
+    font-size: 9px;
+    letter-spacing: .09em;
+}
+
+body:not(.admin-dashboard-page) .adm-heading h1,
+body:not(.admin-dashboard-page) .rv-title,
+body:not(.admin-dashboard-page) .rp-heading h1,
+body:not(.admin-dashboard-page) .cv-page-head h1,
+body:not(.admin-dashboard-page) .reception-welcome h1 {
+    color: #111827;
+    font-size: clamp(21px, 1.65vw, 27px);
+    font-weight: 700;
+    letter-spacing: -.025em;
+    line-height: 1.25;
+}
+
+body:not(.admin-dashboard-page) .adm-heading > div:first-child > p:last-child,
+body:not(.admin-dashboard-page) .adm-card-heading p,
+body:not(.admin-dashboard-page) .adm-section-heading p,
+body:not(.admin-dashboard-page) .reception-welcome p:last-child,
+body:not(.admin-dashboard-page) .rp-heading p,
+body:not(.admin-dashboard-page) .cv-page-head p {
+    font-size: 11px;
+}
+
+body:not(.admin-dashboard-page) .adm-card-heading h2,
+body:not(.admin-dashboard-page) .adm-section-heading h2,
+body:not(.admin-dashboard-page) .rv-card-title,
+body:not(.admin-dashboard-page) .rp-card h2,
+body:not(.admin-dashboard-page) .cv-card h2,
+body:not(.admin-dashboard-page) .reception-card-heading h2 {
+    color: #111827;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+body:not(.admin-dashboard-page) .adm-stats,
+body:not(.admin-dashboard-page) .rv-kpis {
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+body:not(.admin-dashboard-page) .adm-stat-card {
+    min-height: 78px;
+    gap: 7px 10px;
+    padding: 12px 14px;
+}
+
+body:not(.admin-dashboard-page) .adm-stat-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+}
+
+body:not(.admin-dashboard-page) .adm-stat-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+body:not(.admin-dashboard-page) .adm-stat-label,
+body:not(.admin-dashboard-page) .rv-kpi-label {
+    font-size: 10px;
+}
+
+body:not(.admin-dashboard-page) .adm-stat-card strong,
+body:not(.admin-dashboard-page) .rv-kpi-valor {
+    font-size: 21px;
+}
+
+body:not(.admin-dashboard-page) .adm-card,
+body:not(.admin-dashboard-page) .adm-stat-card,
+body:not(.admin-dashboard-page) .rv-card,
+body:not(.admin-dashboard-page) .rv-kpi-card,
+body:not(.admin-dashboard-page) .rp-card,
+body:not(.admin-dashboard-page) .cv-card,
+body:not(.admin-dashboard-page) .reception-card,
+body:not(.admin-dashboard-page) .quick-action {
+    border-color: #E1E5EA;
+    border-radius: 7px;
+    box-shadow: 0 1px 3px rgba(17, 24, 39, .05);
+}
+
+body:not(.admin-dashboard-page) .adm-card {
+    margin-bottom: 14px;
+    padding: 16px;
+}
+
+body:not(.admin-dashboard-page) .rv-card {
+    padding: 15px;
+}
+
+body:not(.admin-dashboard-page) .cv-card,
+body:not(.admin-dashboard-page) .rp-card {
+    padding: 16px;
+}
+
+body:not(.admin-dashboard-page) .adm-card-heading,
+body:not(.admin-dashboard-page) .adm-section-heading {
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+body:not(.admin-dashboard-page) .adm-card-heading h2,
+body:not(.admin-dashboard-page) .adm-section-heading h2,
+body:not(.admin-dashboard-page) .cv-card h2,
+body:not(.admin-dashboard-page) .rp-card h2 {
+    font-size: 13px;
+}
+
+body:not(.admin-dashboard-page) .adm-button,
+body:not(.admin-dashboard-page) .cv-button,
+body:not(.admin-dashboard-page) .cv-back,
+body:not(.admin-dashboard-page) .rp-back,
+body:not(.admin-dashboard-page) .rp-submit button,
+body:not(.admin-dashboard-page) .rv-btn-primary,
+body:not(.admin-dashboard-page) .rv-btn-outline,
+body:not(.admin-dashboard-page) .table-action {
+    min-height: 32px;
+    padding: 7px 11px;
+    border-radius: 5px;
+    font-size: 11px;
+}
+
+body:not(.admin-dashboard-page) .adm-input,
+body:not(.admin-dashboard-page) .adm-field input,
+body:not(.admin-dashboard-page) .adm-field select,
+body:not(.admin-dashboard-page) .adm-field textarea,
+body:not(.admin-dashboard-page) .adm-search input,
+body:not(.admin-dashboard-page) .user-role-form select,
+body:not(.admin-dashboard-page) .rv-input,
+body:not(.admin-dashboard-page) .rv-input-icon input,
+body:not(.admin-dashboard-page) .rp-field input,
+body:not(.admin-dashboard-page) .rp-field select,
+body:not(.admin-dashboard-page) .cv-form input,
+body:not(.admin-dashboard-page) .cv-form select,
+body:not(.admin-dashboard-page) .cv-form textarea,
+body:not(.admin-dashboard-page) .dialog-grid input,
+body:not(.admin-dashboard-page) .dialog-grid select {
+    border-color: #D1D5DB;
+    border-radius: 5px;
+    font-size: 11px;
+}
+
+body:not(.admin-dashboard-page) .adm-field input,
+body:not(.admin-dashboard-page) .adm-field select,
+body:not(.admin-dashboard-page) .adm-search input,
+body:not(.admin-dashboard-page) .user-role-form select,
+body:not(.admin-dashboard-page) .rv-input,
+body:not(.admin-dashboard-page) .rp-field input,
+body:not(.admin-dashboard-page) .rp-field select,
+body:not(.admin-dashboard-page) .cv-form input,
+body:not(.admin-dashboard-page) .cv-form select {
+    min-height: 35px;
+    padding: 7px 9px;
+}
+
+body:not(.admin-dashboard-page) .adm-field label,
+body:not(.admin-dashboard-page) .rv-form-group label,
+body:not(.admin-dashboard-page) .rp-field label,
+body:not(.admin-dashboard-page) .cv-form label {
+    font-size: 10px;
+}
+
+body:not(.admin-dashboard-page) .adm-table th,
+body:not(.admin-dashboard-page) .rv-table th,
+body:not(.admin-dashboard-page) .cv-table th,
+body:not(.admin-dashboard-page) .reception-card th {
+    padding: 9px 10px;
+    border-bottom: 1px solid #D7DDE3;
+    background: #F3F4F6;
+    color: #4B5563;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .045em;
+}
+
+body:not(.admin-dashboard-page) .adm-table td,
+body:not(.admin-dashboard-page) .rv-table td,
+body:not(.admin-dashboard-page) .cv-table td,
+body:not(.admin-dashboard-page) .reception-card td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #E1E5EA;
+    color: #374151;
+    font-size: 11px;
+}
+
+body:not(.admin-dashboard-page) .adm-pagination,
+body:not(.admin-dashboard-page) .rv-pagination {
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid #E1E5EA;
+    color: #6B7280;
+    font-size: 10px;
+}
+
+body:not(.admin-dashboard-page) .adm-pagination a,
+body:not(.admin-dashboard-page) .rv-pag-btn {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 5px 9px;
+    border: 1px solid #D1D5DB;
+    border-radius: 5px;
+    background: #fff;
+    color: #374151;
+    font-size: 10px;
+}
+
+body:not(.admin-dashboard-page) .adm-pagination a:hover,
+body:not(.admin-dashboard-page) .rv-pag-btn:hover {
+    border-color: #183D3D;
+    background: #F3F4F6;
+}
+
+body:not(.admin-dashboard-page) .adm-pagination a[aria-current="page"],
+body:not(.admin-dashboard-page) .rv-pag-btn.active {
+    border-color: #183D3D;
+    background: #183D3D;
+    color: #fff;
+}
+
+body:not(.admin-dashboard-page) .reception-welcome {
+    margin-bottom: 16px;
+}
+
+body:not(.admin-dashboard-page) .quick-actions {
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+body:not(.admin-dashboard-page) .quick-action {
+    min-height: 70px;
+    gap: 10px;
+    padding: 12px;
+}
+
+body:not(.admin-dashboard-page) .quick-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    font-size: 19px;
+}
+
+body:not(.admin-dashboard-page) .quick-action strong,
+body:not(.admin-dashboard-page) .reception-card td strong {
+    font-size: 11px;
+}
+
+body:not(.admin-dashboard-page) .quick-action small,
+body:not(.admin-dashboard-page) .reception-card td small {
+    font-size: 10px;
+}
+
+body:not(.admin-dashboard-page) .reception-tables {
+    gap: 14px;
+}
+
+body:not(.admin-dashboard-page) .reception-card {
+    padding: 16px;
+}
+
+body:not(.admin-dashboard-page) .reception-card-heading {
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+body:not(.admin-dashboard-page) .reception-count {
+    min-width: 26px;
+    height: 26px;
+    font-size: 11px;
+}
+
+body:not(.admin-dashboard-page) .rv-table th,
+body:not(.admin-dashboard-page) .adm-table th,
+body:not(.admin-dashboard-page) .reception-card th {
+    background: #F9FAFB;
+    color: #4B5563;
+    font-size: 10px;
+}
+
+html[data-theme="dark"] body:not(.admin-dashboard-page) {
+    background: #1C2423;
+    color: #F3F4F6;
+}
+
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-card,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-stat-card,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rv-card,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rv-kpi-card,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rp-card,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .cv-card,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .reception-card,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .quick-action {
+    border-color: #394443;
+    background: #242D2C;
+}
+
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-heading h1,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rv-title,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rp-heading h1,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .cv-page-head h1,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .reception-welcome h1,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-card-heading h2,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-section-heading h2,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rv-card-title,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rp-card h2,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .cv-card h2,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .reception-card-heading h2 {
+    color: #F3F4F6;
+}
+
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-input,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-field input,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-field select,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-field textarea,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-search input,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .user-role-form select,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rv-input,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rv-input-icon input,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rp-field input,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rp-field select,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .cv-form input,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .cv-form select,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .cv-form textarea,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .dialog-grid input,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .dialog-grid select {
+    border-color: #566161;
+    background: #222929;
+    color: #F0F4F3;
+}
+
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-table th,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rv-table th,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .cv-table th,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .reception-card th {
+    border-color: #394443;
+    background: #283130;
+    color: #D1D5DB;
+}
+
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-table td,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rv-table td,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .cv-table td,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .reception-card td {
+    border-color: #394443;
+    color: #C4CECD;
+}
+
+@media (max-width: 1050px) {
+    body:not(.admin-dashboard-page) .ad-main,
+    body:not(.admin-dashboard-page) .rp-main,
+    body:not(.admin-dashboard-page) .cv-main {
+        padding-left: 64px;
+        padding-right: 20px;
+    }
+
+    body:not(.admin-dashboard-page) .reception-main {
+        padding-left: 64px;
+        padding-right: 20px;
+    }
+
+    body.menu-abierto:not(.admin-dashboard-page) .reception-main {
+        padding-left: 270px;
+    }
+}
+
+@media (max-width: 760px) {
+    body:not(.admin-dashboard-page) .ad-main,
+    body:not(.admin-dashboard-page) .rp-main,
+    body:not(.admin-dashboard-page) .cv-main,
+    body.menu-abierto:not(.admin-dashboard-page) .ad-main,
+    body.menu-abierto:not(.admin-dashboard-page) .rp-main,
+    body.menu-abierto:not(.admin-dashboard-page) .cv-main {
+        padding: 76px 14px 90px;
+    }
+
+    body:not(.admin-dashboard-page) .reception-main,
+    body.menu-abierto:not(.admin-dashboard-page) .reception-main {
+        padding: 76px 14px 90px;
+    }
+
+    body:not(.admin-dashboard-page) .adm-stats,
+    body:not(.admin-dashboard-page) .rv-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    body:not(.admin-dashboard-page) .adm-heading,
+    body:not(.admin-dashboard-page) .adm-card-heading,
+    body:not(.admin-dashboard-page) .adm-section-heading,
+    body:not(.admin-dashboard-page) .reception-welcome,
+    body:not(.admin-dashboard-page) .reception-card-heading {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    body:not(.admin-dashboard-page) .adm-search {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    body:not(.admin-dashboard-page) .adm-search input {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    body:not(.admin-dashboard-page) .adm-form-grid,
+    body:not(.admin-dashboard-page) .cv-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    body:not(.admin-dashboard-page) .adm-span-2 {
+        grid-column: auto;
+    }
+
+    body:not(.admin-dashboard-page) .adm-pagination {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}

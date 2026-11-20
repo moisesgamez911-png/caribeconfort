@@ -7,6 +7,7 @@
     <title>Recepción | Caribe Confort</title>
     <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=105">
     <link rel="stylesheet" href="{% static 'css/recepcionista/dashboard.css' %}?v=4">
+    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=2">
 </head>
 <body>
 {% include 'inc/admin_header.html' %}
@@ -93,6 +94,7 @@
         <article class="reception-card" id="reservas-hotel">
             <header class="reception-card-heading">
                 <div><p class="reception-eyebrow">GESTIÓN DE ESTADÍAS</p><h2>Todas las Reservas</h2></div>
+                <span class="reception-count" aria-label="Total de reservas">{{ total_reservas }}</span>
                 <a class="table-action" href="/adminreserva">Administrar reservas</a>
             </header>
             <div class="reception-table-wrap">

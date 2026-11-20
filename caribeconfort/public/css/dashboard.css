@@ -352,6 +352,10 @@ body {
 .card-ocupacion {
     display: flex;
     flex-direction: column;
+    height: 100%;
+    width: 600px;
+    min-width: 450px !important;
+
 }
 
 .chart-container {
@@ -444,6 +448,9 @@ body {
     border-radius: var(--radio-tarjeta);
     padding: 20px 24px;
     box-shadow: var(--sombra-tarjeta);
+    width: 600px;
+    min-width: 500px !important;
+
 }
 
 .ing-card-lineal .dash-card-head {

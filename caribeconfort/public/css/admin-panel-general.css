@@ -10,7 +10,7 @@ body.admin-dashboard-page *:not([class*="bi-"]) {
 
 body.admin-dashboard-page .ad-main {
     width: 100%;
-    max-width: 1680px;
+    max-width: 1920px;
     margin: 0 auto;
     padding: 88px 28px 48px 80px;
 }
@@ -210,7 +210,7 @@ body.admin-dashboard-page .kpi-foot.rojo {
 
 body.admin-dashboard-page .dash-main-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(300px, .9fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 16px;
     align-items: start;
 }
@@ -225,10 +225,41 @@ body.admin-dashboard-page .dash-col-right {
 }
 
 body.admin-dashboard-page .dash-support-grid {
-    display: flex;
+    display: grid;
     min-width: 0;
-    flex-direction: column;
-    gap: 14px;
+    grid-template-columns: minmax(0, 1.35fr) minmax(300px, .9fr);
+    align-items: start;
+    gap: 16px;
+}
+
+body.admin-dashboard-page .dash-support-grid > .dash-col-mid,
+body.admin-dashboard-page .dash-support-grid > .dash-col-right {
+    width: 100%;
+    min-width: 0;
+}
+
+body.admin-dashboard-page .dash-support-grid > .dash-col-right .estado-hotel-card {
+    height: auto;
+    min-height: 170px;
+    max-height: none;
+    grid-template-columns: minmax(0, 1.1fr) minmax(130px, .9fr);
+    grid-template-rows: 38px minmax(130px, 1fr);
+}
+
+body.admin-dashboard-page .dash-support-grid > .dash-col-right .estado-hotel-card > .dash-card-head {
+    padding: 10px 12px 4px;
+}
+
+body.admin-dashboard-page .dash-support-grid > .dash-col-right .estado-img-wrap {
+    min-width: 0;
+    overflow: hidden;
+}
+
+body.admin-dashboard-page .dash-support-grid > .dash-col-right .estado-img-wrap img {
+    width: 100%;
+    height: 100%;
+    min-height: 145px;
+    object-fit: cover;
 }
 
 body.admin-dashboard-page .dash-card {
@@ -554,47 +585,47 @@ body.admin-dashboard-page .ing-periodo {
     font-size: 10px;
 }
 
-[data-theme="dark"] body.admin-dashboard-page {
+html[data-theme="dark"] body.admin-dashboard-page {
     background: #1C2423;
     color: #F3F4F6;
 }
 
-[data-theme="dark"] body.admin-dashboard-page .dash-header,
-[data-theme="dark"] body.admin-dashboard-page .kpi-card,
-[data-theme="dark"] body.admin-dashboard-page .dash-card {
+html[data-theme="dark"] body.admin-dashboard-page .dash-header,
+html[data-theme="dark"] body.admin-dashboard-page .kpi-card,
+html[data-theme="dark"] body.admin-dashboard-page .dash-card {
     border-color: #394443;
     background: #242D2C;
 }
 
-[data-theme="dark"] body.admin-dashboard-page .dash-title,
-[data-theme="dark"] body.admin-dashboard-page .kpi-valor,
-[data-theme="dark"] body.admin-dashboard-page .dash-card-title,
-[data-theme="dark"] body.admin-dashboard-page .estado-nombre,
-[data-theme="dark"] body.admin-dashboard-page .mini-card-title {
+html[data-theme="dark"] body.admin-dashboard-page .dash-title,
+html[data-theme="dark"] body.admin-dashboard-page .kpi-valor,
+html[data-theme="dark"] body.admin-dashboard-page .dash-card-title,
+html[data-theme="dark"] body.admin-dashboard-page .estado-nombre,
+html[data-theme="dark"] body.admin-dashboard-page .mini-card-title {
     color: #F3F4F6;
 }
 
-[data-theme="dark"] body.admin-dashboard-page .dash-sub,
-[data-theme="dark"] body.admin-dashboard-page .dash-fecha span,
-[data-theme="dark"] body.admin-dashboard-page .kpi-label,
-[data-theme="dark"] body.admin-dashboard-page .kpi-sub,
-[data-theme="dark"] body.admin-dashboard-page .kpi-foot,
-[data-theme="dark"] body.admin-dashboard-page .dash-tabla td,
-[data-theme="dark"] body.admin-dashboard-page .lista-accesos a {
+html[data-theme="dark"] body.admin-dashboard-page .dash-sub,
+html[data-theme="dark"] body.admin-dashboard-page .dash-fecha span,
+html[data-theme="dark"] body.admin-dashboard-page .kpi-label,
+html[data-theme="dark"] body.admin-dashboard-page .kpi-sub,
+html[data-theme="dark"] body.admin-dashboard-page .kpi-foot,
+html[data-theme="dark"] body.admin-dashboard-page .dash-tabla td,
+html[data-theme="dark"] body.admin-dashboard-page .lista-accesos a {
     color: #C4CECD;
 }
 
-[data-theme="dark"] body.admin-dashboard-page .dash-tabla th,
-[data-theme="dark"] body.admin-dashboard-page .rv-pag-btn,
-[data-theme="dark"] body.admin-dashboard-page .toggle-ocupacion {
+html[data-theme="dark"] body.admin-dashboard-page .dash-tabla th,
+html[data-theme="dark"] body.admin-dashboard-page .rv-pag-btn,
+html[data-theme="dark"] body.admin-dashboard-page .toggle-ocupacion {
     border-color: #485252;
     background: #283130;
     color: #D1D5DB;
 }
 
-[data-theme="dark"] body.admin-dashboard-page .dash-tabla td,
-[data-theme="dark"] body.admin-dashboard-page .dash-card-head,
-[data-theme="dark"] body.admin-dashboard-page .rv-pagination {
+html[data-theme="dark"] body.admin-dashboard-page .dash-tabla td,
+html[data-theme="dark"] body.admin-dashboard-page .dash-card-head,
+html[data-theme="dark"] body.admin-dashboard-page .rv-pagination {
     border-color: #394443;
 }
 
@@ -619,9 +650,7 @@ body.admin-dashboard-page .ing-periodo {
     }
 
     body.admin-dashboard-page .dash-support-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        align-items: start;
+        grid-template-columns: minmax(0, 1.2fr) minmax(280px, .9fr);
     }
 
     body.admin-dashboard-page .dash-col-mid,
@@ -671,6 +700,10 @@ body.admin-dashboard-page .ing-periodo {
 
     body.admin-dashboard-page .dash-support-grid {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    body.admin-dashboard-page .dash-support-grid > .dash-col-right .estado-hotel-card {
+        grid-template-columns: minmax(0, 1.1fr) minmax(120px, .9fr);
     }
 
     body.admin-dashboard-page .dash-grid-3 {

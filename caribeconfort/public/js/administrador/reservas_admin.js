@@ -32,7 +32,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!modal) return;
         ids.forEach(function (id) {
             var boton = document.getElementById(id);
-            if (boton) boton.addEventListener('click', function () { cerrarModal(modal); });
+            if (boton) boton.addEventListener('click', function (event) {
+                event.preventDefault();
+                cerrarModal(modal);
+            });
         });
         modal.addEventListener('click', function (event) {
             if (event.target === modal) cerrarModal(modal);

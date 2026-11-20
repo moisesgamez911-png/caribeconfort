@@ -76,28 +76,50 @@ def _descifrar_contrasena_smtp(contrasena_cifrada):
 
 def _conexion_correo_hotel():
     hotel = Hoteles.objects.filter(smtp_host__gt='').order_by('id').first()
-    if not hotel:
-        return None, settings.DEFAULT_FROM_EMAIL
+    if hotel:
+        if not all((
+            hotel.smtp_host,
+            hotel.smtp_port,
+            hotel.smtp_username,
+            hotel.smtp_from_email,
+            hotel.smtp_password_encrypted,
+        )):
+            raise RuntimeError('La configuración SMTP del hotel está incompleta.')
 
-    if not all((
-        hotel.smtp_host,
-        hotel.smtp_port,
-        hotel.smtp_username,
-        hotel.smtp_from_email,
-        hotel.smtp_password_encrypted,
-    )):
-        raise RuntimeError('La configuración SMTP del hotel está incompleta.')
+        host = hotel.smtp_host
+        port = hotel.smtp_port
+        username = hotel.smtp_username
+        password = _descifrar_contrasena_smtp(hotel.smtp_password_encrypted)
+        remitente = hotel.smtp_from_email
+        use_ssl = port == 465
+        use_tls = hotel.smtp_use_tls and not use_ssl
+    else:
+        opciones = settings.MAILERS['default']['OPTIONS']
+        if not opciones['host']:
+            raise RuntimeError(
+                'Configura el SMTP del hotel o define EMAIL_HOST para enviar correos.'
+            )
+        host = opciones['host']
+        port = opciones['port']
+        username = opciones['username']
+        password = opciones['password']
+        remitente = settings.DEFAULT_FROM_EMAIL
+        use_ssl = opciones.get('use_ssl', False)
+        use_tls = opciones.get('use_tls', False)
+
+    if use_ssl and use_tls:
+        raise RuntimeError('El SMTP no puede usar SSL y STARTTLS simultáneamente.')
 
     conexion = get_connection(
-        host=hotel.smtp_host,
-        port=hotel.smtp_port,
-        username=hotel.smtp_username,
-        password=_descifrar_contrasena_smtp(hotel.smtp_password_encrypted),
-        use_tls=hotel.smtp_use_tls,
-        use_ssl=False,
+        host=host,
+        port=port,
+        username=username,
+        password=password,
+        use_tls=use_tls,
+        use_ssl=use_ssl,
         fail_silently=False,
     )
-    return conexion, hotel.smtp_from_email
+    return conexion, remitente
 
 
 def _enviar_correo_hotel(asunto, titulo, mensaje, destinatario):
@@ -191,7 +213,14 @@ def _enviar_invitacion_resena(reserva, request):
             mensaje,
             destinatario,
         )
-    except (SMTPException, OSError, RuntimeError):
+    except RuntimeError as error:
+        logger.warning(
+            'No se pudo enviar la invitación de reseña para la reserva %s: %s',
+            reserva.pk,
+            error,
+        )
+        return False
+    except (SMTPException, OSError):
         logger.exception(
             'No se pudo enviar la invitación de reseña para la reserva %s.',
             reserva.pk,
@@ -1129,10 +1158,13 @@ def cambiar_password_reset(request):
     return render(request, 'clientes/cambiar_contraseña.html', {'mostrar_passwords': verificado})
 
 
-def finalizar_reservas_vencidas(request):
+def finalizar_reservas_vencidas(request, enviar_invitaciones=True):
     """Una reserva confirmada cuya fecha de salida ya pasó queda como Finalizada."""
     hoy = timezone.localdate()
     Reservas.objects.filter(estado='Confirmada', fechasalida__lt=hoy).update(estado='Finalizada')
+    if not enviar_invitaciones:
+        return
+
     reservas_pendientes = Reservas.objects.filter(
         estado='Finalizada',
         fechasalida__lt=hoy,
@@ -1411,19 +1443,6 @@ def reservasadmin(request):
         'huespedes', 'habitaciones', 'planes'
     ).order_by('-fechasolicitud')
 
-    reservas_contadas = reserva.count()
-    total_reservas = reservas_contadas
-    total_confirmadas = reserva.filter(estado='Confirmada').count()
-    total_proceso = reserva.filter(
-        estado__in=['Pendiente', 'Pagada - Por validar']
-    ).count()
-    total_canceladas = reserva.filter(estado='Cancelada').count()
-    checkin_hoy = reserva.filter(estado='En curso').count()
-    porcentaje_confirmadas = round(total_confirmadas * 100 / total_reservas) if total_reservas else 0
-    porcentaje_proceso = round(total_proceso * 100 / total_reservas) if total_reservas else 0
-    porcentaje_canceladas = round(total_canceladas * 100 / total_reservas) if total_reservas else 0
-    porcentaje_checkin = round(checkin_hoy * 100 / total_reservas) if total_reservas else 0
-
     q = request.GET.get('q', '').strip()
     estado_filtro = request.GET.get('estado', '').strip()
     habitacion_filtro = request.GET.get('habitacion', '').strip()
@@ -1469,6 +1488,19 @@ def reservasadmin(request):
         reserva = reserva.filter(fechaentrada__gte=fecha_desde)
     if fecha_hasta:
         reserva = reserva.filter(fechaentrada__lte=fecha_hasta)
+
+    reservas_contadas = reserva.count()
+    total_reservas = reservas_contadas
+    total_confirmadas = reserva.filter(estado='Confirmada').count()
+    total_proceso = reserva.filter(
+        estado__in=['Pendiente', 'Pagada - Por validar']
+    ).count()
+    total_canceladas = reserva.filter(estado='Cancelada').count()
+    checkin_hoy = reserva.filter(estado='En curso').count()
+    porcentaje_confirmadas = round(total_confirmadas * 100 / total_reservas) if total_reservas else 0
+    porcentaje_proceso = round(total_proceso * 100 / total_reservas) if total_reservas else 0
+    porcentaje_canceladas = round(total_canceladas * 100 / total_reservas) if total_reservas else 0
+    porcentaje_checkin = round(checkin_hoy * 100 / total_reservas) if total_reservas else 0
 
     reservas_por_validar = Reservas.objects.filter(
         estado='Pagada - Por validar'
@@ -3658,7 +3690,7 @@ def administrador(request):
     if request.session.get('rol') != 'Administrador':
         return redirect('/login')
 
-    finalizar_reservas_vencidas(request)
+    finalizar_reservas_vencidas(request, enviar_invitaciones=False)
 
     hoy = timezone.localdate()
     inicio_mes = hoy.replace(day=1)
@@ -4236,6 +4268,7 @@ def recepcionista(request):
         'salidas_hoy': salidas_hoy,
         'reservas_activas': reservas_activas,
         'reservas_hotel': reservas_hotel,
+        'total_reservas': len(reservas_hotel),
         'servicios_pendientes': servicios_pendientes,
         'notificaciones_pendientes': reservas_pendientes_validacion,
         'notificaciones_servicios': servicios_pendientes.count(),

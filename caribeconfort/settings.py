@@ -16,6 +16,7 @@ except ImportError:
     dj_database_url = None
 from pathlib import Path
 from django.db.backends.mysql.base import DatabaseWrapper
+from django.core.exceptions import ImproperlyConfigured
 from django.core.management.utils import get_random_secret_key
 
 
@@ -27,9 +28,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY") or get_random_secret_key()
-
 DEBUG = os.environ.get("DEBUG", "True") == "True"
+
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured('Define SECRET_KEY en el entorno de producción.')
+    secret_key_path = BASE_DIR / '.dev-secret-key'
+    try:
+        SECRET_KEY = secret_key_path.read_text(encoding='ascii').strip()
+    except FileNotFoundError:
+        SECRET_KEY = get_random_secret_key()
+        try:
+            with secret_key_path.open('x', encoding='ascii') as secret_key_file:
+                secret_key_file.write(SECRET_KEY)
+        except FileExistsError:
+            SECRET_KEY = secret_key_path.read_text(encoding='ascii').strip()
+    if not SECRET_KEY:
+        raise ImproperlyConfigured('La clave local de desarrollo está vacía.')
 
 
 
@@ -165,15 +181,28 @@ MEDIA_ROOT = BASE_DIR / 'caribeconfort' / 'public' / 'img' / 'imagenes'
 # Email
 # Configure SMTP credentials through environment variables or the admin panel.
 
+smtp_port = int(os.environ.get('EMAIL_PORT', '587'))
+smtp_use_ssl = os.environ.get(
+    'EMAIL_USE_SSL',
+    'true' if smtp_port == 465 else 'false',
+).lower() in {'1', 'true', 'yes'}
+smtp_use_tls = os.environ.get(
+    'EMAIL_USE_TLS',
+    'false' if smtp_use_ssl else 'true',
+).lower() in {'1', 'true', 'yes'}
+if smtp_use_tls and smtp_use_ssl:
+    raise ImproperlyConfigured('EMAIL_USE_TLS y EMAIL_USE_SSL no pueden estar activos a la vez.')
+
 MAILERS = {
     'default': {
         'BACKEND': 'django.core.mail.backends.smtp.EmailBackend',
         'OPTIONS': {
             'host': os.environ.get('EMAIL_HOST', ''),
-            'port': int(os.environ.get('EMAIL_PORT', '587')),
+            'port': smtp_port,
             'username': os.environ.get('EMAIL_HOST_USER', ''),
             'password': os.environ.get('EMAIL_HOST_PASSWORD', ''),
-            'use_tls': os.environ.get('EMAIL_USE_TLS', 'true').lower() in {'1', 'true', 'yes'},
+            'use_tls': smtp_use_tls,
+            'use_ssl': smtp_use_ssl,
         },
     },
 }

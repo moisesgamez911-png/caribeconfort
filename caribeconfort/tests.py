@@ -32,6 +32,7 @@ from caribeconfort.models import (
 from caribeconfort.views import (
     _cifrar_contrasena_smtp,
     _descifrar_contrasena_smtp,
+    _conexion_correo_hotel,
     _enviar_invitacion_resena,
     _enviar_correo_hotel,
     buscar_disponibilidad,
@@ -39,10 +40,13 @@ from caribeconfort.views import (
     descargar_certificado_pagos,
     descargar_factura_reserva,
     dejar_resena,
+    finalizar_reservas_vencidas,
     galeria,
     galeriaadmin,
     home,
     procesar_reembolso,
+    recepcionista,
+    reservasadmin,
     servir_logo_hotel,
     solicitar_servicio,
 )
@@ -85,6 +89,69 @@ def crear_reserva_prueba(huesped, fechaentrada=None):
     )
 
 
+class ReservationDashboardCountTests(TestCase):
+    def setUp(self):
+        huesped = crear_huesped_prueba()
+        crear_reserva_prueba(huesped)
+        reserva_cancelada = crear_reserva_prueba(huesped)
+        reserva_cancelada.estado = 'Cancelada'
+        reserva_cancelada.save(update_fields=['estado'])
+
+    def test_admin_count_matches_filtered_reservation_table(self):
+        request = RequestFactory().get('/adminreserva', {'estado': 'Cancelada'})
+        request.session = {'rol': 'Administrador'}
+
+        with patch(
+            'caribeconfort.views.finalizar_reservas_vencidas',
+        ), patch(
+            'caribeconfort.views.render',
+            return_value=HttpResponse(),
+        ) as render_view:
+            response = reservasadmin(request)
+
+        context = render_view.call_args.args[2]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(context['total_reservas'], 1)
+        self.assertEqual(context['page_obj'].paginator.count, 1)
+
+    def test_reception_count_matches_reservation_table(self):
+        request = RequestFactory().get('/recepcionista')
+        request.session = {'rol': 'Recepcionista'}
+
+        with patch(
+            'caribeconfort.views.render',
+            return_value=HttpResponse(),
+        ) as render_view:
+            response = recepcionista(request)
+
+        context = render_view.call_args.args[2]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(context['total_reservas'], len(context['reservas_hotel']))
+        self.assertEqual(context['total_reservas'], 2)
+
+
+class ExpiredReservationFinalizationTests(TestCase):
+    def test_dashboard_can_finalize_expired_reservations_without_sending_email(self):
+        huesped = crear_huesped_prueba()
+        reserva = crear_reserva_prueba(
+            huesped,
+            fechaentrada=timezone.localdate() - timedelta(days=10),
+        )
+        request = RequestFactory().get('/administrador')
+
+        with patch(
+            'caribeconfort.views._enviar_invitacion_resena',
+        ) as send_review_invitation:
+            finalizar_reservas_vencidas(
+                request,
+                enviar_invitaciones=False,
+            )
+
+        reserva.refresh_from_db()
+        self.assertEqual(reserva.estado, 'Finalizada')
+        send_review_invitation.assert_not_called()
+
+
 class ResenaInvitationTests(SimpleTestCase):
     def test_sends_review_invitation_without_shadowing_translation(self):
         resena = SimpleNamespace(
@@ -117,6 +184,37 @@ class ResenaInvitationTests(SimpleTestCase):
         self.assertTrue(resena.correo_enviado)
         resena.save.assert_called_once_with(update_fields=['correo_enviado'])
         self.assertEqual(send_hotel_email.call_args.args[3], 'cliente@example.com')
+
+    def test_missing_smtp_configuration_is_logged_without_traceback(self):
+        resena = SimpleNamespace(
+            correo_enviado=False,
+            token=uuid4(),
+            save=Mock(),
+        )
+        reserva = SimpleNamespace(
+            huespedes=SimpleNamespace(
+                correo='cliente@example.com',
+                nombres='Cliente',
+            ),
+            pk=42,
+        )
+
+        with patch.object(
+            Resena.objects,
+            'get_or_create',
+            return_value=(resena, True),
+        ), patch(
+            'caribeconfort.views._enviar_correo_hotel',
+            side_effect=RuntimeError('SMTP no configurado'),
+        ), self.assertLogs('caribeconfort.views', level='WARNING') as logs:
+            resultado = _enviar_invitacion_resena(
+                reserva,
+                RequestFactory().get('/'),
+            )
+
+        self.assertFalse(resultado)
+        self.assertIn('SMTP no configurado', logs.output[0])
+        self.assertNotIn('Traceback', '\n'.join(logs.output))
 
 
 class ServicioRequestValidationTests(SimpleTestCase):
@@ -336,6 +434,73 @@ class HomeHotelMapTests(TestCase):
 
 
 class SMTPMailConfigurationTests(TestCase):
+    def test_missing_smtp_host_is_reported_instead_of_using_localhost(self):
+        with override_settings(MAILERS={'default': {'OPTIONS': {'host': ''}}}):
+            with self.assertRaisesRegex(RuntimeError, 'EMAIL_HOST'):
+                _conexion_correo_hotel()
+
+    def test_environment_smtp_settings_are_used_without_hotel_configuration(self):
+        opciones = {
+            'host': 'smtp.example.com',
+            'port': 587,
+            'username': 'hotel@example.com',
+            'password': 'smtp-secret-for-test',
+            'use_tls': True,
+            'use_ssl': False,
+        }
+        with override_settings(
+            MAILERS={'default': {'OPTIONS': opciones}},
+            DEFAULT_FROM_EMAIL='notificaciones@example.com',
+        ), patch(
+            'caribeconfort.views.get_connection',
+            return_value=object(),
+        ) as get_connection:
+            conexion, remitente = _conexion_correo_hotel()
+
+        self.assertIsNotNone(conexion)
+        self.assertEqual(remitente, 'notificaciones@example.com')
+        get_connection.assert_called_once_with(
+            host='smtp.example.com',
+            port=587,
+            username='hotel@example.com',
+            password='smtp-secret-for-test',
+            use_tls=True,
+            use_ssl=False,
+            fail_silently=False,
+        )
+
+    def test_port_465_uses_implicit_ssl_instead_of_starttls(self):
+        clave = Fernet.generate_key().decode('ascii')
+        with override_settings(EMAIL_CREDENTIAL_ENCRYPTION_KEY=clave):
+            Hoteles.objects.create(
+                nombre='Caribe Confort',
+                direccion='Calle 1',
+                municipio='Riohacha',
+                telefono='3000000000',
+                correo='hotel@example.com',
+                smtp_host='smtp.example.com',
+                smtp_port=465,
+                smtp_username='hotel@example.com',
+                smtp_from_email='notificaciones@example.com',
+                smtp_password_encrypted=_cifrar_contrasena_smtp('smtp-secret-for-test'),
+                smtp_use_tls=True,
+            )
+            with patch(
+                'caribeconfort.views.get_connection',
+                return_value=object(),
+            ) as get_connection:
+                _conexion_correo_hotel()
+
+        get_connection.assert_called_once_with(
+            host='smtp.example.com',
+            port=465,
+            username='hotel@example.com',
+            password='smtp-secret-for-test',
+            use_tls=False,
+            use_ssl=True,
+            fail_silently=False,
+        )
+
     def test_password_is_encrypted_and_branded_html_uses_hotel_smtp_settings(self):
         clave = Fernet.generate_key().decode('ascii')
         contrasena = 'smtp-secret-for-test'
