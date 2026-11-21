@@ -511,7 +511,10 @@ class PublicGalleryCategoryTests(TestCase):
 
 class AdminGalleryImageUpdateTests(TestCase):
     def test_replacing_an_image_updates_the_public_gallery_url(self):
-        categoria = CategoriaGaleria.objects.create(nombre='Interiores')
+        categoria = CategoriaGaleria.objects.create(
+            nombre='Carrusel',
+            estado=False,
+        )
         imagen = ImagenGaleria.objects.create(
             categoria=categoria,
             titulo='Imagen anterior',
@@ -542,6 +545,8 @@ class AdminGalleryImageUpdateTests(TestCase):
             imagen.refresh_from_db()
             self.assertNotEqual(imagen.imagen, 'uploads/galeria/anterior.png')
             self.assertTrue(Path(media_root, imagen.imagen).is_file())
+            categoria.refresh_from_db()
+            self.assertTrue(categoria.estado)
 
             with patch(
                 'caribeconfort.views.render',
@@ -556,6 +561,22 @@ class AdminGalleryImageUpdateTests(TestCase):
             )
             self.assertEqual(
                 imagen_publica_actualizada.url_imagen,
+                f'/media/{imagen.imagen}',
+            )
+
+            with patch(
+                'caribeconfort.views.render',
+                return_value=HttpResponse(),
+            ) as home_render:
+                home(RequestFactory().get('/'))
+
+            imagenes_carrusel = home_render.call_args.args[2]['imagenes_carrusel']
+            imagen_portada_actualizada = next(
+                imagen_publica for imagen_publica in imagenes_carrusel
+                if imagen_publica.pk == imagen.pk
+            )
+            self.assertEqual(
+                imagen_portada_actualizada.url_imagen,
                 f'/media/{imagen.imagen}',
             )
 

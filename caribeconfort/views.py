@@ -346,11 +346,11 @@ def home(request):
         'reserva__planes',
     ).order_by('-fecha')[:3]
     imagenes_carrusel = list(
-        ImagenGaleria.objects.filter(seccion='carrusel', estado=True)
+        ImagenGaleria.objects.filter(seccion='carrusel', estado=True, categoria__estado=True)
         .select_related('categoria').order_by('id')
     )
     imagenes_galeria_home = list(
-        ImagenGaleria.objects.filter(seccion='galeria', estado=True)
+        ImagenGaleria.objects.filter(seccion='galeria', estado=True, categoria__estado=True)
         .select_related('categoria').order_by('id')
     )
     for imagen in (*imagenes_carrusel, *imagenes_galeria_home):
