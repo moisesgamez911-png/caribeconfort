@@ -1145,7 +1145,7 @@ html[data-theme="dark"] .refund-modal footer .refund-cancel {
     color: #4B5563;
     font: inherit;
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 500;
     cursor: pointer;
 }
 
@@ -1196,9 +1196,13 @@ html[data-theme="dark"] .refund-modal footer .refund-cancel {
     place-items: center;
     width: 34px;
     height: 34px;
+    padding: 0;
     border: 1px solid #E1E5EA;
     border-radius: 6px;
+    background: transparent;
     color: #6B7280;
+    font: inherit;
+    cursor: pointer;
 }
 
 .ad-header-notification:hover {
@@ -1221,6 +1225,155 @@ html[data-theme="dark"] .refund-modal footer .refund-cancel {
     color: #fff;
     font-size: 9px;
     font-weight: 800;
+}
+
+.ad-header-notification-wrap {
+    position: relative;
+}
+
+.ad-notification-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 80;
+    display: flex;
+    flex-direction: column;
+    width: min(390px, calc(100vw - 24px));
+    max-height: min(70vh, 560px);
+    overflow: hidden;
+    border: 1px solid var(--borde-header);
+    border-radius: 8px;
+    background: var(--bg-header);
+    box-shadow: 0 14px 36px rgba(17, 24, 39, .18);
+    color: var(--texto-header);
+}
+
+.ad-notification-dropdown[hidden] {
+    display: none;
+}
+
+.ad-notification-heading,
+.ad-notification-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+}
+
+.ad-notification-heading {
+    border-bottom: 1px solid var(--borde-header);
+    font-size: 13px;
+}
+
+.ad-notification-heading > span {
+    display: grid;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 5px;
+    place-items: center;
+    border-radius: 999px;
+    background: #e8efed;
+    color: var(--texto-header);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.ad-notification-list {
+    overflow-y: auto;
+}
+
+.ad-notification-item {
+    display: grid;
+    gap: 4px;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--borde-header);
+    color: var(--texto-header);
+    text-decoration: none;
+}
+
+.ad-notification-item:hover,
+.ad-notification-item:focus-visible {
+    background: #f3f7f5;
+    outline: none;
+}
+
+.ad-notification-kind {
+    color: var(--texto-secundario-header);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.ad-notification-item strong {
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ad-notification-item small,
+.ad-notification-empty {
+    margin: 0;
+    color: var(--texto-secundario-header);
+    font-size: 11px;
+}
+
+.ad-notification-footer {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--borde-header);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.ad-notification-footer a {
+    color: var(--texto-header);
+    text-decoration: none;
+}
+
+.ad-notification-footer a:hover {
+    text-decoration: underline;
+}
+
+.ad-notification-empty {
+    padding: 18px 14px;
+    text-align: center;
+}
+
+[data-theme="dark"] .ad-notification-dropdown {
+    border-color: #485252;
+    background: #242d2c;
+    color: #f3f4f6;
+}
+
+[data-theme="dark"] .ad-notification-heading,
+[data-theme="dark"] .ad-notification-item,
+[data-theme="dark"] .ad-notification-footer {
+    border-color: #394443;
+}
+
+[data-theme="dark"] .ad-notification-heading > span {
+    background: #394443;
+    color: #f3f4f6;
+}
+
+[data-theme="dark"] .ad-notification-item,
+[data-theme="dark"] .ad-notification-footer a {
+    color: #f3f4f6;
+}
+
+[data-theme="dark"] .ad-notification-item:hover,
+[data-theme="dark"] .ad-notification-item:focus-visible {
+    background: #303b39;
+}
+
+[data-theme="dark"] .ad-notification-kind,
+[data-theme="dark"] .ad-notification-item small,
+[data-theme="dark"] .ad-notification-empty {
+    color: #c4cecd;
 }
 
 .ad-header-divider {

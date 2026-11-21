@@ -1,4 +1,4 @@
-{% load static %}
+{% load static i18n %}
 <nav class="ad-rail" id="adRail" aria-label="Menú de administración">
     <button class="ad-item ad-toggle" type="button" id="adToggle" aria-expanded="false" data-tip="Menú">
         <span class="ad-ico"><img src="{% static 'img/iconos/capas.png' %}" alt=""></span>
@@ -19,8 +19,8 @@
     <a class="ad-item {% if request.path == '/adminhabitaciones' %}activo{% endif %}" href="/adminhabitaciones" data-tip="Habitaciones" {% if request.path == '/adminhabitaciones' %}aria-current="page"{% endif %}>
         <span class="ad-ico"><img src="{% static 'img/iconos/litera.png' %}" alt=""></span><span class="ad-txt">Habitaciones</span>
     </a>
-    <a class="ad-item {% if request.path == '/admintiposhabitacion' %}activo{% endif %}" data-secondary-menu="true" href="/admintiposhabitacion" data-tip="Tipos de habitación" {% if request.path == '/admintiposhabitacion' %}aria-current="page"{% endif %}>
-        <span class="ad-ico"><img src="{% static 'img/iconos/cama-alternativa.png' %}" alt=""></span><span class="ad-txt">Tipos de habitación</span>
+    <a class="ad-item {% if request.path == '/admintiposhabitacion' %}activo{% endif %}" data-secondary-menu="true" href="/admintiposhabitacion" data-tip="{% trans 'Tipos' %}" {% if request.path == '/admintiposhabitacion' %}aria-current="page"{% endif %}>
+        <span class="ad-ico"><img src="{% static 'img/iconos/cama-alternativa.png' %}" alt=""></span><span class="ad-txt">{% trans "Tipos" %}</span>
     </a>
     <a class="ad-item {% if request.path == '/adminservicios' %}activo{% endif %}" href="/adminservicios" data-tip="Servicios" {% if request.path == '/adminservicios' %}aria-current="page"{% endif %}>
         <span class="ad-ico"><img src="{% static 'img/iconos/servicio-de-habitaciones.png' %}" alt="">{% if notificaciones_servicios %}<span class="ad-notificacion ad-notificacion-count">{{ notificaciones_servicios }}</span>{% endif %}</span><span class="ad-txt">Servicios</span>

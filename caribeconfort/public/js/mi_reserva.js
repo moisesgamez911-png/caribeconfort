@@ -322,8 +322,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         btn.innerHTML = '<i class="bi bi-check2-circle"></i> Sí, cancelar reserva';
                         btn.disabled = false;
-                        
-                        setTimeout(() => window.location.reload(), 2000);
+
+                        if (!data.correo_enviado && window.ccAlert) {
+                            window.ccAlert(data.message || 'La reserva se canceló, pero no se pudo enviar el correo de confirmación.')
+                                .then(() => window.location.reload());
+                        } else {
+                            setTimeout(() => window.location.reload(), 2000);
+                        }
                         
                     } else {
                         window.ccAlert(data.message || "Ocurrió un error al cancelar la reserva.");

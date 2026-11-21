@@ -754,6 +754,55 @@ html {
     line-height: 1.5;
 }
 
+.service-payment-details {
+    margin: 0 0 12px;
+    padding: 13px;
+    border: 1px solid #DCE3E1;
+    border-radius: 10px;
+    background: #FFFFFF;
+}
+
+.service-payment-details[hidden] { display: none !important; }
+.service-payment-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.service-payment-fields label { display: grid; gap: 6px; color: #344447; font-size: 11px; font-weight: 700; }
+.service-payment-fields input { width: 100%; min-height: 40px; padding: 9px 11px; border: 1px solid #D9DEDB; border-radius: 8px; background: #FFF; color: #1A1816; font: inherit; font-size: 12px; }
+.service-payment-fields input:focus { border-color: #183D3D; outline: 0; box-shadow: 0 0 0 3px rgba(24, 61, 61, .12); }
+.service-payment-security { margin: 10px 0 0; color: #687579; font-size: 10px; line-height: 1.45; }
+
+html[data-theme="dark"] .modal-servicio-box {
+    border-color: #465351;
+    background: #242D2C;
+    color: #F3F6F5;
+}
+html[data-theme="dark"] .modal-servicio-header,
+html[data-theme="dark"] .modal-servicio-footer,
+html[data-theme="dark"] .modal-servicio-success { border-color: #3B4947; background: #202827; }
+html[data-theme="dark"] .encabezado-texto h2,
+html[data-theme="dark"] .modal-servicio-success h2,
+html[data-theme="dark"] .resumen-item strong { color: #F3F6F5; }
+html[data-theme="dark"] .encabezado-texto p,
+html[data-theme="dark"] .service-payment-note,
+html[data-theme="dark"] .service-payment-security,
+html[data-theme="dark"] .modal-servicio-success p { color: #B9C6C4; }
+html[data-theme="dark"] .modal-servicio-header .cerrar-superior { color: #E4ECEA; }
+html[data-theme="dark"] .modal-servicio-header .cerrar-superior:hover { background: #34413F; }
+html[data-theme="dark"] .resumen-box { background: #2E3B39; }
+html[data-theme="dark"] .resumen-item .etiqueta { color: #B9C6C4; }
+html[data-theme="dark"] .form-group-servicio label,
+html[data-theme="dark"] .service-payment-method legend,
+html[data-theme="dark"] .service-payment-fields label { color: #E3EAE8; }
+html[data-theme="dark"] .input-servicio,
+html[data-theme="dark"] .service-payment-fields input { border-color: #53615F; background: #1D2524; color: #F3F6F5; }
+html[data-theme="dark"] .service-payment-option,
+html[data-theme="dark"] .service-payment-details { border-color: #465351; background: #202827; color: #E3EAE8; }
+html[data-theme="dark"] .service-payment-option:has(input:checked) { border-color: #79A49B; background: #2E4540; }
+html[data-theme="dark"] .boton-secundario { border-color: #566562; background: #2B3534; color: #E3EAE8; }
+html[data-theme="dark"] .boton-secundario:hover { background: #36423F; }
+
+@media (max-width: 560px) {
+    .service-payment-fields { grid-template-columns: minmax(0, 1fr); }
+}
+
 .service-payment-method {
     margin: 2px 0 12px;
     padding: 0;

@@ -14,19 +14,24 @@ from PIL import Image
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.http import HttpResponse
-from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
+from django.template.loader import render_to_string
+from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
 
-from caribeconfort.context_processors import identidad_hotel
+from caribeconfort.context_processors import identidad_hotel, notificaciones_administracion
 from caribeconfort.models import (
     CategoriaGaleria,
+    CaracteristicaPlan,
     Huespedes,
     Hoteles,
     ImagenGaleria,
     Pagos,
+    Planes,
     Reservas,
     Resena,
     Roles,
+    ServicioReserva,
+    Servicios,
     Usuarios,
 )
 from caribeconfort.views import (
@@ -87,6 +92,170 @@ def crear_reserva_prueba(huesped, fechaentrada=None):
         estado='Confirmada',
         valortotal=Decimal('100.00'),
     )
+
+
+class AdminNotificationContextTests(TestCase):
+    def test_admin_gets_pending_reservation_and_service_notifications(self):
+        huesped = crear_huesped_prueba()
+        reserva = crear_reserva_prueba(huesped)
+        reserva.estado = 'Pagada - Por validar'
+        reserva.save(update_fields=['estado'])
+        pago = Pagos.objects.create(
+            reservas=reserva,
+            valor=Decimal('25.00'),
+            metodopago='Pendiente',
+            concepto='Servicio',
+        )
+        servicio = Servicios.objects.create(
+            nombre='Desayuno',
+            precio=Decimal('25.00'),
+        )
+        solicitud = ServicioReserva.objects.create(
+            reservas=reserva,
+            servicios=servicio,
+            pago=pago,
+            cantidad=1,
+            valor=Decimal('25.00'),
+        )
+        request = RequestFactory().get('/administrador')
+        request.session = {'rol': 'Administrador', 'usuario_nom': 'Admin'}
+
+        contexto = notificaciones_administracion(request)
+
+        self.assertEqual(contexto['notificaciones_pendientes'], 1)
+        self.assertEqual(contexto['notificaciones_servicios'], 1)
+        self.assertEqual(contexto['total_notificaciones'], 2)
+        self.assertEqual(contexto['reservas_notificaciones'][0], reserva)
+        self.assertEqual(contexto['servicios_notificaciones'][0], solicitud)
+        html = render_to_string(
+            'inc/admin_header.html',
+            {'rol': 'Administrador'},
+            request=request,
+        )
+        self.assertIn('adNotificationToggle', html)
+        self.assertIn('Reserva por validar', html)
+        self.assertIn('Servicio pendiente', html)
+        self.assertIn('>2</span>', html)
+
+    def test_guest_does_not_receive_administrator_notification_data(self):
+        request = RequestFactory().get('/')
+        request.session = {'rol': 'Cliente'}
+
+        self.assertEqual(notificaciones_administracion(request), {})
+
+
+class AdminPlanTypeManagementTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        session = self.client.session
+        session['rol'] = 'Administrador'
+        session['usuario_nom'] = 'Admin'
+        session.save()
+
+    def test_types_page_renders_both_catalog_tabs(self):
+        plan = Planes.objects.create(
+            nombre='Plan visible',
+            precio=Decimal('50000.00'),
+        )
+        servicio = Servicios.objects.create(
+            nombre='Desayuno incluido',
+            precio=Decimal('10.00'),
+        )
+        plan.Servicios_tipos.add(servicio)
+        CaracteristicaPlan.objects.create(plan=plan, texto='Desayuno')
+
+        response = self.client.get('/admintiposhabitacion?tab=planes')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Tipos de habitación')
+        self.assertContains(response, 'Tipos de planes')
+        self.assertContains(response, 'Plan visible')
+        self.assertContains(response, 'Desayuno incluido')
+        self.assertContains(
+            response,
+            f'<option value="{servicio.id}" selected>Desayuno incluido</option>',
+        )
+        self.assertContains(response, 'adNotificationToggle')
+
+    def test_create_edit_and_delete_unreferenced_plan_type(self):
+        datos = {
+            'accion': 'crear_plan',
+            'tab': 'planes',
+            'nombre': 'Plan Caribe',
+            'descripcion': 'Estadía con desayuno',
+            'precio': '250000',
+            'imagen': 'planes/caribe.jpg',
+            'disponibles': '8',
+            'duracion_dias': '3',
+            'max_adultos': '2',
+            'max_ninos': '1',
+            'orden': '2',
+            'caracteristicas': 'Desayuno incluido\nTraslado al aeropuerto',
+            'estado': 'on',
+        }
+        respuesta = self.client.post('/admintiposhabitacion', datos)
+
+        self.assertRedirects(
+            respuesta,
+            '/admintiposhabitacion?tab=planes',
+            fetch_redirect_response=False,
+        )
+        plan = Planes.objects.get(nombre='Plan Caribe')
+        self.assertEqual(plan.precio, Decimal('250000.00'))
+        self.assertEqual(plan.disponibles, 8)
+        self.assertEqual(plan.caracteristicas.count(), 2)
+
+        datos.update({
+            'accion': 'editar_plan',
+            'plan_id': str(plan.id),
+            'nombre': 'Plan Caribe Premium',
+            'caracteristicas': 'Desayuno de cortesía',
+            'estado': '',
+        })
+        respuesta = self.client.post('/admintiposhabitacion', datos)
+        self.assertRedirects(
+            respuesta,
+            '/admintiposhabitacion?tab=planes',
+            fetch_redirect_response=False,
+        )
+        plan.refresh_from_db()
+        self.assertEqual(plan.nombre, 'Plan Caribe Premium')
+        self.assertFalse(plan.estado)
+        self.assertEqual(
+            list(plan.caracteristicas.values_list('texto', flat=True)),
+            ['Desayuno de cortesía'],
+        )
+
+        respuesta = self.client.post('/admintiposhabitacion', {
+            'accion': 'eliminar_plan',
+            'tab': 'planes',
+            'plan_id': str(plan.id),
+        })
+        self.assertRedirects(
+            respuesta,
+            '/admintiposhabitacion?tab=planes',
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(Planes.objects.filter(id=plan.id).exists())
+
+    def test_plan_referenced_by_reservation_cannot_be_deleted(self):
+        huesped = crear_huesped_prueba()
+        plan = Planes.objects.create(
+            nombre='Plan reservado',
+            precio=Decimal('100.00'),
+        )
+        reserva = crear_reserva_prueba(huesped)
+        reserva.planes = plan
+        reserva.save(update_fields=['planes'])
+
+        respuesta = self.client.post('/admintiposhabitacion', {
+            'accion': 'eliminar_plan',
+            'tab': 'planes',
+            'plan_id': str(plan.id),
+        }, follow=True)
+
+        self.assertTrue(Planes.objects.filter(id=plan.id).exists())
+        self.assertContains(respuesta, 'No se puede eliminar un plan que ya tiene reservas')
 
 
 class ReservationDashboardCountTests(TestCase):

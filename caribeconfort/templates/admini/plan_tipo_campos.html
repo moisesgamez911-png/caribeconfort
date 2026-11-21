@@ -1,0 +1,65 @@
+{% load i18n %}
+<div class="adm-form-grid plan-type-fields">
+    <div class="adm-field adm-span-2">
+        <label for="planNombre{{ form_id }}">{% trans "Nombre" %}</label>
+        <input id="planNombre{{ form_id }}" name="nombre" maxlength="100" value="{{ plan.nombre|default:'' }}" required>
+    </div>
+    <div class="adm-field adm-span-2">
+        <label for="planDescripcion{{ form_id }}">{% trans "Descripción" %}</label>
+        <textarea id="planDescripcion{{ form_id }}" name="descripcion" maxlength="255" rows="3">{{ plan.descripcion|default:'' }}</textarea>
+    </div>
+    <div class="adm-field adm-span-2">
+        <label for="planCaracteristicas{{ form_id }}">{% trans "Características incluidas (una por línea)" %}</label>
+        <textarea id="planCaracteristicas{{ form_id }}" name="caracteristicas" rows="4">{% if plan %}{% for caracteristica in plan.caracteristicas.all %}{{ caracteristica.texto }}{% if not forloop.last %}&#10;{% endif %}{% endfor %}{% endif %}</textarea>
+    </div>
+    <div class="adm-field">
+        <label for="planPrecio{{ form_id }}">{% trans "Precio (COP)" %}</label>
+        <input id="planPrecio{{ form_id }}" name="precio" type="number" min="0.01" step="0.01" value="{% if plan %}{{ plan.precio }}{% endif %}" required>
+    </div>
+    <div class="adm-field">
+        <label for="planImagen{{ form_id }}">{% trans "Ruta de imagen (opcional)" %}</label>
+        <input id="planImagen{{ form_id }}" name="imagen" maxlength="255" value="{{ plan.imagen|default:'' }}">
+    </div>
+    <div class="adm-field">
+        <label for="planDuracion{{ form_id }}">{% trans "Duración en días" %}</label>
+        <input id="planDuracion{{ form_id }}" name="duracion_dias" type="number" min="1" max="365" value="{% if plan %}{{ plan.duracion_dias }}{% else %}5{% endif %}" required>
+    </div>
+    <div class="adm-field">
+        <label for="planDisponibles{{ form_id }}">{% trans "Reservas disponibles" %}</label>
+        <input id="planDisponibles{{ form_id }}" name="disponibles" type="number" min="0" max="2147483647" value="{% if plan %}{{ plan.disponibles }}{% else %}10{% endif %}" required>
+    </div>
+    <div class="adm-field">
+        <label for="planAdultos{{ form_id }}">{% trans "Máximo de adultos" %}</label>
+        <input id="planAdultos{{ form_id }}" name="max_adultos" type="number" min="1" max="100" value="{% if plan %}{{ plan.max_adultos }}{% else %}4{% endif %}" required>
+    </div>
+    <div class="adm-field">
+        <label for="planNinos{{ form_id }}">{% trans "Máximo de niños" %}</label>
+        <input id="planNinos{{ form_id }}" name="max_ninos" type="number" min="0" max="100" value="{% if plan %}{{ plan.max_ninos }}{% else %}4{% endif %}" required>
+    </div>
+    <div class="adm-field">
+        <label for="planOrden{{ form_id }}">{% trans "Orden de aparición" %}</label>
+        <input id="planOrden{{ form_id }}" name="orden" type="number" min="0" max="2147483647" value="{% if plan %}{{ plan.orden }}{% else %}0{% endif %}" required>
+    </div>
+    <div class="adm-field">
+        <label for="planHabitacion{{ form_id }}">{% trans "Tipo de habitación asociado" %}</label>
+        <select id="planHabitacion{{ form_id }}" name="tipo_habitacion">
+            <option value="">{% trans "Sin tipo de habitación" %}</option>
+            {% for tipo in tipos_habitacion %}
+            <option value="{{ tipo.id }}" {% if plan.tipo_habitacion_id == tipo.id %}selected{% endif %}>{{ tipo.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="adm-field adm-span-2">
+        <label for="planServicios{{ form_id }}">{% trans "Servicios incluidos" %}</label>
+        <select id="planServicios{{ form_id }}" name="servicios" class="plan-services-select" multiple>
+            {% for servicio in servicios_admin %}
+            <option value="{{ servicio.id }}" {% if plan and servicio in plan.Servicios_tipos.all %}selected{% endif %}>{{ servicio.nombre }}</option>
+            {% endfor %}
+        </select>
+        <small>{% trans "Usa Ctrl o Cmd para seleccionar varios servicios." %}</small>
+    </div>
+    <label class="adm-field plan-active-field">
+        <span>{% trans "Plan visible para reservar" %}</span>
+        <span><input type="checkbox" name="estado" {% if not plan or plan.estado %}checked{% endif %}> {% trans "Activo" %}</span>
+    </label>
+</div>

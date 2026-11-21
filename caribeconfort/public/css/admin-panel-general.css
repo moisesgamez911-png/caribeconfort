@@ -227,18 +227,17 @@ body.admin-dashboard-page .dash-col-right {
 body.admin-dashboard-page .dash-support-grid {
     display: grid;
     min-width: 0;
-    grid-template-columns: minmax(0, 1.35fr) minmax(300px, .9fr);
-    align-items: start;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
     gap: 16px;
 }
 
-body.admin-dashboard-page .dash-support-grid > .dash-col-mid,
-body.admin-dashboard-page .dash-support-grid > .dash-col-right {
+body.admin-dashboard-page .dash-support-grid > .dash-card {
     width: 100%;
     min-width: 0;
 }
 
-body.admin-dashboard-page .dash-support-grid > .dash-col-right .estado-hotel-card {
+body.admin-dashboard-page .dash-support-grid > .estado-hotel-card {
     height: auto;
     min-height: 170px;
     max-height: none;
@@ -246,16 +245,16 @@ body.admin-dashboard-page .dash-support-grid > .dash-col-right .estado-hotel-car
     grid-template-rows: 38px minmax(130px, 1fr);
 }
 
-body.admin-dashboard-page .dash-support-grid > .dash-col-right .estado-hotel-card > .dash-card-head {
+body.admin-dashboard-page .dash-support-grid > .estado-hotel-card > .dash-card-head {
     padding: 10px 12px 4px;
 }
 
-body.admin-dashboard-page .dash-support-grid > .dash-col-right .estado-img-wrap {
+body.admin-dashboard-page .dash-support-grid > .estado-hotel-card .estado-img-wrap {
     min-width: 0;
     overflow: hidden;
 }
 
-body.admin-dashboard-page .dash-support-grid > .dash-col-right .estado-img-wrap img {
+body.admin-dashboard-page .dash-support-grid > .estado-hotel-card .estado-img-wrap img {
     width: 100%;
     height: 100%;
     min-height: 145px;
@@ -629,6 +628,57 @@ html[data-theme="dark"] body.admin-dashboard-page .rv-pagination {
     border-color: #394443;
 }
 
+html[data-theme="dark"] body.admin-dashboard-page .dash-tabla tbody tr:hover,
+html[data-theme="dark"] body.admin-dashboard-page .dash-tabla tbody tr:hover td {
+    background: #34413F !important;
+}
+
+html[data-theme="dark"] body.admin-dashboard-page .dash-tabla tbody tr:hover td {
+    color: #F3F6F5;
+}
+
+html[data-theme="dark"] body.admin-dashboard-page .dash-tabla .btn-acciones-reserva img {
+    filter: brightness(0) invert(.88);
+}
+
+html[data-theme="dark"] body.admin-dashboard-page .lista-mini li,
+html[data-theme="dark"] body.admin-dashboard-page .lista-mini .mini-txt,
+html[data-theme="dark"] body.admin-dashboard-page .rv-up-info span,
+html[data-theme="dark"] body.admin-dashboard-page .rv-badge-time,
+html[data-theme="dark"] body.admin-dashboard-page .dash-link {
+    color: #C4CECD;
+}
+
+html[data-theme="dark"] body.admin-dashboard-page .mini-ico {
+    border-color: #3B4947;
+    background: #2E3B39;
+    color: #DCE7E4;
+}
+
+html[data-theme="dark"] body.admin-dashboard-page .modal-notificacion-box {
+    border: 1px solid #465351;
+    background: #242D2C;
+    color: #F3F6F5;
+}
+
+html[data-theme="dark"] body.admin-dashboard-page .notif-title {
+    color: #F3F6F5;
+}
+
+html[data-theme="dark"] body.admin-dashboard-page .notif-message {
+    color: #C4CECD;
+}
+
+html[data-theme="dark"] body.admin-dashboard-page .btn-notif-close {
+    border: 1px solid #557D78;
+    background: #557D78;
+    color: #FFFFFF;
+}
+
+html[data-theme="dark"] body.admin-dashboard-page .ad-main svg {
+    color: #DCE7E4;
+}
+
 @media (max-width: 1280px) {
     body.admin-dashboard-page .dash-kpis-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -650,11 +700,6 @@ html[data-theme="dark"] body.admin-dashboard-page .rv-pagination {
     }
 
     body.admin-dashboard-page .dash-support-grid {
-        grid-template-columns: minmax(0, 1.2fr) minmax(280px, .9fr);
-    }
-
-    body.admin-dashboard-page .dash-col-mid,
-    body.admin-dashboard-page .dash-col-right {
         gap: 12px;
     }
 }
@@ -702,7 +747,7 @@ html[data-theme="dark"] body.admin-dashboard-page .rv-pagination {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    body.admin-dashboard-page .dash-support-grid > .dash-col-right .estado-hotel-card {
+    body.admin-dashboard-page .dash-support-grid > .estado-hotel-card {
         grid-template-columns: minmax(0, 1.1fr) minmax(120px, .9fr);
     }
 

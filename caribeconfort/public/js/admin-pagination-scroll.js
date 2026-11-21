@@ -5,12 +5,36 @@
         return window.location.pathname + window.location.search;
     }
 
+    function guardarPosicion(url) {
+        try {
+            sessionStorage.setItem(storageKey, JSON.stringify({
+                url: url || currentUrl(),
+                scrollY: window.scrollY
+            }));
+        } catch (error) {
+            // La restauración es una mejora opcional si el navegador bloquea sessionStorage.
+        }
+    }
+
     function restoreScroll() {
-        var stored = sessionStorage.getItem(storageKey);
+        var stored;
+        try {
+            stored = sessionStorage.getItem(storageKey);
+        } catch (error) {
+            return;
+        }
         if (!stored) return;
 
-        var position = JSON.parse(stored);
-        if (position.url !== currentUrl()) {
+        var position;
+        try {
+            position = JSON.parse(stored);
+        } catch (error) {
+            sessionStorage.removeItem(storageKey);
+            return;
+        }
+
+        // Los filtros cambian el query string, pero siguen en la misma pantalla.
+        if (!position.url || new URL(position.url, window.location.origin).pathname !== window.location.pathname) {
             sessionStorage.removeItem(storageKey);
             return;
         }
@@ -22,27 +46,8 @@
         });
     }
 
-    document.addEventListener('click', function (event) {
-        if (
-            event.defaultPrevented ||
-            event.button !== 0 ||
-            event.metaKey ||
-            event.ctrlKey ||
-            event.shiftKey ||
-            event.altKey
-        ) return;
-
-        var link = event.target.closest('.adm-pagination a, .rv-pagination a');
-        if (!link || link.target) return;
-
-        var destination = new URL(link.href, window.location.href);
-        if (destination.origin !== window.location.origin) return;
-
-        sessionStorage.setItem(storageKey, JSON.stringify({
-            url: destination.pathname + destination.search,
-            scrollY: window.scrollY
-        }));
-        window.history.scrollRestoration = 'manual';
+    window.addEventListener('pagehide', function () {
+        guardarPosicion();
     });
 
     window.addEventListener('pageshow', restoreScroll);

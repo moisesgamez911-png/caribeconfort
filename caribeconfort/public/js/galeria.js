@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const lbPrev = document.getElementById("lbPrev");
     const lbNext = document.getElementById("lbNext");
     
-    const tiles = Array.from(document.querySelectorAll(".tile"));
+    const tiles = Array.from(document.querySelectorAll(".tile-photo"));
     let currentIndex = 0;
     let lightboxTrigger = null;
 

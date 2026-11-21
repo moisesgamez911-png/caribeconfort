@@ -22,12 +22,28 @@ def identidad_hotel(request):
 def notificaciones_administracion(request):
     if request.session.get('rol') not in {'Administrador', 'Recepcionista'}:
         return {}
+    reservas = Reservas.objects.filter(
+        estado='Pagada - Por validar',
+    ).select_related(
+        'huespedes',
+        'habitaciones',
+        'planes',
+    ).order_by('-fechasolicitud')
+    servicios = ServicioReserva.objects.filter(
+        estado='Pendiente',
+        pago__metodopago='Pendiente',
+    ).select_related(
+        'reservas__huespedes',
+        'reservas__habitaciones',
+        'reservas__planes',
+        'servicios',
+    ).order_by('-fecha')
+    total_reservas = reservas.count()
+    total_servicios = servicios.count()
     return {
-        'notificaciones_pendientes': Reservas.objects.filter(
-            estado='Pagada - Por validar',
-        ).count(),
-        'notificaciones_servicios': ServicioReserva.objects.filter(
-            estado='Pendiente',
-            pago__metodopago='Pendiente',
-        ).count(),
+        'notificaciones_pendientes': total_reservas,
+        'notificaciones_servicios': total_servicios,
+        'total_notificaciones': total_reservas + total_servicios,
+        'reservas_notificaciones': reservas[:5],
+        'servicios_notificaciones': servicios[:5],
     }

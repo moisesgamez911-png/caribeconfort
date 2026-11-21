@@ -25,6 +25,25 @@ document.addEventListener("DOMContentLoaded", function () {
     const successModal = document.getElementById("modalExitoServicio");
     const quantityInput = document.getElementById("cantidadServicio");
     const formSolicitar = document.getElementById("formSolicitarServicio");
+    const paymentMethodInputs = formSolicitar.querySelectorAll('input[name="metodo_pago_preferido"]');
+    const paymentDetailGroups = formSolicitar.querySelectorAll('[data-payment-details]');
+
+    function syncPaymentDetails() {
+        const selectedMethod = formSolicitar.querySelector('input[name="metodo_pago_preferido"]:checked')?.value;
+        paymentDetailGroups.forEach(function (group) {
+            const active = group.dataset.paymentDetails === selectedMethod;
+            group.hidden = !active;
+            group.querySelectorAll('[data-payment-field]').forEach(function (field) {
+                field.disabled = !active;
+                field.required = active;
+                if (!active) field.value = '';
+            });
+        });
+    }
+
+    paymentMethodInputs.forEach(function (input) {
+        input.addEventListener('change', syncPaymentDetails);
+    });
 
     function updateDisplayedPrice() {
         const price = Number(document.getElementById("hdnServicioPrecio").value);
@@ -44,6 +63,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const price = Number(button.dataset.precio);
 
             formSolicitar.reset();
+            syncPaymentDetails();
             document.getElementById("txtServicioNombre").textContent = service;
             document.getElementById("hdnServicioId").value = serviceId;
             document.getElementById("hdnServicioNombre").value = service;
@@ -93,6 +113,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     formSolicitar.addEventListener("submit", function (event) {
         event.preventDefault();
+
+        if (!formSolicitar.reportValidity()) return;
 
         const submitButton = document.getElementById("btnConfirmarPagoServicio");
         const serviceId = document.getElementById("hdnServicioId").value;

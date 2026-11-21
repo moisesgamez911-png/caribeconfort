@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Galería | Caribe Confort</title>
-    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=105">
-    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=102">
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=107">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=103">
     <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}?v=2">
     <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
-    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=10">
 </head>
 <body>
 {% include 'inc/admin_header.html' %}
@@ -67,12 +67,40 @@
         <div class="adm-section-heading">
             <div><h2>Imágenes registradas</h2><p>{{ imagenes|length }} imágenes organizadas por sección</p></div>
         </div>
+        <div class="adm-gallery-tools">
+            <nav class="adm-gallery-filters" aria-label="Filtrar imágenes por sección">
+                <button type="button" class="adm-gallery-filter is-active" data-gallery-section="all" aria-pressed="true">Todas <span>{{ imagenes|length }}</span></button>
+                {% for valor, etiqueta in secciones_galeria %}
+                <button type="button" class="adm-gallery-filter" data-gallery-section="{{ valor }}" aria-pressed="false">{{ etiqueta }}</button>
+                {% endfor %}
+            </nav>
+            <label class="adm-gallery-search">
+                <span class="sr-only">Buscar imágenes</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+                <input type="search" id="buscarImagenGaleria" placeholder="Buscar por título o sección">
+            </label>
+            <label class="adm-gallery-status-filter" for="filtrarEstadoGaleria">Estado
+                <select id="filtrarEstadoGaleria">
+                    <option value="all">Todos</option>
+                    <option value="active">Activas</option>
+                    <option value="inactive">Inactivas</option>
+                </select>
+            </label>
+        </div>
+        <p class="adm-gallery-results" id="resultadoFiltroGaleria" aria-live="polite"></p>
         <div class="adm-gallery-grid">
             {% for imagen in imagenes %}
-            <article class="adm-image-card">
+            <article class="adm-image-card" data-section="{{ imagen.seccion }}" data-state="{% if imagen.estado %}active{% else %}inactive{% endif %}" data-search="{{ imagen.titulo|default:'' }} {{ imagen.categoria.nombre }} {{ imagen.seccion }} {{ imagen.id }}">
                 <div class="adm-image-preview">
-                    <img src="{{ imagen.url_gestor }}" alt="{{ imagen.titulo|default:imagen.categoria.nombre }}" loading="lazy">
-                    <span class="adm-pill {% if imagen.estado %}green{% else %}gray{% endif %}">{% if imagen.estado %}Activa{% else %}Inactiva{% endif %}</span>
+                    <img data-preview-image src="{{ imagen.url_gestor }}" alt="{{ imagen.titulo|default:imagen.categoria.nombre }}" loading="lazy">
+                    <div class="adm-image-preview-top">
+                        <span class="adm-image-section-pill">{{ imagen.get_seccion_display }}</span>
+                        <span class="adm-pill {% if imagen.estado %}green{% else %}gray{% endif %}" data-preview-status>{% if imagen.estado %}Activa{% else %}Inactiva{% endif %}</span>
+                    </div>
+                    <div class="adm-image-preview-caption">
+                        <span>IMAGEN {{ imagen.id }}</span>
+                        <strong data-preview-title>{{ imagen.titulo|default:imagen.categoria.nombre }}</strong>
+                    </div>
                 </div>
                 <form method="post" enctype="multipart/form-data" class="adm-image-edit">
                     {% csrf_token %}
@@ -91,10 +119,10 @@
                         </select>
                     </div>
                     <div class="adm-field">
-                        <label for="imagenArchivo{{ imagen.id }}">Reemplazar archivo</label>
-                        <input id="imagenArchivo{{ imagen.id }}" name="archivo" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif">
+                        <label for="imagenArchivo{{ imagen.id }}">Reemplazar imagen</label>
+                        <input id="imagenArchivo{{ imagen.id }}" name="archivo" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" data-preview-input>
                     </div>
-                    <label class="user-active"><input type="checkbox" name="estado" {% if imagen.estado %}checked{% endif %}> Mostrar imagen</label>
+                    <label class="user-active adm-image-active-toggle"><input type="checkbox" name="estado" {% if imagen.estado %}checked{% endif %} data-preview-active> Mostrar imagen en el sitio</label>
                     <div class="adm-image-actions">
                         <button class="adm-button" type="submit">Guardar</button>
                     </div>
@@ -110,8 +138,85 @@
             <div class="adm-card adm-empty">Todavía no hay imágenes registradas.</div>
             {% endfor %}
         </div>
+        <div class="adm-card adm-empty" id="galeriaSinCoincidencias" hidden>No hay imágenes que coincidan con los filtros.</div>
     </section>
 </main>
-<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var cards = Array.from(document.querySelectorAll('.adm-image-card'));
+    var filterButtons = Array.from(document.querySelectorAll('.adm-gallery-filter'));
+    var search = document.getElementById('buscarImagenGaleria');
+    var status = document.getElementById('filtrarEstadoGaleria');
+    var result = document.getElementById('resultadoFiltroGaleria');
+    var empty = document.getElementById('galeriaSinCoincidencias');
+    var section = 'all';
+
+    document.querySelectorAll('.adm-image-card').forEach(function (card) {
+        var input = card.querySelector('[data-preview-input]');
+        var image = card.querySelector('[data-preview-image]');
+        var title = card.querySelector('[name="titulo"]');
+        var previewTitle = card.querySelector('[data-preview-title]');
+        var active = card.querySelector('[data-preview-active]');
+        var statusPill = card.querySelector('[data-preview-status]');
+        var previewUrl = '';
+
+        if (input && image) {
+            input.addEventListener('change', function () {
+                var file = input.files && input.files[0];
+                if (!file) return;
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+                previewUrl = URL.createObjectURL(file);
+                image.src = previewUrl;
+                image.alt = title && title.value.trim() ? title.value.trim() : file.name;
+            });
+        }
+        if (title && previewTitle) {
+            title.addEventListener('input', function () {
+                previewTitle.textContent = title.value.trim() || 'Imagen sin título';
+                if (image) image.alt = title.value.trim() || 'Vista previa de imagen';
+            });
+        }
+        if (active && statusPill) {
+            active.addEventListener('change', function () {
+                statusPill.textContent = active.checked ? 'Activa' : 'Inactiva';
+                statusPill.classList.toggle('green', active.checked);
+                statusPill.classList.toggle('gray', !active.checked);
+                card.dataset.state = active.checked ? 'active' : 'inactive';
+                applyFilters();
+            });
+        }
+    });
+
+    function applyFilters() {
+        var query = (search.value || '').trim().toLocaleLowerCase();
+        var selectedState = status.value;
+        var visible = 0;
+        cards.forEach(function (card) {
+            var matches = (section === 'all' || card.dataset.section === section) &&
+                (selectedState === 'all' || card.dataset.state === selectedState) &&
+                (card.dataset.search || '').toLocaleLowerCase().includes(query);
+            card.hidden = !matches;
+            if (matches) visible += 1;
+        });
+        result.textContent = visible + (visible === 1 ? ' imagen visible' : ' imágenes visibles');
+        empty.hidden = visible !== 0;
+    }
+    filterButtons.forEach(function (button) {
+        button.addEventListener('click', function () {
+            section = button.dataset.gallerySection;
+            filterButtons.forEach(function (item) {
+                var active = item === button;
+                item.classList.toggle('is-active', active);
+                item.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+            applyFilters();
+        });
+    });
+    if (search) search.addEventListener('input', applyFilters);
+    status.addEventListener('change', applyFilters);
+    applyFilters();
+});
+</script>
+<script src="{% static 'js/barra-encabezado.js' %}?v=15"></script>
 </body>
 </html>

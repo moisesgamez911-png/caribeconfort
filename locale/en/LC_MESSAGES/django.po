@@ -20,6 +20,24 @@ msgstr "Rooms / Booking"
 msgid "Galería"
 msgstr "Gallery"
 
+msgid "Buscar imágenes"
+msgstr "Search images"
+
+msgid "Buscar por título o categoría"
+msgstr "Search by title or category"
+
+msgid "Buscar"
+msgstr "Search"
+
+msgid "Limpiar búsqueda"
+msgstr "Clear search"
+
+msgid "Filtrar por categoría"
+msgstr "Filter by category"
+
+msgid "Todas"
+msgstr "All"
+
 msgid "Servicios"
 msgstr "Services"
 
@@ -400,3 +418,192 @@ msgstr "Your comment cannot exceed 2,000 characters."
 
 msgid "¿Cómo estuvo tu estancia en Caribe Confort?"
 msgstr "How was your stay at Caribe Confort?"
+
+msgid "Acciones"
+msgstr "Actions"
+
+msgid "Activar modo oscuro"
+msgstr "Enable dark mode"
+
+msgid "Activo"
+msgstr "Active"
+
+msgid "Administra los tipos de habitación y los planes disponibles."
+msgstr "Manage room types and available packages."
+
+msgid "Administración"
+msgstr "Administration"
+
+msgid "Aún no hay tipos de habitación registrados."
+msgstr "No room types have been registered yet."
+
+msgid "Aún no hay tipos de planes registrados."
+msgstr "No plan types have been registered yet."
+
+msgid "CATÁLOGO DE PLANES"
+msgstr "PLAN CATALOG"
+
+msgid "CATÁLOGOS DEL HOTEL"
+msgstr "HOTEL CATALOGS"
+
+msgid "Cancelar"
+msgstr "Cancel"
+
+msgid "Capacidad"
+msgstr "Capacity"
+
+msgid "Características incluidas (una por línea)"
+msgstr "Included features (one per line)"
+
+msgid "Caribe Confort, inicio del panel"
+msgstr "Caribe Confort, dashboard home"
+
+msgid "Catálogos de tipos"
+msgstr "Type catalogs"
+
+msgid "Cerrar"
+msgstr "Close"
+
+msgid "Crear tipo"
+msgstr "Create type"
+
+msgid "Crear tipo de habitación"
+msgstr "Create room type"
+
+msgid "Crear tipo de plan"
+msgstr "Create plan type"
+
+msgid "Disponibles"
+msgstr "Available"
+
+msgid "Duración"
+msgstr "Duration"
+
+msgid "Duración en días"
+msgstr "Duration in days"
+
+msgid "Editar"
+msgstr "Edit"
+
+msgid "Editar tipo de plan"
+msgstr "Edit plan type"
+
+msgid "Eliminar"
+msgstr "Delete"
+
+msgid "Estado"
+msgstr "Status"
+
+msgid "Guardar cambios"
+msgstr "Save changes"
+
+msgid "Habitación"
+msgstr "Room"
+
+msgid "INVENTARIO DEL HOTEL"
+msgstr "HOTEL INVENTORY"
+
+msgid "Inactivo"
+msgstr "Inactive"
+
+msgid "Máximo de adultos"
+msgstr "Maximum adults"
+
+msgid "Máximo de niños"
+msgstr "Maximum children"
+
+msgid "No hay notificaciones pendientes."
+msgstr "There are no pending notifications."
+
+msgid "Notificaciones"
+msgstr "Notifications"
+
+msgid "Notificaciones recientes"
+msgstr "Recent notifications"
+
+msgid "Orden de aparición"
+msgstr "Display order"
+
+msgid "Plan"
+msgstr "Plan"
+
+msgid "Plan visible para reservar"
+msgstr "Plan available for booking"
+
+msgid "Precio"
+msgstr "Price"
+
+msgid "Precio (COP)"
+msgstr "Price (COP)"
+
+msgid "Recepción"
+msgstr "Reception"
+
+msgid "Reserva por validar"
+msgstr "Reservation awaiting validation"
+
+msgid "Reservas disponibles"
+msgstr "Available bookings"
+
+msgid "Riohacha, La Guajira · Sistema de Gestión Hotelera"
+msgstr "Riohacha, La Guajira · Hotel Management System"
+
+msgid "Ruta de imagen (opcional)"
+msgstr "Image path (optional)"
+
+msgid "Servicio pendiente"
+msgstr "Pending service"
+
+msgid "Servicios incluidos"
+msgstr "Included services"
+
+msgid "Sin tipo de habitación"
+msgstr "No room type"
+
+msgid "Tarifa"
+msgstr "Rate"
+
+msgid "Tarifa base"
+msgstr "Base rate"
+
+msgid "Tipo de habitación asociado"
+msgstr "Associated room type"
+
+msgid "Tipos"
+msgstr "Types"
+
+msgid "Tipos de habitación"
+msgstr "Room types"
+
+msgid "Tipos de planes"
+msgstr "Plan types"
+
+msgid "Tipos de planes registrados"
+msgstr "Registered plan types"
+
+msgid "Tipos registrados"
+msgstr "Registered types"
+
+msgid "Usa Ctrl o Cmd para seleccionar varios servicios."
+msgstr "Use Ctrl or Cmd to select multiple services."
+
+msgid "Ver reservas pendientes"
+msgstr "View pending reservations"
+
+msgid "Ver servicios pendientes"
+msgstr "View pending services"
+
+msgid "Ver sitio del hotel"
+msgstr "View hotel website"
+
+msgid "días"
+msgstr "days"
+
+msgid "huéspedes"
+msgstr "guests"
+
+msgid "tipos de habitación."
+msgstr "room types."
+
+msgid "tipos de planes."
+msgstr "plan types."

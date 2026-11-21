@@ -316,6 +316,10 @@ class ServicioReserva(models.Model):
         blank=True,
         default='',
     )
+    tarjeta_titular=models.CharField(max_length=100, blank=True, default='')
+    tarjeta_ultimos4=models.CharField(max_length=4, blank=True, default='')
+    nequi_titular=models.CharField(max_length=100, blank=True, default='')
+    nequi_celular=models.CharField(max_length=20, blank=True, default='')
     estado=models.CharField(max_length=20, choices=estados, default='Pendiente')
     fecha=models.DateTimeField(auto_now_add=True)
 

@@ -1,5 +1,6 @@
 {% load static %}
 {% load static l10n i18n %}
+{% get_current_language as CURRENT_LANGUAGE %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,12 +10,12 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     
-    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=105">
-    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=102">
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=107">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=103">
     <link rel="stylesheet" href="{% static 'css/administrador/reservas.css' %}?v=2">
     <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
-    <link rel="stylesheet" href="{% static 'css/admin-panel-general.css' %}?v=2">
-    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'css/admin-panel-general.css' %}?v=5">
+    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=9">
 </head>
 <body class="admin-dashboard-page">
 
@@ -32,7 +33,7 @@
         <div class="dash-header-meta">
             <div class="dash-fecha">
                 <div>
-                    <strong>{% now "l, j \d\e F \d\e Y" %}</strong>
+                    <strong>{% if CURRENT_LANGUAGE == 'en' %}{% now "l, F j, Y" %}{% else %}{% now "l, j \d\e F \d\e Y" %}{% endif %}</strong>
                     <span>{% trans "Hotel Caribe Confort · Riohacha, La Guajira" %}</span>
                 </div>
             </div>
@@ -263,7 +264,10 @@
                             <tr>
                                 <td>{{ item.reservas.huespedes.nombres }} {{ item.reservas.huespedes.apellidos }}</td>
                                 <td>CC-{{ item.reservas_id|stringformat:"04d" }}</td>
-                                <td>{{ item.servicios.nombre }}</td>
+                                <td>
+                                    {{ item.servicios.nombre }}
+                                    {% if item.metodo_pago_preferido == 'Tarjeta' %}<small class="dash-payment-reference">Tarjeta · {{ item.tarjeta_titular }} · •••• {{ item.tarjeta_ultimos4 }}</small>{% elif item.metodo_pago_preferido == 'Nequi' %}<small class="dash-payment-reference">Nequi · {{ item.nequi_titular }} · {{ item.nequi_celular }}</small>{% endif %}
+                                </td>
                                 <td>{{ item.cantidad }}</td>
                                 <td>${{ item.valor|floatformat:2 }}</td>
                                 <td>
@@ -338,7 +342,6 @@
         </div>
 
         <div class="dash-support-grid">
-        <div class="dash-col-mid">
             
             <div class="dash-card card-ocupacion">
                 <div class="dash-card-head">
@@ -458,9 +461,6 @@
                 </div>
             </div>
 
-        </div>
-
-        <div class="dash-col-right">
             <div class="dash-card estado-hotel-card">
                 <div class="dash-card-head">
                     <h2 class="dash-card-title">Estado del hotel</h2>
@@ -508,7 +508,6 @@
                     {% endfor %}
                 </ul>
             </div>
-        </div>
         </div>
 
     </div>
@@ -612,6 +611,6 @@
 
 <script src="{% static 'js/dashboard.js' %}?v=10002"></script>
 <script src="{% static 'js/admin-pagination-scroll.js' %}?v=1"></script>
-<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+<script src="{% static 'js/barra-encabezado.js' %}?v=15"></script>
 </body>
 </html>

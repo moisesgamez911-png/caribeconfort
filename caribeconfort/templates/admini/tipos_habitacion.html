@@ -1,74 +1,130 @@
-{% load static %}
+{% load static i18n %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Tipos de habitación | Caribe Confort</title>
-    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=105">
+    <title>{% trans "Tipos" %} | Caribe Confort</title>
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=107">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
-    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=9">
 </head>
 <body>
 {% include 'inc/admin_header.html' %}
 {% include 'inc/admin_nav.html' %}
 <main class="ad-main adm-page">
     <header class="adm-heading">
-        <div><p class="adm-eyebrow">INVENTARIO DEL HOTEL</p><h1>Tipos de habitación</h1><p>Consulta las capacidades y tarifas base por tipo.</p></div>
-        <button class="adm-button" type="button" id="abrirTipoHabitacion">+ Crear tipo</button>
+        <div><p class="adm-eyebrow">{% trans "CATÁLOGOS DEL HOTEL" %}</p><h1>{% trans "Tipos" %}</h1><p>{% trans "Administra los tipos de habitación y los planes disponibles." %}</p></div>
     </header>
     {% if messages %}<div class="adm-messages" role="status">{% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}</div>{% endif %}
+    <div class="user-tabs" role="tablist" aria-label="{% trans 'Catálogos de tipos' %}">
+        <button type="button" class="user-tab" id="tabTiposHabitacion" role="tab" data-type-tab="habitaciones" aria-controls="panelTiposHabitacion" aria-selected="{% if tab_tipos == 'habitaciones' %}true{% else %}false{% endif %}">{% trans "Tipos de habitación" %}</button>
+        <button type="button" class="user-tab" id="tabTiposPlan" role="tab" data-type-tab="planes" aria-controls="panelTiposPlan" aria-selected="{% if tab_tipos == 'planes' %}true{% else %}false{% endif %}">{% trans "Tipos de planes" %}</button>
+    </div>
+    <section class="user-panel" id="panelTiposHabitacion" role="tabpanel" aria-labelledby="tabTiposHabitacion" data-type-panel="habitaciones" {% if tab_tipos != 'habitaciones' %}hidden{% endif %}>
     <section class="adm-card">
-        <div class="adm-card-heading"><div><h2>Tipos registrados</h2><p>{{ tipos_habitacion|length }} tipos de habitación.</p></div></div>
+        <div class="adm-card-heading"><div><h2>{% trans "Tipos registrados" %}</h2><p>{{ tipos_habitacion|length }} {% trans "tipos de habitación." %}</p></div><button class="adm-button" type="button" id="abrirTipoHabitacion">+ {% trans "Crear tipo" %}</button></div>
         <div class="adm-table-wrap">
             <table class="adm-table">
-                <thead><tr><th>Nombre</th><th>Capacidad</th><th>Tarifa base</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>{% trans "Nombre" %}</th><th>{% trans "Capacidad" %}</th><th>{% trans "Tarifa base" %}</th><th>{% trans "Acciones" %}</th></tr></thead>
                 <tbody>
                     {% for tipo in tipos_habitacion %}
                     <tr>
                         <td><strong>{{ tipo.nombre }}</strong></td>
-                        <td>{{ tipo.capacidad }} huéspedes</td>
+                        <td>{{ tipo.capacidad }} {% trans "huéspedes" %}</td>
                         <td>${{ tipo.tarifa|floatformat:2 }}</td>
-                        <td><button class="adm-button secondary" type="button" data-open-tipo="editarTipo{{ tipo.id }}">Editar</button></td>
+                        <td><button class="adm-button secondary" type="button" data-open-tipo="editarTipo{{ tipo.id }}">{% trans "Editar" %}</button></td>
                     </tr>
-                    {% empty %}<tr><td class="adm-empty" colspan="4">Aún no hay tipos de habitación registrados.</td></tr>{% endfor %}
+                    {% empty %}<tr><td class="adm-empty" colspan="4">{% trans "Aún no hay tipos de habitación registrados." %}</td></tr>{% endfor %}
                 </tbody>
             </table>
         </div>
     </section>
+    </section>
     {% for tipo in tipos_habitacion %}
     <dialog class="adm-dialog" id="editarTipo{{ tipo.id }}" aria-labelledby="tituloEditarTipo{{ tipo.id }}">
-        <header class="adm-dialog-heading"><div><p class="adm-eyebrow">INVENTARIO DEL HOTEL</p><h2 id="tituloEditarTipo{{ tipo.id }}">Editar {{ tipo.nombre }}</h2></div><button class="room-modal-close" type="button" data-close-tipo aria-label="Cerrar">&times;</button></header>
+        <header class="adm-dialog-heading"><div><p class="adm-eyebrow">{% trans "INVENTARIO DEL HOTEL" %}</p><h2 id="tituloEditarTipo{{ tipo.id }}">{% trans "Editar" %} {{ tipo.nombre }}</h2></div><button class="room-modal-close" type="button" data-close-tipo aria-label="{% trans 'Cerrar' %}">&times;</button></header>
         <form method="post">
             {% csrf_token %}
             <input type="hidden" name="accion" value="editar">
             <input type="hidden" name="tipo_id" value="{{ tipo.id }}">
+            <input type="hidden" name="tab" value="habitaciones">
             <div class="adm-form-grid">
-                <div class="adm-field adm-span-2"><label for="editarTipoNombre{{ tipo.id }}">Nombre</label><input id="editarTipoNombre{{ tipo.id }}" name="nombre" maxlength="100" value="{{ tipo.nombre }}" required></div>
-                <div class="adm-field"><label for="editarTipoCapacidad{{ tipo.id }}">Capacidad</label><input id="editarTipoCapacidad{{ tipo.id }}" name="capacidad" type="number" min="1" max="100" value="{{ tipo.capacidad }}" required></div>
-                <div class="adm-field"><label for="editarTipoTarifa{{ tipo.id }}">Tarifa</label><input id="editarTipoTarifa{{ tipo.id }}" name="tarifa" type="number" min="0.01" step="0.01" value="{{ tipo.tarifa }}" required></div>
+                <div class="adm-field adm-span-2"><label for="editarTipoNombre{{ tipo.id }}">{% trans "Nombre" %}</label><input id="editarTipoNombre{{ tipo.id }}" name="nombre" maxlength="100" value="{{ tipo.nombre }}" required></div>
+                <div class="adm-field"><label for="editarTipoCapacidad{{ tipo.id }}">{% trans "Capacidad" %}</label><input id="editarTipoCapacidad{{ tipo.id }}" name="capacidad" type="number" min="1" max="100" value="{{ tipo.capacidad }}" required></div>
+                <div class="adm-field"><label for="editarTipoTarifa{{ tipo.id }}">{% trans "Tarifa" %}</label><input id="editarTipoTarifa{{ tipo.id }}" name="tarifa" type="number" min="0.01" step="0.01" value="{{ tipo.tarifa }}" required></div>
             </div>
-            <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-tipo>Cancelar</button><button class="adm-button" type="submit">Guardar cambios</button></footer>
+            <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-tipo>{% trans "Cancelar" %}</button><button class="adm-button" type="submit">{% trans "Guardar cambios" %}</button></footer>
         </form>
     </dialog>
     {% endfor %}
+    <section class="user-panel" id="panelTiposPlan" role="tabpanel" aria-labelledby="tabTiposPlan" data-type-panel="planes" {% if tab_tipos != 'planes' %}hidden{% endif %}>
+        <section class="adm-card">
+            <div class="adm-card-heading"><div><h2>{% trans "Tipos de planes registrados" %}</h2><p>{{ planes_admin|length }} {% trans "tipos de planes." %}</p></div><button class="adm-button" type="button" id="abrirTipoPlan">+ {% trans "Crear tipo de plan" %}</button></div>
+            <div class="adm-table-wrap">
+                <table class="adm-table">
+                    <thead><tr><th>{% trans "Nombre" %}</th><th>{% trans "Precio" %}</th><th>{% trans "Duración" %}</th><th>{% trans "Disponibles" %}</th><th>{% trans "Estado" %}</th><th>{% trans "Acciones" %}</th></tr></thead>
+                    <tbody>
+                        {% for plan in planes_admin %}
+                        <tr>
+                            <td><strong>{{ plan.nombre }}</strong><small class="adm-table-subtext">{{ plan.descripcion|default:"—" }}</small></td>
+                            <td>${{ plan.precio|floatformat:2 }}</td>
+                            <td>{{ plan.duracion_dias }} {% trans "días" %}</td>
+                            <td>{{ plan.disponibles }}</td>
+                            <td>{% if plan.estado %}{% trans "Activo" %}{% else %}{% trans "Inactivo" %}{% endif %}</td>
+                            <td>
+                                <div class="adm-row-actions">
+                                    <button class="adm-button secondary" type="button" data-open-plan="editarPlan{{ plan.id }}">{% trans "Editar" %}</button>
+                                    <form method="post" class="plan-delete-form" data-plan-name="{{ plan.nombre }}">
+                                        {% csrf_token %}<input type="hidden" name="accion" value="eliminar_plan"><input type="hidden" name="plan_id" value="{{ plan.id }}"><input type="hidden" name="tab" value="planes">
+                                        <button class="adm-button danger" type="submit">{% trans "Eliminar" %}</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}<tr><td class="adm-empty" colspan="6">{% trans "Aún no hay tipos de planes registrados." %}</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {% for plan in planes_admin %}
+        <dialog class="adm-dialog plan-type-dialog" id="editarPlan{{ plan.id }}" aria-labelledby="tituloEditarPlan{{ plan.id }}">
+            <header class="adm-dialog-heading"><div><p class="adm-eyebrow">{% trans "CATÁLOGO DE PLANES" %}</p><h2 id="tituloEditarPlan{{ plan.id }}">{% trans "Editar tipo de plan" %}</h2></div><button class="room-modal-close" type="button" data-close-plan aria-label="{% trans 'Cerrar' %}">&times;</button></header>
+            <form method="post" class="plan-type-form">
+                {% csrf_token %}<input type="hidden" name="accion" value="editar_plan"><input type="hidden" name="plan_id" value="{{ plan.id }}"><input type="hidden" name="tab" value="planes">
+                {% include "admini/plan_tipo_campos.html" with form_id=plan.id plan=plan %}
+                <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-plan>{% trans "Cancelar" %}</button><button class="adm-button" type="submit">{% trans "Guardar cambios" %}</button></footer>
+            </form>
+        </dialog>
+        {% endfor %}
+    </section>
 </main>
 <dialog class="adm-dialog" id="crearTipoHabitacion" aria-labelledby="tituloTipoHabitacion">
-    <header class="adm-dialog-heading"><div><p class="adm-eyebrow">INVENTARIO DEL HOTEL</p><h2 id="tituloTipoHabitacion">Crear tipo de habitación</h2></div><button class="room-modal-close" type="button" id="cerrarTipoHabitacion" aria-label="Cerrar">&times;</button></header>
+    <header class="adm-dialog-heading"><div><p class="adm-eyebrow">{% trans "INVENTARIO DEL HOTEL" %}</p><h2 id="tituloTipoHabitacion">{% trans "Crear tipo de habitación" %}</h2></div><button class="room-modal-close" type="button" id="cerrarTipoHabitacion" aria-label="{% trans 'Cerrar' %}">&times;</button></header>
     <form method="post">
         {% csrf_token %}
         <input type="hidden" name="accion" value="crear">
+        <input type="hidden" name="tab" value="habitaciones">
         <div class="adm-form-grid">
-            <div class="adm-field adm-span-2"><label for="tipoNombre">Nombre</label><input id="tipoNombre" name="nombre" maxlength="100" required></div>
-            <div class="adm-field"><label for="tipoCapacidad">Capacidad</label><input id="tipoCapacidad" name="capacidad" type="number" min="1" max="100" required></div>
-            <div class="adm-field"><label for="tipoTarifa">Tarifa</label><input id="tipoTarifa" name="tarifa" type="number" min="0.01" step="0.01" required></div>
+            <div class="adm-field adm-span-2"><label for="tipoNombre">{% trans "Nombre" %}</label><input id="tipoNombre" name="nombre" maxlength="100" required></div>
+            <div class="adm-field"><label for="tipoCapacidad">{% trans "Capacidad" %}</label><input id="tipoCapacidad" name="capacidad" type="number" min="1" max="100" required></div>
+            <div class="adm-field"><label for="tipoTarifa">{% trans "Tarifa" %}</label><input id="tipoTarifa" name="tarifa" type="number" min="0.01" step="0.01" required></div>
         </div>
-        <footer class="adm-form-actions"><button class="adm-button secondary" type="button" id="cancelarTipoHabitacion">Cancelar</button><button class="adm-button" type="submit">Crear tipo</button></footer>
+        <footer class="adm-form-actions"><button class="adm-button secondary" type="button" id="cancelarTipoHabitacion">{% trans "Cancelar" %}</button><button class="adm-button" type="submit">{% trans "Crear tipo" %}</button></footer>
+    </form>
+</dialog>
+<dialog class="adm-dialog plan-type-dialog" id="crearTipoPlan" aria-labelledby="tituloTipoPlan">
+    <header class="adm-dialog-heading"><div><p class="adm-eyebrow">{% trans "CATÁLOGO DE PLANES" %}</p><h2 id="tituloTipoPlan">{% trans "Crear tipo de plan" %}</h2></div><button class="room-modal-close" type="button" data-close-plan aria-label="{% trans 'Cerrar' %}">&times;</button></header>
+    <form method="post" class="plan-type-form">
+        {% csrf_token %}<input type="hidden" name="accion" value="crear_plan"><input type="hidden" name="tab" value="planes">
+        {% include "admini/plan_tipo_campos.html" with form_id="nuevoPlan" %}
+        <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-plan>{% trans "Cancelar" %}</button><button class="adm-button" type="submit">{% trans "Crear tipo de plan" %}</button></footer>
     </form>
 </dialog>
 <script>
     const tipoHabitacionDialog = document.getElementById('crearTipoHabitacion');
+    const tipoPlanDialog = document.getElementById('crearTipoPlan');
     document.getElementById('abrirTipoHabitacion').addEventListener('click', () => tipoHabitacionDialog.showModal());
     document.getElementById('cerrarTipoHabitacion').addEventListener('click', () => tipoHabitacionDialog.close());
     document.getElementById('cancelarTipoHabitacion').addEventListener('click', () => tipoHabitacionDialog.close());
@@ -78,7 +134,37 @@
     document.querySelectorAll('[data-close-tipo]').forEach((button) => {
         button.addEventListener('click', () => button.closest('dialog').close());
     });
+    document.getElementById('abrirTipoPlan').addEventListener('click', () => tipoPlanDialog.showModal());
+    document.querySelectorAll('[data-open-plan]').forEach((button) => {
+        button.addEventListener('click', () => document.getElementById(button.dataset.openPlan).showModal());
+    });
+    document.querySelectorAll('[data-close-plan]').forEach((button) => {
+        button.addEventListener('click', () => button.closest('dialog').close());
+    });
+    document.querySelectorAll('.plan-delete-form').forEach((form) => {
+        form.addEventListener('submit', (event) => {
+            if (!window.confirm(`¿Eliminar el tipo de plan "${form.dataset.planName}"?`)) event.preventDefault();
+        });
+    });
+    const typeTabs = document.querySelectorAll('[data-type-tab]');
+    const typePanels = document.querySelectorAll('[data-type-panel]');
+    function activateTypeTab(tab, updateUrl) {
+        const selected = tab === 'planes' ? 'planes' : 'habitaciones';
+        typeTabs.forEach((button) => {
+            const active = button.dataset.typeTab === selected;
+            button.setAttribute('aria-selected', active ? 'true' : 'false');
+            button.tabIndex = active ? 0 : -1;
+        });
+        typePanels.forEach((panel) => { panel.hidden = panel.dataset.typePanel !== selected; });
+        if (updateUrl) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', selected);
+            window.history.replaceState(null, '', url);
+        }
+    }
+    typeTabs.forEach((button) => button.addEventListener('click', () => activateTypeTab(button.dataset.typeTab, true)));
+    activateTypeTab('{{ tab_tipos }}', false);
 </script>
-<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+<script src="{% static 'js/barra-encabezado.js' %}?v=15"></script>
 </body>
 </html>

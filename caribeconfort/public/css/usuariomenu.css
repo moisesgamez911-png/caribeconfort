@@ -855,3 +855,8 @@
         right: -42px;
     }
 }
+
+.user-menu-button,
+.user-menu-button .menu-account-label {
+    font-weight: 500;
+}

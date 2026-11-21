@@ -67,3 +67,9 @@
     color: #183D3D;
     box-shadow: none;
 }
+
+/* Keep language labels at the same medium weight on every customer page. */
+.language-switcher-button,
+.nav-idioma-btn {
+    font-weight: 500 !important;
+}

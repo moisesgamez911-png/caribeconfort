@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Servicios pendientes | Caribe Confort</title>
-    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=105">
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=107">
     <link rel="stylesheet" href="{% static 'css/recepcionista/dashboard.css' %}?v=4">
-    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=9">
 </head>
 <body>
 {% include 'inc/admin_header.html' %}
@@ -33,6 +33,11 @@
                             <small>{{ item.reservas.huespedes.identificacion }}</small>
                             <small>Solicitó: {{ item.solicitado_por|default:item.reservas.huespedes.nombres }}</small>
                             <small>Pago preferido: {{ item.get_metodo_pago_preferido_display|default:"No indicado" }}</small>
+                            {% if item.metodo_pago_preferido == 'Tarjeta' %}
+                                <small>Titular: {{ item.tarjeta_titular }} · termina en {{ item.tarjeta_ultimos4 }}</small>
+                            {% elif item.metodo_pago_preferido == 'Nequi' %}
+                                <small>Nequi: {{ item.nequi_titular }} · {{ item.nequi_celular }}</small>
+                            {% endif %}
                         </td>
                         <td>CC-{{ item.reservas_id|stringformat:"04d" }} · Hab. {{ item.reservas.habitaciones.numero|default:"—" }}</td>
                         <td>{{ item.servicios.nombre }}</td>
@@ -65,6 +70,6 @@
         </div>
     </article>
 </main>
-<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+<script src="{% static 'js/barra-encabezado.js' %}?v=15"></script>
 </body>
 </html>

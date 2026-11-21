@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Recepción | Caribe Confort</title>
-    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=105">
+    <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=107">
     <link rel="stylesheet" href="{% static 'css/recepcionista/dashboard.css' %}?v=4">
-    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=9">
 </head>
 <body>
 {% include 'inc/admin_header.html' %}
@@ -139,7 +139,10 @@
                         <tr>
                             <td><strong>{{ item.reservas.huespedes.nombres }} {{ item.reservas.huespedes.apellidos }}</strong><small>{{ item.reservas.huespedes.identificacion }}</small></td>
                             <td>CC-{{ item.reservas_id|stringformat:"04d" }}</td>
-                            <td>{{ item.servicios.nombre }}</td>
+                            <td>
+                                {{ item.servicios.nombre }}
+                                {% if item.metodo_pago_preferido == 'Tarjeta' %}<small class="payment-reference">Tarjeta · {{ item.tarjeta_titular }} · •••• {{ item.tarjeta_ultimos4 }}</small>{% elif item.metodo_pago_preferido == 'Nequi' %}<small class="payment-reference">Nequi · {{ item.nequi_titular }} · {{ item.nequi_celular }}</small>{% endif %}
+                            </td>
                             <td>{{ item.cantidad }}</td>
                             <td>${{ item.valor|floatformat:2 }}</td>
                             <td>
@@ -249,7 +252,7 @@
 </dialog>
 
 <script src="{% static 'js/reembolso_reserva.js' %}?v=1"></script>
-<script src="{% static 'js/barra-encabezado.js' %}?v=14"></script>
+<script src="{% static 'js/barra-encabezado.js' %}?v=15"></script>
 <script src="{% static 'js/recepcionista/dashboard.js' %}?v=3"></script>
 </body>
 </html>

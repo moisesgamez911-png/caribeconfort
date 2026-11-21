@@ -6,9 +6,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% trans "Servicios" %} | Caribe Confort</title>
-    <link rel="stylesheet" href="{% static 'css/servicios.css' %}?v=21">
-    <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=4">
-    <link rel="stylesheet" href="{% static 'css/idiomas.css' %}">
+    <link rel="stylesheet" href="{% static 'css/servicios.css' %}?v=22">
+    <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=5">
+    <link rel="stylesheet" href="{% static 'css/idiomas.css' %}?v=2">
     <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -237,7 +237,29 @@
                         </label>
                     </div>
                 </fieldset>
-                <p class="service-payment-note">{% trans "Guardaremos tu método preferido para que recepción lo tenga en cuenta. Esta solicitud no procesa el pago ni realiza cargos bancarios." %}</p>
+                <div class="service-payment-details" id="detallesPagoTarjeta" data-payment-details="Tarjeta" hidden>
+                    <div class="service-payment-fields">
+                        <label>{% trans "Nombre del titular" %}
+                            <input type="text" name="tarjeta_titular" maxlength="100" autocomplete="cc-name" data-payment-field required disabled>
+                        </label>
+                        <label>{% trans "Últimos 4 dígitos de la tarjeta" %}
+                            <input type="text" name="tarjeta_ultimos4" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" data-payment-field required disabled>
+                        </label>
+                    </div>
+                    <p class="service-payment-security">{% trans "Por seguridad, no ingreses el número completo ni el código de seguridad (CVV)." %}</p>
+                </div>
+                <div class="service-payment-details" id="detallesPagoNequi" data-payment-details="Nequi" hidden>
+                    <div class="service-payment-fields">
+                        <label>{% trans "Nombre del titular de Nequi" %}
+                            <input type="text" name="nequi_titular" maxlength="100" autocomplete="name" data-payment-field required disabled>
+                        </label>
+                        <label>{% trans "Celular asociado a Nequi" %}
+                            <input type="tel" name="nequi_celular" inputmode="tel" pattern="[0-9+() .-]{7,20}" maxlength="20" autocomplete="tel" data-payment-field required disabled>
+                        </label>
+                    </div>
+                    <p class="service-payment-security">{% trans "Nunca solicitaremos tu clave o PIN de Nequi." %}</p>
+                </div>
+                <p class="service-payment-note">{% trans "El pago no se procesa ahora. Recepción usará estos datos solo para identificar el método de pago al gestionar tu solicitud." %}</p>
             </div>
 
             <footer class="modal-servicio-footer">
@@ -267,6 +289,6 @@
 
 <script src="{% static 'js/bootstrap.bundle.js' %}"></script>
 <script src="{% static 'js/feedback.js' %}?v=1"></script>
-<script src="{% static 'js/servicios.js' %}?v=21"></script>
+<script src="{% static 'js/servicios.js' %}?v=22"></script>
 </body>
 </html>

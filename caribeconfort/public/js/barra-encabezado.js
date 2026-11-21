@@ -111,7 +111,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const adFecha = document.getElementById("adFecha");
     if (adFecha) {
-        const f = new Date().toLocaleDateString("es-CO", {
+        const idiomaFecha = document.documentElement.lang.toLowerCase().startsWith("en") ? "en-US" : "es-CO";
+        const f = new Date().toLocaleDateString(idiomaFecha, {
             weekday: "long", day: "numeric", month: "long", year: "numeric"
         });
         adFecha.textContent = f.charAt(0).toUpperCase() + f.slice(1);

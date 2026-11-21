@@ -16,10 +16,48 @@
     <div class="ad-top-der">
         {% include "clientes/idioma_switcher.html" %}
         <span class="ad-header-date"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span id="adFecha"></span></span>
-        <a class="ad-header-notification" href="/adminreserva" aria-label="{% trans 'Ver reservas pendientes' %}" title="{% trans 'Ver reservas pendientes' %}">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
-            {% if notificaciones_pendientes %}<span class="ad-header-notification-count">{{ notificaciones_pendientes }}</span>{% endif %}
-        </a>
+        <div class="ad-header-notification-wrap">
+            <button type="button" class="ad-header-notification" id="adNotificationToggle"
+                    aria-label="{% trans 'Notificaciones' %} ({{ total_notificaciones|default:0 }})"
+                    aria-expanded="false" aria-controls="adNotificationMenu">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+                {% if total_notificaciones %}<span class="ad-header-notification-count">{{ total_notificaciones }}</span>{% endif %}
+            </button>
+            <section class="ad-notification-dropdown" id="adNotificationMenu" aria-label="{% trans 'Notificaciones recientes' %}" hidden>
+                <header class="ad-notification-heading">
+                    <strong>{% trans "Notificaciones" %}</strong>
+                    <span>{{ total_notificaciones|default:0 }}</span>
+                </header>
+                <div class="ad-notification-list">
+                    {% for reserva in reservas_notificaciones %}
+                    <a class="ad-notification-item" href="/adminreserva?estado=Pagada%20-%20Por%20validar">
+                        <span class="ad-notification-kind">{% trans "Reserva por validar" %}</span>
+                        <strong>CC-{{ reserva.id|stringformat:"04d" }} · {{ reserva.huespedes.nombres }} {{ reserva.huespedes.apellidos }}</strong>
+                        <small>
+                            {% if reserva.habitaciones %}{% trans "Habitación" %} {{ reserva.habitaciones.numero }}
+                            {% elif reserva.planes %}{% trans "Plan" %}: {{ reserva.planes.nombre }}
+                            {% endif %}
+                            · {{ reserva.fechasolicitud|date:"d/m/Y H:i" }}
+                        </small>
+                    </a>
+                    {% endfor %}
+                    {% for item in servicios_notificaciones %}
+                    <a class="ad-notification-item" href="/recepcion/servicios-pendientes">
+                        <span class="ad-notification-kind">{% trans "Servicio pendiente" %}</span>
+                        <strong>{{ item.servicios.nombre }} · {{ item.reservas.huespedes.nombres }} {{ item.reservas.huespedes.apellidos }}</strong>
+                        <small>CC-{{ item.reservas_id|stringformat:"04d" }} · {{ item.fecha|date:"d/m/Y H:i" }}</small>
+                    </a>
+                    {% endfor %}
+                    {% if not reservas_notificaciones and not servicios_notificaciones %}
+                    <p class="ad-notification-empty">{% trans "No hay notificaciones pendientes." %}</p>
+                    {% endif %}
+                </div>
+                <footer class="ad-notification-footer">
+                    <a href="/adminreserva?estado=Pagada%20-%20Por%20validar">{% trans "Ver reservas pendientes" %}</a>
+                    <a href="/recepcion/servicios-pendientes">{% trans "Ver servicios pendientes" %}</a>
+                </footer>
+            </section>
+        </div>
         <button type="button" class="ad-theme-toggle" id="adThemeToggle" aria-label="{% trans 'Activar modo oscuro' %}" title="{% trans 'Activar modo oscuro' %}">
             <svg class="ad-theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
             <svg class="ad-theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.5 8.5 0 1 0 20.5 15.5Z"/></svg>
@@ -43,3 +81,4 @@
     </div>
 </header>
 <script src="{% static 'js/feedback.js' %}?v=1" defer></script>
+<script src="{% static 'js/admin-notificaciones.js' %}?v=1" defer></script>

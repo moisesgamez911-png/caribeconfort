@@ -185,6 +185,70 @@ document.addEventListener('DOMContentLoaded', function () {
         return Number.isFinite(saldo) ? Math.max(0, saldo) : 0;
     }
 
+    document.querySelectorAll('.btn-reenviar-confirmacion').forEach(function (boton) {
+        boton.addEventListener('click', function () {
+            var reservaId = boton.dataset.id;
+            if (!reservaId || !csrfToken) {
+                window.ccAlert('No se pudo validar la sesión. Recarga la página e inténtalo nuevamente.');
+                return;
+            }
+            window.ccConfirm('¿Quieres reenviar el correo de confirmación de la reserva CC-' + String(reservaId).padStart(4, '0') + '?').then(function (confirmado) {
+                if (!confirmado) return;
+                boton.disabled = true;
+                fetch('/adminreserva/' + reservaId + '/reenviar-confirmacion/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken },
+                }).then(function (response) {
+                    return response.json().then(function (data) {
+                        if (!response.ok || !data.success) {
+                            throw new Error(data.message || 'No se pudo reenviar la confirmación.');
+                        }
+                        return data;
+                    });
+                }).then(function (data) {
+                    return window.ccAlert(data.message || 'Correo de confirmación enviado.');
+                }).catch(function (error) {
+                    window.ccAlert(error.message || 'No se pudo conectar con el servidor.');
+                }).finally(function () {
+                    boton.disabled = false;
+                });
+            });
+        });
+    });
+
+    document.querySelectorAll('.btn-cancelar-reserva').forEach(function (boton) {
+        boton.addEventListener('click', function () {
+            var reservaId = boton.dataset.id;
+            var numeroReserva = boton.dataset.reserva || ('CC-' + String(reservaId).padStart(4, '0'));
+            if (!reservaId || !csrfToken) {
+                window.ccAlert('No se pudo validar la sesión. Recarga la página e inténtalo nuevamente.');
+                return;
+            }
+            window.ccConfirm('¿Deseas cancelar la reserva ' + numeroReserva + '? Esta acción actualizará su estado.').then(function (confirmado) {
+                if (!confirmado) return;
+                boton.disabled = true;
+                fetch('/api/cancelar-reserva/' + reservaId + '/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken },
+                }).then(function (response) {
+                    return response.json().then(function (data) {
+                        if (!response.ok || !data.success) {
+                            throw new Error(data.message || 'No se pudo cancelar la reserva.');
+                        }
+                        return data;
+                    });
+                }).then(function (data) {
+                    return window.ccAlert(data.message || 'Reserva cancelada.').then(function () {
+                        window.location.reload();
+                    });
+                }).catch(function (error) {
+                    boton.disabled = false;
+                    window.ccAlert(error.message || 'No se pudo conectar con el servidor.');
+                });
+            });
+        });
+    });
+
     if (modalCheckin) {
         document.querySelectorAll('.btn-checkin').forEach(function (boton) {
             boton.addEventListener('click', function () {
@@ -199,7 +263,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 modalCheckin.classList.add('activo');
             });
         });
-        configurarCierre(modalCheckin, ['btnCerrarCheckin', 'btnNoCheckin']);
+        var btnCancelarCheckin = document.getElementById('btnNoCheckin');
+        var btnCerrarCheckin = document.getElementById('btnCerrarCheckin');
+        [btnCancelarCheckin, btnCerrarCheckin].forEach(function (boton) {
+            if (!boton) return;
+            boton.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                modalCheckin.classList.remove('activo');
+            });
+        });
+        modalCheckin.addEventListener('click', function (event) {
+            if (event.target === modalCheckin) modalCheckin.classList.remove('activo');
+        });
     }
 
     if (modalValidar) {
@@ -221,10 +297,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
         function enviarAccion(accion) {
             var reservaId = modalValidar.dataset.reservaId;
+            var botonAccion = accion === 'aprobar'
+                ? document.getElementById('btnConfirmarValidacion')
+                : document.getElementById('btnRechazarValidacion');
             if (!reservaId || !csrfToken) {
                 window.ccAlert('No se pudo validar la sesión o el token de seguridad. Recarga la página e inténtalo nuevamente.');
                 return;
             }
+            if (botonAccion) botonAccion.disabled = true;
             fetch('/gestionar-reserva/' + reservaId + '/', {
                 method: 'POST',
                 headers: {
@@ -244,7 +324,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (data.success) window.location.reload();
                     });
                 })
-                .catch(function (error) { window.ccAlert(error.message); });
+                .catch(function (error) {
+                    if (botonAccion) botonAccion.disabled = false;
+                    var mensaje = error instanceof TypeError
+                        ? 'No hubo respuesta del servidor Django. Comprueba que el servidor siga activo y revisa su terminal. Recarga la página antes de volver a intentar para verificar el estado de la reserva.'
+                        : (error.message || 'No se pudo procesar la reserva.');
+                    window.ccAlert(mensaje);
+                });
         }
 
         var btnConfirmar = document.getElementById('btnConfirmarValidacion');

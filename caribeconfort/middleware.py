@@ -1,3 +1,4 @@
+from django.middleware.csrf import get_token
 from django.utils.html import escape
 
 
@@ -6,6 +7,7 @@ class IdiomaGlobalMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        csrf_token = get_token(request)
         response = self.get_response(request)
 
         content_type = response.get('Content-Type', '')
@@ -36,7 +38,13 @@ class IdiomaGlobalMiddleware:
             flags=re.I,
         )
 
-        script = '<script src="/static/js/idiomas-global.js?v=2" defer></script>'
+        csrf_meta = '<meta name="csrf-token" content="' + escape(csrf_token) + '">'
+        if 'name="csrf-token"' not in html.lower():
+            head_end = html.lower().find('</head>')
+            if head_end >= 0:
+                html = html[:head_end] + csrf_meta + html[head_end:]
+
+        script = '<script src="/static/js/idiomas-global.js?v=8" defer></script>'
         if '</body>' in html.lower():
             lower = html.lower()
             position = lower.rfind('</body>')
