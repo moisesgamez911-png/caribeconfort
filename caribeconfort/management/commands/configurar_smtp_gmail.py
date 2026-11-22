@@ -1,33 +1,22 @@
 from getpass import getpass
-from smtplib import SMTPException
+from smtplib import SMTPAuthenticationError, SMTPException
 
-from cryptography.fernet import Fernet
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 from django.core.validators import validate_email
 
 from caribeconfort.models import Hoteles
-from caribeconfort.views import _conexion_correo_hotel
+from caribeconfort.views import (
+    _cifrar_contrasena_smtp,
+    _conexion_correo_hotel,
+    _normalizar_contrasena_smtp,
+)
 
 
 class Command(BaseCommand):
     help = 'Guarda las credenciales Gmail SMTP cifradas y comprueba la conexión.'
 
     def handle(self, *args, **options):
-        clave = getattr(settings, 'EMAIL_CREDENTIAL_ENCRYPTION_KEY', '')
-        if not clave:
-            raise CommandError(
-                'Django no detecta EMAIL_CREDENTIAL_ENCRYPTION_KEY. '
-                'Abre una terminal nueva y vuelve a ejecutar este comando.'
-            )
-        try:
-            fernet = Fernet(clave.encode('ascii'))
-        except (ValueError, UnicodeError) as error:
-            raise CommandError(
-                'EMAIL_CREDENTIAL_ENCRYPTION_KEY no es una clave Fernet válida.'
-            ) from error
-
         hotel = Hoteles.objects.order_by('id').first()
         crear_hotel = hotel is None
         if crear_hotel:
@@ -62,7 +51,7 @@ class Command(BaseCommand):
         contrasena = getpass('Contraseña de aplicación de Gmail (no se mostrará): ')
         if not contrasena:
             raise CommandError('La contraseña de aplicación no puede estar vacía.')
-        contrasena = ''.join(contrasena.split())
+        contrasena = _normalizar_contrasena_smtp('smtp.gmail.com', contrasena)
 
         if crear_hotel:
             hotel = Hoteles.objects.create(**datos_hotel)
@@ -71,9 +60,10 @@ class Command(BaseCommand):
         hotel.smtp_port = 587
         hotel.smtp_username = usuario
         hotel.smtp_from_email = remitente
-        hotel.smtp_password_encrypted = fernet.encrypt(
-            contrasena.encode('utf-8')
-        ).decode('ascii')
+        try:
+            hotel.smtp_password_encrypted = _cifrar_contrasena_smtp(contrasena)
+        except ValueError as error:
+            raise CommandError(str(error)) from error
         hotel.smtp_use_tls = True
         hotel.save(update_fields=[
             'smtp_host',
@@ -90,14 +80,19 @@ class Command(BaseCommand):
             conectado = conexion.open()
             if not conectado:
                 raise RuntimeError('El backend SMTP no abrió la conexión.')
-        except (OSError, SMTPException, RuntimeError) as error:
+        except SMTPAuthenticationError as error:
             raise CommandError(
-                'Los datos se guardaron cifrados, pero Gmail no aceptó la conexión. '
-                'Verifica la contraseña de aplicación y vuelve a ejecutar el comando.'
+                'La contraseña quedó guardada y cifrada en esta base de datos, pero Gmail rechazó el usuario o la contraseña (535). '
+                'El usuario debe ser la misma cuenta que generó la contraseña de aplicación.'
+            ) from error
+        except (OSError, SMTPException, RuntimeError, ValueError) as error:
+            raise CommandError(
+                'La contraseña quedó guardada y cifrada en esta base de datos, pero no se pudo verificar la conexión SMTP. '
+                'Comprueba la conexión y la configuración.'
             ) from error
         finally:
             conexion.close()
 
         self.stdout.write(self.style.SUCCESS(
-            'Configuración Gmail guardada y conexión SMTP verificada. No se envió ningún correo.'
+            'Configuración Gmail guardada y conexión SMTP autenticada. No se envió ningún correo.'
         ))
