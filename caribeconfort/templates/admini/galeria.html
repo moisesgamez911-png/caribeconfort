@@ -104,6 +104,40 @@
         </form>
     </section>
 
+    <section class="adm-card adm-form-card">
+        <div class="adm-card-heading">
+            <div><h2>Categorías existentes</h2><p>Edita el nombre, icono o visibilidad de cada categoría.</p></div>
+        </div>
+        <div class="adm-category-list">
+            {% for categoria in categorias_galeria %}
+            <form method="post" class="adm-category-row">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="editar_categoria">
+                <input type="hidden" name="categoria_id" value="{{ categoria.id }}">
+                <div class="adm-field">
+                    <label for="categoriaEditNombre{{ categoria.id }}">Nombre</label>
+                    <input id="categoriaEditNombre{{ categoria.id }}" name="nombre" maxlength="100" value="{{ categoria.nombre }}" required>
+                </div>
+                <div class="adm-field">
+                    <label for="categoriaEditIcono{{ categoria.id }}">Icono</label>
+                    <select id="categoriaEditIcono{{ categoria.id }}" name="icono" required>
+                        {% for icono in iconos_categoria_galeria %}
+                        <option value="{{ icono }}" {% if categoria.icono == icono %}selected{% endif %}>{{ icono|capfirst }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <label class="user-active adm-image-active-toggle">
+                    <input type="checkbox" name="estado" {% if categoria.estado %}checked{% endif %}>
+                    Visible
+                </label>
+                <div class="adm-image-actions"><button class="adm-button" type="submit">Guardar categoría</button></div>
+            </form>
+            {% empty %}
+            <p class="adm-empty">Todavía no hay categorías.</p>
+            {% endfor %}
+        </div>
+    </section>
+
     <section class="adm-gallery-section">
         <div class="adm-section-heading">
             <div><h2>Imágenes registradas</h2><p>{{ imagenes|length }} imágenes organizadas por sección</p></div>

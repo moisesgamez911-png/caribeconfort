@@ -27,6 +27,27 @@ document.addEventListener("DOMContentLoaded", function () {
     const formSolicitar = document.getElementById("formSolicitarServicio");
     const paymentMethodInputs = formSolicitar.querySelectorAll('input[name="metodo_pago_preferido"]');
     const paymentDetailGroups = formSolicitar.querySelectorAll('[data-payment-details]');
+    const secondBeneficiaryToggle = document.getElementById("btnAgregarBeneficiario");
+    const secondBeneficiaryGroup = document.getElementById("segundaPersonaServicio");
+
+    function setSecondBeneficiaryVisible(visible) {
+        if (!secondBeneficiaryToggle || !secondBeneficiaryGroup) return;
+        secondBeneficiaryGroup.hidden = !visible;
+        secondBeneficiaryToggle.setAttribute("aria-expanded", String(visible));
+        secondBeneficiaryToggle.textContent = visible
+            ? "Quitar segunda persona"
+            : "Agregar segunda persona (opcional)";
+        if (!visible) {
+            const input = secondBeneficiaryGroup.querySelector("input");
+            if (input) input.value = "";
+        }
+    }
+
+    if (secondBeneficiaryToggle) {
+        secondBeneficiaryToggle.addEventListener("click", function () {
+            setSecondBeneficiaryVisible(secondBeneficiaryGroup.hidden);
+        });
+    }
 
     function syncPaymentDetails() {
         const selectedMethod = formSolicitar.querySelector('input[name="metodo_pago_preferido"]:checked')?.value;
@@ -63,6 +84,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const price = Number(button.dataset.precio);
 
             formSolicitar.reset();
+            setSecondBeneficiaryVisible(false);
             syncPaymentDetails();
             document.getElementById("txtServicioNombre").textContent = service;
             document.getElementById("hdnServicioId").value = serviceId;

@@ -133,8 +133,8 @@
                         <div class="room-gallery">
                             <figure class="room-gallery-main">
                                 <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
-                                    {% if t.imagen %}
-                                        <img src="{% static 'img/imagenes/' %}{{ t.imagen }}" alt="{% trans 'Habitación' %} {{ t.nombre }}" loading="lazy" decoding="async">
+                                    {% if t.url_imagen %}
+                                        <img src="{{ t.url_imagen }}" alt="{% trans 'Habitación' %} {{ t.nombre }}" loading="lazy" decoding="async">
                                     {% else %}
                                         <img src="{% static 'img/imagenes/' %}{{ habitacion_imagen }}" alt="{% trans 'Habitación' %} {{ t.nombre }}" loading="lazy" decoding="async">
                                     {% endif %}

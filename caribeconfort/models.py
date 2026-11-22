@@ -301,7 +301,9 @@ class ServicioReserva(models.Model):
         ('Rechazado', 'Rechazado'),
     ]
     METODOS_PAGO_PREFERIDOS = [
+        ('Efectivo', 'Efectivo'),
         ('Tarjeta', 'Tarjeta'),
+        ('Transferencia', 'Transferencia'),
         ('Nequi', 'Nequi'),
     ]
     reservas=models.ForeignKey(Reservas, on_delete=models.CASCADE, db_column='idreservas')
@@ -310,6 +312,9 @@ class ServicioReserva(models.Model):
     cantidad=models.IntegerField()
     valor=models.DecimalField(max_digits=10, decimal_places=2)
     solicitado_por=models.CharField(max_length=100, blank=True, default='')
+    beneficiario=models.CharField(max_length=100, blank=True, default='')
+    beneficiario_segundo=models.CharField(max_length=100, blank=True, default='')
+    motivo_rechazo=models.CharField(max_length=500, blank=True, default='')
     metodo_pago_preferido=models.CharField(
         max_length=20,
         choices=METODOS_PAGO_PREFERIDOS,

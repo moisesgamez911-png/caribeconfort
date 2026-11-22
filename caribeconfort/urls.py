@@ -1,7 +1,7 @@
 
 from django.urls import include, path
 from django.conf import settings
-from django.conf.urls.static import static
+from django.views.static import serve as serve_media
 from caribeconfort.views import (home, galeria, servicios, habitaciones, imagenes, registrarhabitacion, registrarservicio, buscar_disponibilidad, iniciosesion
                                  , administrador, recepcionista, logout_view, planes, registrarcliente, confirmar_codigo,crear_reserva,reservasadmin,
                                  habitacionesadmin, pagar_reserva, procesar_pago, crear_reserva_plan, solicitar_servicio, mis_reservas,
@@ -79,5 +79,8 @@ urlpatterns = [
     path('adminreportes/exportar', exportar_reporte, name='exportar_reporte'),
 
 ]
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Los medios subidos por el hotel también deben servirse en producción. En Render
+# MEDIA_ROOT debe apuntar a un disco persistente configurado para el servicio.
+urlpatterns += [
+    path('media/<path:path>', serve_media, {'document_root': settings.MEDIA_ROOT}),
+]

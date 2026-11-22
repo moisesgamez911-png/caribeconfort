@@ -3211,3 +3211,17 @@ body.gallery-open {
         height: clamp(260px, 58vh, 500px);
     }
 }
+
+@media (max-width: 767.98px) {
+    .reservas-page {
+        overflow-x: hidden;
+    }
+
+    .reservas-page :is(input, select, textarea) {
+        font-size: 16px;
+    }
+
+    .reservas-page :is(button, .btn, .btn-primary, .btn-secondary, .room-gallery-nav) {
+        min-height: 44px;
+    }
+}

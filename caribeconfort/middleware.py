@@ -44,7 +44,7 @@ class IdiomaGlobalMiddleware:
             if head_end >= 0:
                 html = html[:head_end] + csrf_meta + html[head_end:]
 
-        script = '<script src="/static/js/idiomas-global.js?v=8" defer></script>'
+        script = '<script src="/static/js/idiomas-global.js?v=9" defer></script>'
         if '</body>' in html.lower():
             lower = html.lower()
             position = lower.rfind('</body>')

@@ -24,7 +24,7 @@
     <article class="reception-card">
         <div class="reception-table-wrap">
             <table>
-                <thead><tr><th>Huésped</th><th>Reserva</th><th>Servicio</th><th>Cantidad</th><th>Valor</th><th>Registrar pago</th></tr></thead>
+                <thead><tr><th>Huésped</th><th>Beneficiario(s)</th><th>Reserva</th><th>Habitación</th><th>Servicio</th><th>Cantidad</th><th>Valor</th><th>Estado</th><th>Acciones</th></tr></thead>
                 <tbody>
                     {% for item in servicios_pendientes %}
                     <tr>
@@ -39,10 +39,13 @@
                                 <small>Nequi: {{ item.nequi_titular }} · {{ item.nequi_celular }}</small>
                             {% endif %}
                         </td>
-                        <td>CC-{{ item.reservas_id|stringformat:"04d" }} · Hab. {{ item.reservas.habitaciones.numero|default:"—" }}</td>
+                        <td>{{ item.beneficiario|default:"No indicado" }}{% if item.beneficiario_segundo %}<small>{{ item.beneficiario_segundo }}</small>{% endif %}</td>
+                        <td>CC-{{ item.reservas_id|stringformat:"04d" }}</td>
+                        <td>{{ item.reservas.habitaciones.numero|default:"—" }}</td>
                         <td>{{ item.servicios.nombre }}</td>
                         <td>{{ item.cantidad }}</td>
                         <td>${{ item.valor|precio:2 }}</td>
+                        <td><span class="status-pill">{{ item.estado }}</span></td>
                         <td>
                             <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar">
                                 {% csrf_token %}
@@ -55,21 +58,30 @@
                                 </select>
                                 <button class="table-action" type="submit">Aprobar pago</button>
                             </form>
-                            <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar" class="service-reject-form">
-                                {% csrf_token %}
-                                <input type="hidden" name="next" value="/recepcion/servicios-pendientes">
-                                <input type="hidden" name="accion" value="rechazar">
-                                <input name="motivo" maxlength="500" required placeholder="Motivo del rechazo" aria-label="Motivo del rechazo">
-                                <button class="table-action service-reject-button" type="submit">Rechazar</button>
-                            </form>
+                            <button class="table-action service-reject-button" type="button" data-reject-service data-action="/recepcion/servicio/{{ item.id }}/aprobar" data-next="/recepcion/servicios-pendientes">Rechazar</button>
                         </td>
                     </tr>
-                    {% empty %}<tr><td class="table-empty" colspan="6">No hay servicios pendientes de pago.</td></tr>{% endfor %}
+                    {% empty %}<tr><td class="table-empty" colspan="9">No hay servicios pendientes de pago.</td></tr>{% endfor %}
                 </tbody>
             </table>
         </div>
     </article>
 </main>
+<dialog class="reception-dialog service-reject-dialog" id="modalRechazoServicio" aria-labelledby="tituloRechazoServicio">
+    <header class="dialog-heading"><div><p class="reception-eyebrow">SOLICITUD DE SERVICIO</p><h2 id="tituloRechazoServicio">Rechazar solicitud</h2></div><button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button></header>
+    <form method="post" id="formRechazoServicio">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="rechazar">
+        <input type="hidden" name="next" value="/recepcion/servicios-pendientes">
+        <div class="dialog-grid">
+            <label class="dialog-span-2">Motivo<select name="motivo_rechazo" id="motivoRechazoServicio" required><option value="">Selecciona el motivo</option><option value="sin_disponibilidad">Sin disponibilidad en el horario solicitado</option><option value="mantenimiento">Servicio en mantenimiento</option><option value="datos_incompletos">Datos incompletos del huésped</option><option value="fuera_horario">Fuera de horario de atención</option><option value="otro">Otro</option></select></label>
+            <label class="dialog-span-2" id="detalleRechazoServicio" hidden>Describe el motivo<textarea name="motivo_detalle" maxlength="500" disabled></textarea></label>
+        </div>
+        <p class="dialog-note">La solicitud se rechazará sin cobrar el servicio. No se realizará un reembolso bancario.</p>
+        <footer class="dialog-actions"><button type="button" class="secondary-button" data-close-dialog>Cancelar</button><button type="submit" class="primary-button service-reject-button">Confirmar rechazo</button></footer>
+    </form>
+</dialog>
 <script src="{% static 'js/barra-encabezado.js' %}?v=15"></script>
+<script src="{% static 'js/gestion-servicios.js' %}?v=1"></script>
 </body>
 </html>

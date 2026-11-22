@@ -1105,3 +1105,48 @@ html[data-theme="dark"] .boton-secundario:hover { background: #36423F; }
         flex-direction: column;
     }
 }
+
+.service-beneficiary-toggle {
+    min-height: 44px;
+    margin: -4px 0 14px;
+    padding: 8px 12px;
+    border: 1px solid #D9DEDB;
+    border-radius: 8px;
+    background: #FFFFFF;
+    color: #183D3D;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.service-beneficiary-toggle:hover {
+    background: #E9F0ED;
+}
+
+.service-beneficiary-toggle:focus-visible {
+    outline: 2px solid #C4A462;
+    outline-offset: 2px;
+}
+
+@media (max-width: 767.98px) {
+    .servicios-page {
+        overflow-x: hidden;
+    }
+
+    .servicios-page :is(input, select, textarea) {
+        font-size: 16px;
+    }
+
+    .servicios-page :is(button, .btn-solicitar, .btn-solicitar-login) {
+        min-height: 44px;
+    }
+
+    .modal-servicio-box {
+        max-height: calc(100dvh - 24px);
+    }
+
+    .modal-servicio-body {
+        padding: 16px;
+    }
+}

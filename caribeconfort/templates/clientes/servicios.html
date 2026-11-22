@@ -224,6 +224,34 @@
                     >
                 </div>
 
+                <div class="form-group-servicio">
+                    <label for="beneficiarioServicio">{% trans "Nombre completo de quien recibirá el servicio" %}</label>
+                    <input
+                        type="text"
+                        id="beneficiarioServicio"
+                        name="beneficiario"
+                        class="input-servicio"
+                        maxlength="100"
+                        value="{% if huesped %}{{ huesped.nombres }} {{ huesped.apellidos }}{% endif %}"
+                        autocomplete="name"
+                        required
+                    >
+                </div>
+                <button type="button" class="service-beneficiary-toggle" id="btnAgregarBeneficiario" aria-expanded="false" aria-controls="segundaPersonaServicio">
+                    {% trans "Agregar segunda persona (opcional)" %}
+                </button>
+                <div class="form-group-servicio" id="segundaPersonaServicio" hidden>
+                    <label for="beneficiarioSegundoServicio">{% trans "Nombre completo de la segunda persona" %}</label>
+                    <input
+                        type="text"
+                        id="beneficiarioSegundoServicio"
+                        name="beneficiario_segundo"
+                        class="input-servicio"
+                        maxlength="100"
+                        autocomplete="name"
+                    >
+                </div>
+
                 <fieldset class="service-payment-method">
                     <legend>{% trans "¿Con qué método prefieres pagar?" %}</legend>
                     <div class="service-payment-options">
@@ -259,7 +287,7 @@
                     </div>
                     <p class="service-payment-security">{% trans "Nunca solicitaremos tu clave o PIN de Nequi." %}</p>
                 </div>
-                <p class="service-payment-note">{% trans "El pago no se procesa ahora. Recepción usará estos datos solo para identificar el método de pago al gestionar tu solicitud." %}</p>
+                <p class="service-payment-note">{% trans "El pago queda pendiente y no se cobra ahora. Recepción confirmará la solicitud y registrará el pago únicamente si la aprueba." %}</p>
             </div>
 
             <footer class="modal-servicio-footer">
@@ -289,6 +317,6 @@
 
 <script src="{% static 'js/bootstrap.bundle.js' %}"></script>
 <script src="{% static 'js/feedback.js' %}?v=1"></script>
-<script src="{% static 'js/servicios.js' %}?v=22"></script>
+<script src="{% static 'js/servicios.js' %}?v=23"></script>
 </body>
 </html>

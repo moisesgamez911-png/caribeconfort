@@ -27,16 +27,17 @@
         <div class="adm-card-heading"><div><h2>{% trans "Tipos registrados" %}</h2><p>{{ tipos_habitacion|length }} {% trans "tipos de habitación." %}</p></div><button class="adm-button" type="button" id="abrirTipoHabitacion">+ {% trans "Crear tipo" %}</button></div>
         <div class="adm-table-wrap">
             <table class="adm-table">
-                <thead><tr><th>{% trans "Nombre" %}</th><th>{% trans "Capacidad" %}</th><th>{% trans "Tarifa base" %}</th><th>{% trans "Acciones" %}</th></tr></thead>
+                <thead><tr><th>{% trans "Imagen" %}</th><th>{% trans "Nombre" %}</th><th>{% trans "Capacidad" %}</th><th>{% trans "Tarifa base" %}</th><th>{% trans "Acciones" %}</th></tr></thead>
                 <tbody>
                     {% for tipo in tipos_habitacion %}
                     <tr>
+                        <td>{% if tipo.url_imagen %}<img src="{{ tipo.url_imagen }}" alt="{{ tipo.nombre }}" width="72" height="48" style="object-fit:cover;border-radius:8px">{% else %}—{% endif %}</td>
                         <td><strong>{{ tipo.nombre }}</strong></td>
                         <td>{{ tipo.capacidad }} {% trans "huéspedes" %}</td>
                         <td>${{ tipo.tarifa|precio:2 }}</td>
                         <td><button class="adm-button secondary" type="button" data-open-tipo="editarTipo{{ tipo.id }}">{% trans "Editar" %}</button></td>
                     </tr>
-                    {% empty %}<tr><td class="adm-empty" colspan="4">{% trans "Aún no hay tipos de habitación registrados." %}</td></tr>{% endfor %}
+                        {% empty %}<tr><td class="adm-empty" colspan="5">{% trans "Aún no hay tipos de habitación registrados." %}</td></tr>{% endfor %}
                 </tbody>
             </table>
         </div>
@@ -45,7 +46,7 @@
     {% for tipo in tipos_habitacion %}
     <dialog class="adm-dialog" id="editarTipo{{ tipo.id }}" aria-labelledby="tituloEditarTipo{{ tipo.id }}">
         <header class="adm-dialog-heading"><div><p class="adm-eyebrow">{% trans "INVENTARIO DEL HOTEL" %}</p><h2 id="tituloEditarTipo{{ tipo.id }}">{% trans "Editar" %} {{ tipo.nombre }}</h2></div><button class="room-modal-close" type="button" data-close-tipo aria-label="{% trans 'Cerrar' %}">&times;</button></header>
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <input type="hidden" name="accion" value="editar">
             <input type="hidden" name="tipo_id" value="{{ tipo.id }}">
@@ -54,6 +55,7 @@
                 <div class="adm-field adm-span-2"><label for="editarTipoNombre{{ tipo.id }}">{% trans "Nombre" %}</label><input id="editarTipoNombre{{ tipo.id }}" name="nombre" maxlength="100" value="{{ tipo.nombre }}" required></div>
                 <div class="adm-field"><label for="editarTipoCapacidad{{ tipo.id }}">{% trans "Capacidad" %}</label><input id="editarTipoCapacidad{{ tipo.id }}" name="capacidad" type="number" min="1" max="100" value="{{ tipo.capacidad }}" required></div>
                 <div class="adm-field"><label for="editarTipoTarifa{{ tipo.id }}">{% trans "Tarifa" %}</label><input id="editarTipoTarifa{{ tipo.id }}" name="tarifa" type="number" min="0.01" step="0.01" value="{{ tipo.tarifa|unlocalize }}" required></div>
+                <div class="adm-field adm-span-2"><label for="editarTipoImagen{{ tipo.id }}">{% trans "Imagen del tipo" %}</label><input id="editarTipoImagen{{ tipo.id }}" name="imagen" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif">{% if tipo.url_imagen %}<img src="{{ tipo.url_imagen }}" alt="{{ tipo.nombre }}" width="180" style="display:block;margin-top:10px;border-radius:10px">{% endif %}</div>
             </div>
             <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-tipo>{% trans "Cancelar" %}</button><button class="adm-button" type="submit">{% trans "Guardar cambios" %}</button></footer>
         </form>
@@ -91,7 +93,7 @@
         {% for plan in planes_admin %}
         <dialog class="adm-dialog plan-type-dialog" id="editarPlan{{ plan.id }}" aria-labelledby="tituloEditarPlan{{ plan.id }}">
             <header class="adm-dialog-heading"><div><p class="adm-eyebrow">{% trans "CATÁLOGO DE PLANES" %}</p><h2 id="tituloEditarPlan{{ plan.id }}">{% trans "Editar tipo de plan" %}</h2></div><button class="room-modal-close" type="button" data-close-plan aria-label="{% trans 'Cerrar' %}">&times;</button></header>
-            <form method="post" class="plan-type-form">
+            <form method="post" enctype="multipart/form-data" class="plan-type-form">
                 {% csrf_token %}<input type="hidden" name="accion" value="editar_plan"><input type="hidden" name="plan_id" value="{{ plan.id }}"><input type="hidden" name="tab" value="planes">
                 {% include "admini/plan_tipo_campos.html" with form_id=plan.id plan=plan %}
                 <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-plan>{% trans "Cancelar" %}</button><button class="adm-button" type="submit">{% trans "Guardar cambios" %}</button></footer>
@@ -102,7 +104,7 @@
 </main>
 <dialog class="adm-dialog" id="crearTipoHabitacion" aria-labelledby="tituloTipoHabitacion">
     <header class="adm-dialog-heading"><div><p class="adm-eyebrow">{% trans "INVENTARIO DEL HOTEL" %}</p><h2 id="tituloTipoHabitacion">{% trans "Crear tipo de habitación" %}</h2></div><button class="room-modal-close" type="button" id="cerrarTipoHabitacion" aria-label="{% trans 'Cerrar' %}">&times;</button></header>
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <input type="hidden" name="accion" value="crear">
         <input type="hidden" name="tab" value="habitaciones">
@@ -110,13 +112,14 @@
             <div class="adm-field adm-span-2"><label for="tipoNombre">{% trans "Nombre" %}</label><input id="tipoNombre" name="nombre" maxlength="100" required></div>
             <div class="adm-field"><label for="tipoCapacidad">{% trans "Capacidad" %}</label><input id="tipoCapacidad" name="capacidad" type="number" min="1" max="100" required></div>
             <div class="adm-field"><label for="tipoTarifa">{% trans "Tarifa" %}</label><input id="tipoTarifa" name="tarifa" type="number" min="0.01" step="0.01" required></div>
+            <div class="adm-field adm-span-2"><label for="tipoImagen">{% trans "Imagen del tipo" %}</label><input id="tipoImagen" name="imagen" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif"></div>
         </div>
         <footer class="adm-form-actions"><button class="adm-button secondary" type="button" id="cancelarTipoHabitacion">{% trans "Cancelar" %}</button><button class="adm-button" type="submit">{% trans "Crear tipo" %}</button></footer>
     </form>
 </dialog>
 <dialog class="adm-dialog plan-type-dialog" id="crearTipoPlan" aria-labelledby="tituloTipoPlan">
     <header class="adm-dialog-heading"><div><p class="adm-eyebrow">{% trans "CATÁLOGO DE PLANES" %}</p><h2 id="tituloTipoPlan">{% trans "Crear tipo de plan" %}</h2></div><button class="room-modal-close" type="button" data-close-plan aria-label="{% trans 'Cerrar' %}">&times;</button></header>
-    <form method="post" class="plan-type-form">
+    <form method="post" enctype="multipart/form-data" class="plan-type-form">
         {% csrf_token %}<input type="hidden" name="accion" value="crear_plan"><input type="hidden" name="tab" value="planes">
         {% include "admini/plan_tipo_campos.html" with form_id="nuevoPlan" %}
         <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-plan>{% trans "Cancelar" %}</button><button class="adm-button" type="submit">{% trans "Crear tipo de plan" %}</button></footer>

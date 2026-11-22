@@ -347,3 +347,37 @@ html[data-theme="dark"] .service-reject-form input {
     background: #222929;
     color: #f0f4f3;
 }
+
+.dialog-grid textarea {
+    width: 100%;
+    min-height: 96px;
+    padding: 9px 11px;
+    border: 1px solid var(--reception-border);
+    border-radius: 8px;
+    background: #fff;
+    color: #31555b;
+    font: inherit;
+    resize: vertical;
+}
+
+.service-reject-dialog .service-reject-button {
+    border-color: #a7352d;
+    background: #a7352d;
+}
+
+@media (max-width: 620px) {
+    .reception-card :is(button, input, select) {
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    .reception-table-wrap {
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .service-reject-dialog .dialog-actions button {
+        flex: 1 1 140px;
+        min-height: 44px;
+    }
+}

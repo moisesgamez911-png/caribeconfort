@@ -16,9 +16,10 @@
         <label for="planPrecio{{ form_id }}">{% trans "Precio (COP)" %}</label>
         <input id="planPrecio{{ form_id }}" name="precio" type="number" min="0.01" step="0.01" value="{% if plan %}{{ plan.precio|unlocalize }}{% endif %}" required>
     </div>
-    <div class="adm-field">
-        <label for="planImagen{{ form_id }}">{% trans "Ruta de imagen (opcional)" %}</label>
-        <input id="planImagen{{ form_id }}" name="imagen" maxlength="255" value="{{ plan.imagen|default:'' }}">
+    <div class="adm-field adm-span-2">
+        <label for="planImagen{{ form_id }}">{% trans "Imagen del plan (opcional)" %}</label>
+        <input id="planImagen{{ form_id }}" name="imagen" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif">
+        {% if plan.url_imagen %}<img src="{{ plan.url_imagen }}" alt="{{ plan.nombre }}" width="220" style="display:block;margin-top:10px;border-radius:10px">{% endif %}
     </div>
     <div class="adm-field">
         <label for="planDuracion{{ form_id }}">{% trans "Duración en días" %}</label>

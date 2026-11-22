@@ -128,7 +128,7 @@
             <p class="adm-help-text">Aún no hay una contraseña SMTP configurada.</p>
         {% endif %}
         {% if not smtp_encryption_key_configured %}
-            <p class="adm-help-text" role="note">Antes de guardar la contraseña, configura la variable de entorno EMAIL_CREDENTIAL_ENCRYPTION_KEY con una clave Fernet. La contraseña se cifrará antes de guardarse y no volverá a mostrarse.</p>
+            <p class="adm-help-text" role="note">La contraseña se cifra usando una clave derivada de SECRET_KEY. Mantén SECRET_KEY estable entre reinicios para poder descifrarla; puedes definir EMAIL_CREDENTIAL_ENCRYPTION_KEY con una clave Fernet dedicada.</p>
         {% endif %}
         <form method="post" class="adm-form">
             {% csrf_token %}

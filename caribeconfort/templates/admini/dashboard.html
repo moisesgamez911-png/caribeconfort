@@ -254,22 +254,28 @@
             <div class="dash-card dash-services-pending">
                 <div class="dash-card-head">
                     <h2 class="dash-card-title">Solicitudes de servicio pendientes ({{ notificaciones_servicios }})</h2>
-                    <a href="/recepcion/servicios-pendientes" class="dash-link">Ver solicitudes →</a>
+                    <div class="dash-service-heading-actions">
+                        <button type="button" class="dash-link-button" data-open-service-manual="modalServicioManualAdmin">Registrar servicio manualmente</button>
+                        <a href="/recepcion/servicios-pendientes" class="dash-link">Ver solicitudes →</a>
+                    </div>
                 </div>
                 <div class="dash-table-scroll">
                     <table class="dash-tabla">
-                        <thead><tr><th>Huésped</th><th>Reserva</th><th>Servicio</th><th>Cantidad</th><th>Valor</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>Huésped</th><th>Beneficiario(s)</th><th>Reserva</th><th>Habitación</th><th>Servicio</th><th>Cantidad</th><th>Valor</th><th>Estado</th><th>Acciones</th></tr></thead>
                         <tbody>
                             {% for item in servicios_pendientes %}
                             <tr>
                                 <td>{{ item.reservas.huespedes.nombres }} {{ item.reservas.huespedes.apellidos }}</td>
+                                <td>{{ item.beneficiario|default:"No indicado" }}{% if item.beneficiario_segundo %}<small>{{ item.beneficiario_segundo }}</small>{% endif %}</td>
                                 <td>CC-{{ item.reservas_id|stringformat:"04d" }}</td>
+                                <td>{{ item.reservas.habitaciones.numero|default:"—" }}</td>
                                 <td>
                                     {{ item.servicios.nombre }}
                                     {% if item.metodo_pago_preferido == 'Tarjeta' %}<small class="dash-payment-reference">Tarjeta · {{ item.tarjeta_titular }} · •••• {{ item.tarjeta_ultimos4 }}</small>{% elif item.metodo_pago_preferido == 'Nequi' %}<small class="dash-payment-reference">Nequi · {{ item.nequi_titular }} · {{ item.nequi_celular }}</small>{% endif %}
                                 </td>
                                 <td>{{ item.cantidad }}</td>
                                 <td>${{ item.valor|precio:2 }}</td>
+                                <td>{{ item.estado }}</td>
                                 <td>
                                     <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar" class="dash-service-action">
                                         {% csrf_token %}
@@ -282,22 +288,37 @@
                                         </select>
                                         <button class="dash-service-approve" type="submit">Aprobar</button>
                                     </form>
-                                    <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar" class="dash-service-reject">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="next" value="/administrador">
-                                        <input type="hidden" name="accion" value="rechazar">
-                                        <input name="motivo" maxlength="500" required placeholder="Motivo del rechazo" aria-label="Motivo del rechazo">
-                                        <button type="submit">Rechazar</button>
-                                    </form>
+                                    <button class="dash-service-reject-button" type="button" data-reject-service data-action="/recepcion/servicio/{{ item.id }}/aprobar" data-next="/administrador">Rechazar</button>
                                 </td>
                             </tr>
                             {% empty %}
-                            <tr><td colspan="6" class="table-empty">No hay solicitudes de servicio pendientes.</td></tr>
+                            <tr><td colspan="9" class="table-empty">No hay solicitudes de servicio pendientes.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
+
+            <dialog class="service-management-dialog" id="modalServicioManualAdmin" aria-labelledby="tituloServicioManualAdmin">
+                <header class="dialog-heading"><div><p class="reception-eyebrow">CUENTA DE HUÉSPEDES</p><h2 id="tituloServicioManualAdmin">Registrar servicio manualmente</h2></div><button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button></header>
+                <form method="post" action="/recepcion/pago-servicio">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="servicio">
+                    <div class="dialog-grid">
+                        <label class="dialog-span-2">Reserva activa<select name="reserva_id" required><option value="">Selecciona una reserva</option>{% for reserva in reservas_activas %}<option value="{{ reserva.id }}">CC-{{ reserva.id|stringformat:"04d" }} · {{ reserva.huespedes.nombres }} {{ reserva.huespedes.apellidos }} · Hab. {{ reserva.habitaciones.numero|default:"—" }}</option>{% endfor %}</select></label>
+                        <label>Servicio<select name="servicio_id" required><option value="">Selecciona un servicio</option>{% for servicio in servicios_disponibles %}<option value="{{ servicio.id }}">{{ servicio.nombre }} · ${{ servicio.precio|precio:2 }}</option>{% endfor %}</select></label>
+                        <label>Cantidad<input name="cantidad" type="number" min="1" max="50" value="1" required></label>
+                        <label>Beneficiario principal<input name="beneficiario" maxlength="100" required></label>
+                        <label>Segundo beneficiario (opcional)<input name="beneficiario_segundo" maxlength="100"></label>
+                        <label>Valor total (opcional)<input name="valor" type="number" min="0.01" step="0.01"></label>
+                        <label>Estado<select name="estado" class="manual-service-status" required><option value="Pendiente">Pendiente</option><option value="Aprobado">Aprobado</option><option value="Rechazado">Rechazado</option></select></label>
+                        <label data-manual-payment-method>Método de pago<select name="metodo_pago_servicio"><option value="">Pendiente de pago</option><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option></select></label>
+                        <label class="dialog-span-2" data-manual-rejection-reason hidden>Motivo del rechazo<textarea name="motivo_rechazo" maxlength="500"></textarea></label>
+                    </div>
+                    <p class="dialog-note">El valor vacío se calcula con la tarifa del catálogo y la cantidad. Los servicios pendientes no se cobran hasta su aprobación.</p>
+                    <footer class="dialog-actions"><button type="button" class="secondary-button" data-close-dialog>Cancelar</button><button type="submit" class="primary-button">Guardar servicio</button></footer>
+                </form>
+            </dialog>
 
             <div class="dash-grid-3">
                 <div class="dash-card mini-card">
@@ -612,5 +633,6 @@
 <script src="{% static 'js/dashboard.js' %}?v=10002"></script>
 <script src="{% static 'js/admin-pagination-scroll.js' %}?v=1"></script>
 <script src="{% static 'js/barra-encabezado.js' %}?v=15"></script>
+<script src="{% static 'js/gestion-servicios.js' %}?v=1"></script>
 </body>
 </html>

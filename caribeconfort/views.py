@@ -1,4 +1,6 @@
+import base64
 import csv
+import hashlib
 from html import escape as escape_html
 from io import BytesIO
 import logging
@@ -19,7 +21,7 @@ from django.contrib import messages
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.files.storage import FileSystemStorage
 from django.core.validators import validate_email
-from django.core.mail import get_connection, send_mail
+from django.core.mail import EmailMessage, get_connection, send_mail
 from django.core.paginator import Paginator
 from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
@@ -45,13 +47,24 @@ from caribeconfort.models import Resena
 
 logger = logging.getLogger(__name__)
 
+MOTIVOS_RECHAZO_SERVICIO = {
+    'sin_disponibilidad': 'Sin disponibilidad en el horario solicitado',
+    'mantenimiento': 'Servicio en mantenimiento',
+    'datos_incompletos': 'Datos incompletos del huésped',
+    'fuera_horario': 'Fuera de horario de atención',
+}
+
 
 def _fernet_credenciales_correo():
-    clave = getattr(settings, 'EMAIL_CREDENTIAL_ENCRYPTION_KEY', '')
+    clave = (getattr(settings, 'EMAIL_CREDENTIAL_ENCRYPTION_KEY', '') or '').strip()
     if not clave:
-        raise ValueError(
-            'Configura EMAIL_CREDENTIAL_ENCRYPTION_KEY en el entorno antes de guardar credenciales SMTP.'
-        )
+        secreto = getattr(settings, 'SECRET_KEY', '')
+        if not secreto:
+            raise ValueError('Define SECRET_KEY para cifrar las credenciales SMTP.')
+        material = hashlib.sha256(
+            ('caribeconfort.smtp.credentials:' + secreto).encode('utf-8')
+        ).digest()
+        clave = base64.urlsafe_b64encode(material).decode('ascii')
     try:
         return Fernet(clave.encode('ascii'))
     except (ValueError, UnicodeError) as error:
@@ -188,6 +201,57 @@ def _enviar_correo_hotel(asunto, titulo, mensaje, destinatario):
     if enviados != 1:
         raise RuntimeError(f'El correo "{asunto}" no fue aceptado por el backend.')
     return enviados
+
+
+def _enviar_factura_reserva(reserva):
+    correo_destino = _correo_huesped(reserva.huespedes)
+    if not correo_destino:
+        raise RuntimeError('El huésped no tiene un correo válido registrado.')
+
+    hotel = Hoteles.objects.order_by('id').first()
+    if reserva.habitaciones_id:
+        tipo_habitacion = reserva.habitaciones.tipohabitacion
+        alojamiento = f'Habitación {reserva.habitaciones.numero}'
+        if tipo_habitacion:
+            alojamiento += f' · {tipo_habitacion.nombre}'
+    else:
+        alojamiento = reserva.planes.nombre if reserva.planes_id else 'Estancia'
+    pagos = list(Pagos.objects.filter(reservas=reserva).exclude(
+        metodopago='Pendiente',
+    ).order_by('fecha', 'id'))
+    servicios = list(ServicioReserva.objects.filter(
+        reservas=reserva,
+        estado='Aprobado',
+    ).select_related('servicios').order_by('fecha', 'id'))
+    huesped = f'{reserva.huespedes.nombres} {reserva.huespedes.apellidos}'
+    contenido = _crear_pdf_factura_reserva(
+        reserva,
+        hotel,
+        huesped,
+        alojamiento,
+        pagos,
+        servicios,
+    )
+    conexion, remitente = _conexion_correo_hotel()
+    correo = EmailMessage(
+        f'Factura de tu estancia · Reserva CC-{reserva.id:04d}',
+        (
+            f'Hola {reserva.huespedes.nombres},\n\n'
+            f'Gracias por hospedarte en {hotel.nombre if hotel else "Caribe Confort"}. '
+            f'Adjuntamos la factura detallada de tu estancia (reserva CC-{reserva.id:04d}).\n\n'
+            'Esperamos recibirte nuevamente.\n'
+        ),
+        remitente,
+        [correo_destino],
+        connection=conexion,
+    )
+    correo.attach(
+        f'factura_reserva_CC-{reserva.id:04d}.pdf',
+        contenido,
+        'application/pdf',
+    )
+    if correo.send(fail_silently=False) != 1:
+        raise RuntimeError('El servidor SMTP no aceptó el correo con la factura.')
 
 
 def servir_logo_hotel(request, nombre_archivo):
@@ -413,6 +477,7 @@ def galeria(request):
     registros_publicos = ImagenGaleria.objects.filter(
         estado=True,
         seccion__in=SECCIONES_GALERIA_PUBLICA,
+        categoria__estado=True,
     )
     categoria_activa = None
 
@@ -442,6 +507,7 @@ def galeria(request):
     total_general = len(imagenes_sin_repetir(ImagenGaleria.objects.filter(
         estado=True,
         seccion__in=SECCIONES_GALERIA_PUBLICA,
+        categoria__estado=True,
     ).only('id', 'imagen')))
 
     context = {
@@ -454,7 +520,7 @@ def galeria(request):
     return render(request, 'clientes/galeria.html', context)
 
 def planes(request):
-    planes_qs = (
+    planes_qs = list(
         Planes.objects
         .filter(estado=True)
         .prefetch_related('caracteristicas')
@@ -468,6 +534,7 @@ def planes(request):
 
     for p in planes_qs:
         p.precio_fmt = f"{int(p.precio):,}".replace(",", ".")
+        p.url_imagen = _url_imagen_local(p.imagen)
 
     context = {
         'planes': planes_qs,
@@ -606,6 +673,8 @@ def solicitar_servicio(request):
     reserva_id = request.POST.get('reserva_id')
     cantidad_str = request.POST.get('cantidad', '1')
     solicitado_por = request.POST.get('solicitado_por', '').strip()
+    beneficiario = request.POST.get('beneficiario', '').strip() or solicitado_por
+    beneficiario_segundo = request.POST.get('beneficiario_segundo', '').strip()
     metodo_pago_preferido = request.POST.get('metodo_pago_preferido', '').strip()
     tarjeta_titular = request.POST.get('tarjeta_titular', '').strip()
     tarjeta_ultimos4 = request.POST.get('tarjeta_ultimos4', '').strip()
@@ -619,6 +688,11 @@ def solicitar_servicio(request):
         return JsonResponse({
             'ok': False,
             'error': 'Indica el nombre de quien solicita el servicio (máximo 100 caracteres).',
+        }, status=400)
+    if not beneficiario or len(beneficiario) > 100 or len(beneficiario_segundo) > 100:
+        return JsonResponse({
+            'ok': False,
+            'error': 'Indica el nombre de la persona beneficiaria (máximo 100 caracteres).',
         }, status=400)
     if metodo_pago_preferido not in {'Tarjeta', 'Nequi'}:
         return JsonResponse({
@@ -674,6 +748,8 @@ def solicitar_servicio(request):
                 cantidad=cantidad,
                 valor=valor_total,
                 solicitado_por=solicitado_por,
+                beneficiario=beneficiario,
+                beneficiario_segundo=beneficiario_segundo,
                 metodo_pago_preferido=metodo_pago_preferido,
                 tarjeta_titular=tarjeta_titular,
                 tarjeta_ultimos4=tarjeta_ultimos4,
@@ -708,6 +784,9 @@ def solicitar_servicio(request):
                     f'CC-{reserva.id:04d}.\n'
                     f'Cantidad: {cantidad}\n'
                     f'Solicitado por: {solicitado_por}\n'
+                    f'Beneficiario(s): {beneficiario}'
+                    + (f' y {beneficiario_segundo}' if beneficiario_segundo else '')
+                    + '\n'
                     f'Método de pago preferido: {metodo_pago_preferido}\n'
                     f'Valor: ${formato_numero_colombiano(valor_total, 2)} COP\n\n'
                     'Recepción revisará la solicitud y te notificará cuando sea aprobada '
@@ -742,7 +821,7 @@ def imagenes(request):
 TAMANO_MAXIMO_IMAGEN = 10 * 1024 * 1024
 
 
-def _guardar_imagen_habitacion(archivo):
+def _guardar_imagen_catalogo(archivo, carpeta):
     extension = Path(archivo.name).suffix.lower()
     firmas = {
         '.jpg': lambda header: header.startswith(b'\xff\xd8\xff'),
@@ -760,10 +839,11 @@ def _guardar_imagen_habitacion(archivo):
     if not firmas[extension](encabezado):
         raise ValueError('El contenido del archivo no coincide con un formato de imagen permitido.')
     almacenamiento = FileSystemStorage(location=settings.MEDIA_ROOT)
-    return almacenamiento.save(
-        f'uploads/habitaciones/{uuid4().hex}{extension}',
-        archivo,
-    )
+    return almacenamiento.save(f'uploads/{carpeta}/{uuid4().hex}{extension}', archivo)
+
+
+def _guardar_imagen_habitacion(archivo):
+    return _guardar_imagen_catalogo(archivo, 'habitaciones')
 
 
 def _eliminar_imagen_habitacion(ruta):
@@ -772,24 +852,15 @@ def _eliminar_imagen_habitacion(ruta):
 
 
 def _guardar_imagen_servicio(archivo):
-    extension = Path(archivo.name).suffix.lower()
-    firmas = {
-        '.jpg': lambda header: header.startswith(b'\xff\xd8\xff'),
-        '.jpeg': lambda header: header.startswith(b'\xff\xd8\xff'),
-        '.png': lambda header: header.startswith(b'\x89PNG\r\n\x1a\n'),
-        '.gif': lambda header: header.startswith((b'GIF87a', b'GIF89a')),
-        '.webp': lambda header: header.startswith(b'RIFF') and header[8:12] == b'WEBP',
-    }
-    if extension not in firmas:
-        raise ValueError('La imagen debe ser JPG, PNG, WEBP o GIF.')
-    if archivo.size > TAMANO_MAXIMO_IMAGEN:
-        raise ValueError('La imagen no puede superar los 10 MB.')
-    encabezado = archivo.read(12)
-    archivo.seek(0)
-    if not firmas[extension](encabezado):
-        raise ValueError('El contenido del archivo no coincide con un formato de imagen permitido.')
-    almacenamiento = FileSystemStorage(location=settings.MEDIA_ROOT)
-    return almacenamiento.save(f'uploads/servicios/{uuid4().hex}{extension}', archivo)
+    return _guardar_imagen_catalogo(archivo, 'servicios')
+
+
+def _guardar_imagen_tipo_habitacion(archivo):
+    return _guardar_imagen_catalogo(archivo, 'tipos-habitacion')
+
+
+def _guardar_imagen_plan(archivo):
+    return _guardar_imagen_catalogo(archivo, 'planes')
 
 
 def _eliminar_imagen_servicio(ruta):
@@ -2127,7 +2198,11 @@ def checkout_reserva(request, reserva_id):
     metodo = request.POST.get('metodopago', '')
     with transaction.atomic():
         reserva = get_object_or_404(
-            Reservas.objects.select_for_update().select_related('habitaciones'),
+            Reservas.objects.select_for_update().select_related(
+                'huespedes',
+                'habitaciones__tipohabitacion',
+                'planes',
+            ),
             id=reserva_id,
         )
         if reserva.estado != 'En curso':
@@ -2163,16 +2238,31 @@ def checkout_reserva(request, reserva_id):
         reserva.estado = 'Finalizada'
         reserva.save(update_fields=['estado'])
 
-    correo_enviado = _enviar_invitacion_resena(reserva, request)
-    if correo_enviado:
+    factura_enviada = False
+    try:
+        _enviar_factura_reserva(reserva)
+        factura_enviada = True
+    except Exception:
+        logger.exception(
+            'El check-out de la reserva CC-%s se completó, pero no se pudo enviar la factura.',
+            reserva.id,
+        )
+
+    resena_enviada = _enviar_invitacion_resena(reserva, request)
+    if factura_enviada and resena_enviada:
         messages.success(
             request,
-            f'Check-out registrado para la reserva CC-{reserva.id:04d}. Se envió la invitación para dejar una reseña.',
+            f'Check-out registrado para la reserva CC-{reserva.id:04d}. Se enviaron la factura y la invitación para dejar una reseña.',
         )
     else:
+        detalles = []
+        if not factura_enviada:
+            detalles.append('no se pudo enviar la factura')
+        if not resena_enviada:
+            detalles.append('no se pudo enviar la invitación para dejar una reseña')
         messages.warning(
             request,
-            f'Check-out registrado para la reserva CC-{reserva.id:04d}, pero no se pudo enviar la invitación para dejar una reseña.',
+            f'Check-out registrado para la reserva CC-{reserva.id:04d}, pero {" y ".join(detalles)}.',
         )
     return redirect(destino)
 
@@ -2640,6 +2730,59 @@ def usuariosadmin(request):
                     messages.success(request, f'Usuario {nombre_usuario} eliminado correctamente.')
             return redirect('/adminusuarios')
 
+        if request.POST.get('accion') == 'completar_perfil_huesped':
+            usuario_id = request.POST.get('usuario_id', '').strip()
+            usuario = Usuarios.objects.filter(
+                id=usuario_id,
+                roles__nombre='Cliente',
+            ).first() if usuario_id.isdigit() else None
+            if not usuario:
+                return JsonResponse({'ok': False, 'errors': {'usuario': 'Selecciona una cuenta de cliente válida.'}}, status=400)
+            if Huespedes.objects.filter(usuarios=usuario).exists():
+                return JsonResponse({'ok': False, 'errors': {'perfil': 'Esta cuenta ya tiene un perfil de huésped.'}}, status=409)
+
+            nacionalidad_enviada = request.POST.get('nacionalidad', '').strip()
+            nacionalidad = next(
+                (
+                    gentilicio
+                    for gentilicio, pais in NACIONALIDADES.items()
+                    if nacionalidad_enviada.casefold() in {
+                        gentilicio.casefold(), pais.casefold(),
+                    }
+                ),
+                '',
+            )
+            datos_huesped = {
+                'tipodocumento': request.POST.get('tipodocumento', '').strip(),
+                'identificacion': request.POST.get('identificacion', '').strip(),
+                'nombres': usuario.nombre,
+                'apellidos': usuario.apellido,
+                'telefono': request.POST.get('telefono', '').strip(),
+                'direccion': request.POST.get('direccion', '').strip(),
+                'correo': usuario.correo,
+                'nacionalidad': nacionalidad,
+            }
+            errores = {}
+            if datos_huesped['tipodocumento'] not in {'CC', 'CE', 'Pasaporte', 'TI'}:
+                errores['tipodocumento'] = 'Selecciona un tipo de documento válido.'
+            if not all(datos_huesped[campo] for campo in (
+                'identificacion', 'telefono', 'direccion', 'nacionalidad',
+            )):
+                errores['perfil'] = 'Completa documento, teléfono, dirección y nacionalidad.'
+            if len(datos_huesped['identificacion']) > 50 or len(datos_huesped['telefono']) > 100 or len(datos_huesped['direccion']) > 100:
+                errores['perfil'] = 'Revisa la longitud de los datos del huésped.'
+            if datos_huesped['identificacion'] and Huespedes.objects.filter(
+                identificacion=datos_huesped['identificacion'],
+            ).exists():
+                errores['identificacion'] = 'Ese documento ya está asociado a otro huésped.'
+            if errores:
+                return JsonResponse({'ok': False, 'errors': errores}, status=400)
+            try:
+                Huespedes.objects.create(usuarios=usuario, **datos_huesped)
+            except IntegrityError:
+                return JsonResponse({'ok': False, 'errors': {'perfil': 'No se pudo vincular el perfil. Verifica el documento.'}}, status=409)
+            return JsonResponse({'ok': True}, status=201)
+
         if request.POST.get('accion') == 'crear':
             nombre = request.POST.get('nombre', '').strip()
             apellido = request.POST.get('apellido', '').strip()
@@ -2665,27 +2808,79 @@ def usuariosadmin(request):
             rol = Roles.objects.filter(id=rol_id).first() if rol_id.isdigit() else None
             if not rol:
                 errores['rol_id'] = 'Selecciona un rol válido.'
+
+            datos_huesped = None
+            if rol and rol.nombre == 'Cliente':
+                nacionalidad_enviada = request.POST.get('nacionalidad', '').strip()
+                nacionalidad = next(
+                    (
+                        gentilicio
+                        for gentilicio, pais in NACIONALIDADES.items()
+                        if nacionalidad_enviada.casefold() in {
+                            gentilicio.casefold(), pais.casefold(),
+                        }
+                    ),
+                    '',
+                )
+                datos_huesped = {
+                    'tipodocumento': request.POST.get('tipodocumento', '').strip(),
+                    'identificacion': request.POST.get('identificacion', '').strip(),
+                    'nombres': nombre,
+                    'apellidos': apellido,
+                    'telefono': request.POST.get('telefono', '').strip(),
+                    'direccion': request.POST.get('direccion', '').strip(),
+                    'correo': correo,
+                    'nacionalidad': nacionalidad,
+                }
+                if datos_huesped['tipodocumento'] not in {'CC', 'CE', 'Pasaporte', 'TI'}:
+                    errores['tipodocumento'] = 'Selecciona un tipo de documento válido.'
+                if not all(datos_huesped[campo] for campo in (
+                    'identificacion', 'telefono', 'direccion', 'nacionalidad',
+                )):
+                    errores['perfil_huesped'] = 'Completa documento, teléfono, dirección y nacionalidad del cliente.'
+                limites_huesped = {
+                    'identificacion': 50,
+                    'telefono': 100,
+                    'direccion': 100,
+                    'correo': 100,
+                }
+                if any(
+                    len(datos_huesped[campo]) > limite
+                    for campo, limite in limites_huesped.items()
+                ):
+                    errores['perfil_huesped'] = 'Revisa la longitud de los datos del huésped.'
+                if datos_huesped['identificacion'] and Huespedes.objects.filter(
+                    identificacion=datos_huesped['identificacion'],
+                ).exists():
+                    errores['identificacion'] = 'Ya existe un huésped con ese documento.'
             if errores:
                 return JsonResponse({'ok': False, 'errors': errores}, status=400)
 
             try:
-                usuario = Usuarios.objects.create(
-                    nombre=nombre,
-                    apellido=apellido,
-                    correo=correo,
-                    contrasena=make_password(contrasena),
-                    roles=rol,
-                    estado=True,
-                )
+                with transaction.atomic():
+                    usuario = Usuarios.objects.create(
+                        nombre=nombre,
+                        apellido=apellido,
+                        correo=correo,
+                        contrasena=make_password(contrasena),
+                        roles=rol,
+                        estado=True,
+                    )
+                    if datos_huesped:
+                        Huespedes.objects.create(usuarios=usuario, **datos_huesped)
             except IntegrityError:
                 return JsonResponse({
                     'ok': False,
-                    'errors': {'correo': 'Ya existe una cuenta con ese correo.'},
+                    'errors': {'cuenta': 'No se pudo crear la cuenta y el perfil. Verifica el correo y el documento.'},
                 }, status=409)
 
             return JsonResponse({
                 'ok': True,
-                'message': f'Usuario {usuario.nombre} {usuario.apellido} creado correctamente.',
+                'message': (
+                    f'Cliente {usuario.nombre} {usuario.apellido} y su perfil de huésped creados correctamente.'
+                    if datos_huesped
+                    else f'Usuario {usuario.nombre} {usuario.apellido} creado correctamente.'
+                ),
             }, status=201)
 
         usuario_id = request.POST.get('usuario_id', '')
@@ -2701,7 +2896,12 @@ def usuariosadmin(request):
             cambia_admin = usuario.roles.nombre == 'Administrador' and (
                 rol.nombre != 'Administrador' or not nuevo_estado
             )
-            if str(usuario.id) == str(request.session.get('usuario_id')) and (
+            if rol.nombre == 'Cliente' and not Huespedes.objects.filter(usuarios=usuario).exists():
+                messages.error(
+                    request,
+                    'No se puede asignar el rol Cliente sin un perfil de huésped. Completa el perfil antes de cambiar el rol.',
+                )
+            elif str(usuario.id) == str(request.session.get('usuario_id')) and (
                 rol.nombre != 'Administrador' or not nuevo_estado
             ):
                 messages.error(request, 'No puedes cambiar tu propio rol ni desactivar tu cuenta.')
@@ -2726,7 +2926,9 @@ def usuariosadmin(request):
             | Q(correo__icontains=busqueda)
             | Q(roles__nombre__icontains=busqueda)
         )
-    clientes = usuarios.filter(roles__nombre='Cliente').order_by('apellido', 'nombre')
+    clientes = usuarios.filter(roles__nombre='Cliente').annotate(
+        tiene_perfil_huesped=Exists(Huespedes.objects.filter(usuarios_id=OuterRef('pk'))),
+    ).order_by('apellido', 'nombre')
     personal = usuarios.filter(
         roles__nombre__in=['Administrador', 'Recepcionista'],
     ).order_by('apellido', 'nombre')
@@ -2734,6 +2936,7 @@ def usuariosadmin(request):
         'clientes': Paginator(clientes, 25).get_page(request.GET.get('clientes_page')),
         'personal': Paginator(personal, 25).get_page(request.GET.get('personal_page')),
         'roles': Roles.objects.order_by('nombre'),
+        'nacionalidades': NACIONALIDADES,
         'busqueda': busqueda,
         'tab': request.GET.get('tab', 'clientes'),
         'nombre': request.session.get('usuario_nom', 'Administrador'),
@@ -2851,10 +3054,21 @@ def tiposhabitacionadmin(request):
                         return redirect('/admintiposhabitacion')
                 else:
                     tipo = TipoHabitacion()
+                archivo_imagen = request.FILES.get('imagen')
+                ruta_nueva = ''
+                if archivo_imagen:
+                    try:
+                        ruta_nueva = _guardar_imagen_tipo_habitacion(archivo_imagen)
+                    except ValueError as error:
+                        messages.error(request, str(error))
+                        return redirect(destino)
                 tipo.nombre = nombre
                 tipo.capacidad = capacidad
                 tipo.tarifa = tarifa
+                if ruta_nueva:
+                    tipo.imagen = ruta_nueva
                 tipo.save()
+                # Se conserva la imagen anterior para no romper referencias históricas.
                 mensaje = 'Tipo de habitación actualizado correctamente.' if accion == 'editar' else 'Tipo de habitación creado correctamente.'
                 messages.success(request, mensaje)
             return redirect('/admintiposhabitacion')
@@ -2890,7 +3104,7 @@ def tiposhabitacionadmin(request):
 
         nombre = request.POST.get('nombre', '').strip()
         descripcion = request.POST.get('descripcion', '').strip()
-        imagen = request.POST.get('imagen', '').strip()
+        imagen = plan.imagen or ''
         try:
             precio = Decimal(request.POST.get('precio', '').strip())
             disponibles = int(request.POST.get('disponibles', ''))
@@ -2946,10 +3160,22 @@ def tiposhabitacionadmin(request):
             messages.error(request, 'Revisa los datos y límites del tipo de plan.')
             return redirect(destino)
 
+        archivo_imagen = request.FILES.get('imagen')
+        ruta_nueva = ''
+        if archivo_imagen:
+            try:
+                ruta_nueva = _guardar_imagen_plan(archivo_imagen)
+            except ValueError as error:
+                messages.error(request, str(error))
+                return redirect(destino)
+
         plan.nombre = nombre
         plan.descripcion = descripcion
         plan.precio = precio
-        plan.imagen = imagen or None
+        if ruta_nueva:
+            plan.imagen = ruta_nueva
+        elif not plan.imagen:
+            plan.imagen = None
         plan.estado = request.POST.get('estado') == 'on'
         plan.disponibles = disponibles
         plan.tipo_habitacion = tipo_habitacion
@@ -2977,14 +3203,21 @@ def tiposhabitacionadmin(request):
         messages.success(request, mensaje)
         return redirect(destino)
 
-    return render(request, 'admini/tipos_habitacion.html', {
-        'tipos_habitacion': TipoHabitacion.objects.order_by('nombre'),
-        'planes_admin': Planes.objects.select_related(
+    tipos_habitacion = list(TipoHabitacion.objects.order_by('nombre'))
+    for tipo in tipos_habitacion:
+        tipo.url_imagen = _url_imagen_local(tipo.imagen)
+    planes_admin = list(Planes.objects.select_related(
             'tipo_habitacion',
         ).prefetch_related(
             'Servicios_tipos',
             'caracteristicas',
-        ).order_by('orden', 'id'),
+        ).order_by('orden', 'id'))
+    for plan in planes_admin:
+        plan.url_imagen = _url_imagen_local(plan.imagen)
+
+    return render(request, 'admini/tipos_habitacion.html', {
+        'tipos_habitacion': tipos_habitacion,
+        'planes_admin': planes_admin,
         'servicios_admin': Servicios.objects.order_by('nombre'),
         'tab_tipos': 'planes' if request.GET.get('tab') == 'planes' else 'habitaciones',
         'nombre': request.session.get('usuario_nom', 'Administrador'),
@@ -3127,7 +3360,7 @@ def _respuesta_pdf(contenido, nombre_archivo):
     return respuesta
 
 
-def _crear_pdf_factura_reserva(reserva, hotel, huesped, alojamiento, pagos):
+def _crear_pdf_factura_reserva(reserva, hotel, huesped, alojamiento, pagos, servicios=None):
     """Construye una factura de una página con jerarquía visual y resumen de saldo."""
     salida = BytesIO()
     margen = 18 * mm
@@ -3242,6 +3475,67 @@ def _crear_pdf_factura_reserva(reserva, hotel, huesped, alojamiento, pagos):
         ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
     ]))
 
+    servicios = servicios or []
+    noches = max(1, (reserva.fechasalida - reserva.fechaentrada).days)
+    total_servicios = sum((servicio.valor for servicio in servicios), Decimal('0.00'))
+    filas_detalle = [[
+        Paragraph('CONCEPTO', celda_header),
+        Paragraph('DETALLE', celda_header),
+        Paragraph('VALOR', celda_header),
+    ]]
+    if reserva.habitaciones_id:
+        tarifa = reserva.habitaciones.precio
+        total_alojamiento = tarifa * noches
+        filas_detalle.append([
+            Paragraph('Alojamiento', celda),
+            Paragraph(f'{noches} noches × {moneda(tarifa)} · {escape_html(alojamiento)}', celda),
+            Paragraph(moneda(total_alojamiento), celda),
+        ])
+    elif reserva.planes_id:
+        total_alojamiento = reserva.planes.precio
+        filas_detalle.append([
+            Paragraph('Plan de estancia', celda),
+            Paragraph(escape_html(alojamiento), celda),
+            Paragraph(moneda(total_alojamiento), celda),
+        ])
+    else:
+        total_alojamiento = reserva.valortotal - total_servicios
+        filas_detalle.append([
+            Paragraph('Alojamiento', celda),
+            Paragraph(f'{noches} noches · {escape_html(alojamiento)}', celda),
+            Paragraph(moneda(total_alojamiento), celda),
+        ])
+    for servicio in servicios:
+        tarifa_servicio = servicio.valor / max(servicio.cantidad, 1)
+        filas_detalle.append([
+            Paragraph(escape_html(servicio.servicios.nombre), celda),
+            Paragraph(f'{servicio.cantidad} × {moneda(tarifa_servicio)}', celda),
+            Paragraph(moneda(servicio.valor), celda),
+        ])
+    ajustes = reserva.valortotal - total_alojamiento - total_servicios
+    if ajustes:
+        filas_detalle.append([
+            Paragraph('Otros conceptos y ajustes', celda),
+            Paragraph('Ajuste registrado en la reserva', celda),
+            Paragraph(moneda(ajustes), celda),
+        ])
+    tabla_detalle = Table(
+        filas_detalle,
+        colWidths=[43 * mm, ancho_pagina - 95 * mm, 52 * mm],
+        repeatRows=1,
+    )
+    tabla_detalle.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), teal_claro),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8FAF9')]),
+        ('LINEBELOW', (0, 0), (-1, -1), .35, borde),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (-1, 0), (-1, -1), 'RIGHT'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 7),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
+    ]))
+
     filas_pagos = [[
         Paragraph('FECHA', celda_header),
         Paragraph('CONCEPTO', celda_header),
@@ -3303,6 +3597,13 @@ def _crear_pdf_factura_reserva(reserva, hotel, huesped, alojamiento, pagos):
         Paragraph('DETALLE DE LA RESERVA', seccion),
         resumen,
         Spacer(1, 8 * mm),
+        Paragraph('DESGLOSE DE LA ESTANCIA', seccion),
+        tabla_detalle,
+        Paragraph(
+            'Impuestos: no se desglosan por separado; se utilizan los importes totales registrados.',
+            detalle_suave,
+        ),
+        Spacer(1, 6 * mm),
         Paragraph('PAGOS REGISTRADOS', seccion),
         tabla_pagos,
         Spacer(1, 5 * mm),
@@ -3345,7 +3646,18 @@ def descargar_factura_reserva(request, reserva_id):
     )
     huesped = f'{reserva.huespedes.nombres} {reserva.huespedes.apellidos}'
     hotel = Hoteles.objects.order_by('id').first()
-    contenido = _crear_pdf_factura_reserva(reserva, hotel, huesped, alojamiento, list(pagos))
+    servicios = ServicioReserva.objects.filter(
+        reservas=reserva,
+        estado='Aprobado',
+    ).select_related('servicios').order_by('fecha', 'id')
+    contenido = _crear_pdf_factura_reserva(
+        reserva,
+        hotel,
+        huesped,
+        alojamiento,
+        list(pagos),
+        list(servicios),
+    )
     return _respuesta_pdf(contenido, f'factura_reserva_CC-{reserva.id:04d}.pdf')
 
 
@@ -3700,6 +4012,37 @@ def galeriaadmin(request):
             messages.success(request, f'Categoría "{nombre}" creada correctamente.')
             return redirect('/admingaleria')
 
+        if accion == 'editar_categoria':
+            categoria_id = request.POST.get('categoria_id', '').strip()
+            nombre = request.POST.get('nombre', '').strip()
+            icono = request.POST.get('icono', '').strip()
+            if not categoria_id.isdigit():
+                messages.error(request, 'La categoría seleccionada no es válida.')
+                return redirect('/admingaleria')
+            categoria = get_object_or_404(CategoriaGaleria, id=int(categoria_id))
+            if (
+                not nombre
+                or len(nombre) > 100
+                or icono not in ICONOS_CATEGORIA_GALERIA
+            ):
+                messages.error(request, 'Ingresa un nombre e icono válidos para la categoría.')
+                return redirect('/admingaleria')
+            nombres_existentes = CategoriaGaleria.objects.exclude(
+                id=categoria.id,
+            ).values_list('nombre', flat=True)
+            if any(
+                existente.strip().casefold() == nombre.casefold()
+                for existente in nombres_existentes
+            ):
+                messages.error(request, 'Ya existe otra categoría con ese nombre.')
+                return redirect('/admingaleria')
+            categoria.nombre = nombre
+            categoria.icono = icono
+            categoria.estado = request.POST.get('estado') == 'on'
+            categoria.save(update_fields=['nombre', 'icono', 'estado'])
+            messages.success(request, f'Categoría "{nombre}" actualizada correctamente.')
+            return redirect('/admingaleria')
+
         if accion == 'eliminar':
             imagen_id = request.POST.get('imagen_id', '')
             if not imagen_id.isdigit():
@@ -3826,6 +4169,7 @@ def galeriaadmin(request):
         'imagenes': imagenes,
         'secciones_galeria': ImagenGaleria.SECCIONES,
         'categorias_galeria': CategoriaGaleria.objects.order_by('orden', 'nombre'),
+        'iconos_categoria_galeria': sorted(ICONOS_CATEGORIA_GALERIA),
         'nombre': request.session.get('usuario_nom', 'Administrador'),
         'rol': request.session.get('rol', 'Administrador'),
     })
@@ -3985,7 +4329,7 @@ def configuracionadmin(request):
             else opciones_smtp.get('password')
         ),
         'smtp_encryption_key_configured': bool(
-            getattr(settings, 'EMAIL_CREDENTIAL_ENCRYPTION_KEY', '')
+            (getattr(settings, 'EMAIL_CREDENTIAL_ENCRYPTION_KEY', '') or '').strip()
         ),
         'nombre': request.session.get('usuario_nom', 'Administrador'),
         'rol': request.session.get('rol', 'Administrador'),
@@ -4082,6 +4426,7 @@ def buscar_disponibilidad(request):
         habs_disponibles = habitaciones_qs.filter(tipohabitacion=t)
         t.cant_disponibles = habs_disponibles.count()
         t.ids_disponibles = list(habs_disponibles.values_list('id', flat=True))
+        t.url_imagen = _url_imagen_local(t.imagen)
 
     resenas_por_tipo = {}
     if tipos_qs:
@@ -4341,6 +4686,7 @@ def administrador(request):
         pago__metodopago='Pendiente',
     ).select_related(
         'reservas__huespedes',
+        'reservas__habitaciones',
         'servicios',
     ).order_by('fecha')
     notificaciones_servicios = servicios_pendientes_admin.count()
@@ -4697,6 +5043,12 @@ def administrador(request):
         'notificaciones_pendientes': notificaciones_pendientes,
         'servicios_pendientes': servicios_pendientes_admin[:10],
         'notificaciones_servicios': notificaciones_servicios,
+        'reservas_activas': Reservas.objects.filter(
+            estado='En curso',
+        ).select_related('huespedes', 'habitaciones').order_by('fechaentrada'),
+        'servicios_disponibles': Servicios.objects.filter(
+            estado=True,
+        ).order_by('nombre'),
         'page_obj': page_obj,
         'proximas_reservas': proximas_reservas,
         'proximas_reservas_preview': proximas_reservas[:5],
@@ -4993,13 +5345,23 @@ def aprobar_servicio_recepcion(request, servicio_reserva_id):
         messages.error(request, 'La acción seleccionada no es válida.')
         return redirect(destino)
     metodo = request.POST.get('metodopago', '').strip()
-    motivo = request.POST.get('motivo', '').strip()
+    codigo_motivo = request.POST.get('motivo_rechazo', '').strip()
+    detalle_motivo = request.POST.get('motivo_detalle', '').strip()
+    motivo = ''
     if accion == 'aprobar' and metodo not in {'Efectivo', 'Tarjeta', 'Transferencia'}:
         messages.error(request, 'Selecciona un método de pago válido.')
         return redirect(destino)
-    if accion == 'rechazar' and (not motivo or len(motivo) > 500):
-        messages.error(request, 'Indica un motivo de rechazo de hasta 500 caracteres.')
-        return redirect(destino)
+    if accion == 'rechazar':
+        if codigo_motivo == 'otro':
+            if not detalle_motivo or len(detalle_motivo) > 500:
+                messages.error(request, 'Escribe el motivo específico del rechazo (máximo 500 caracteres).')
+                return redirect(destino)
+            motivo = detalle_motivo
+        elif codigo_motivo in MOTIVOS_RECHAZO_SERVICIO:
+            motivo = MOTIVOS_RECHAZO_SERVICIO[codigo_motivo]
+        else:
+            messages.error(request, 'Selecciona un motivo válido para rechazar la solicitud.')
+            return redirect(destino)
 
     with transaction.atomic():
         servicio_reserva = get_object_or_404(
@@ -5042,7 +5404,8 @@ def aprobar_servicio_recepcion(request, servicio_reserva_id):
             pago.delete()
             servicio_reserva.pago = None
             servicio_reserva.estado = 'Rechazado'
-            servicio_reserva.save(update_fields=['pago', 'estado'])
+            servicio_reserva.motivo_rechazo = motivo
+            servicio_reserva.save(update_fields=['pago', 'estado', 'motivo_rechazo'])
 
     huesped = servicio_reserva.reservas.huespedes
     correo_destino = huesped.correo or (
@@ -5072,7 +5435,7 @@ def aprobar_servicio_recepcion(request, servicio_reserva_id):
                         f'La solicitud de {servicio_reserva.servicios.nombre} para la reserva '
                         f'CC-{servicio_reserva.reservas_id:04d} fue rechazada.\n'
                         f'Motivo: {motivo}\n\n'
-                        'El importe no fue cobrado ni agregado al total de tu reserva.'
+                        'El importe no fue cobrado; por tanto, no hay una devolución bancaria pendiente.'
                     ),
                     correo_destino,
                 )
@@ -5087,7 +5450,7 @@ def aprobar_servicio_recepcion(request, servicio_reserva_id):
             messages.success(
                 request,
                 f'Servicio {servicio_reserva.servicios.nombre} '
-                f'{"aprobado y cobrado" if accion == "aprobar" else "rechazado"}; correo enviado.',
+                f'{"aprobado y cobrado" if accion == "aprobar" else "rechazado sin cargo"}; correo enviado.',
             )
     else:
         logger.warning(
@@ -5271,22 +5634,23 @@ def crear_reserva_recepcion(request):
 def registrar_pago_servicio_recepcion(request):
     if request.session.get('rol') not in {'Recepcionista', 'Administrador'}:
         return redirect('/login')
+    destino = '/administrador' if request.session.get('rol') == 'Administrador' else '/recepcion'
     if request.method != 'POST':
-        return redirect('/recepcion')
+        return redirect(destino)
 
     accion = request.POST.get('accion', '')
     try:
         reserva_id = int(request.POST.get('reserva_id', ''))
     except (TypeError, ValueError):
         messages.error(request, 'Selecciona una reserva válida.')
-        return redirect('/recepcion')
+        return redirect(destino)
 
     metodos = {'Efectivo', 'Tarjeta', 'Transferencia'}
     with transaction.atomic():
         reserva = Reservas.objects.select_for_update().filter(id=reserva_id).first()
         if not reserva or reserva.estado not in {'Pendiente', 'Pagada - Por validar', 'Confirmada', 'En curso'}:
             messages.error(request, 'La reserva no existe o no acepta pagos ni servicios.')
-            return redirect('/recepcion')
+            return redirect(destino)
 
         if accion == 'pago':
             try:
@@ -5296,7 +5660,7 @@ def registrar_pago_servicio_recepcion(request):
                 monto = monto.quantize(Decimal('0.01'))
             except (InvalidOperation, AttributeError):
                 messages.error(request, 'Ingresa un monto válido.')
-                return redirect('/recepcion')
+                return redirect(destino)
             metodo = request.POST.get('metodopago', '')
             pagado = Pagos.objects.filter(reservas=reserva).exclude(
                 metodopago='Pendiente',
@@ -5304,7 +5668,7 @@ def registrar_pago_servicio_recepcion(request):
             saldo = max(Decimal('0.00'), reserva.valortotal - pagado)
             if monto <= 0 or monto > saldo or metodo not in metodos:
                 messages.error(request, 'Verifica el monto pendiente y el método de pago.')
-                return redirect('/recepcion')
+                return redirect(destino)
             Pagos.objects.create(reservas=reserva, valor=monto, metodopago=metodo, concepto='Reserva')
             if reserva.estado == 'Pendiente':
                 reserva.estado = 'Pagada - Por validar'
@@ -5313,36 +5677,80 @@ def registrar_pago_servicio_recepcion(request):
         elif accion == 'servicio':
             if reserva.estado != 'En curso':
                 messages.error(request, 'Solo se pueden agregar servicios a una estadía en curso.')
-                return redirect('/recepcion')
+                return redirect(destino)
             try:
                 cantidad = int(request.POST.get('cantidad', ''))
                 servicio_id = int(request.POST.get('servicio_id', ''))
             except (TypeError, ValueError):
                 messages.error(request, 'Selecciona un servicio y una cantidad válida.')
-                return redirect('/recepcion')
+                return redirect(destino)
             servicio = Servicios.objects.filter(id=servicio_id, estado=True).first()
             if not servicio or cantidad < 1 or cantidad > 50:
                 messages.error(request, 'El servicio o la cantidad seleccionados no son válidos.')
-                return redirect('/recepcion')
-            valor_total = (servicio.precio * cantidad).quantize(Decimal('0.01'))
+                return redirect(destino)
+            estado = request.POST.get('estado', 'Pendiente').strip()
+            if estado not in {'Pendiente', 'Aprobado', 'Rechazado'}:
+                messages.error(request, 'Selecciona un estado válido para el servicio.')
+                return redirect(destino)
+            metodo_servicio = request.POST.get('metodo_pago_servicio', '').strip()
+            if metodo_servicio and metodo_servicio not in metodos:
+                messages.error(request, 'Selecciona un método de pago válido para el servicio.')
+                return redirect(destino)
+            try:
+                valor_ingresado = request.POST.get('valor', '').strip()
+                valor_total = (
+                    Decimal(valor_ingresado).quantize(Decimal('0.01'))
+                    if valor_ingresado else
+                    (servicio.precio * cantidad).quantize(Decimal('0.01'))
+                )
+                if not valor_total.is_finite():
+                    raise InvalidOperation
+            except (InvalidOperation, AttributeError):
+                messages.error(request, 'Ingresa un valor válido para el servicio.')
+                return redirect(destino)
+            beneficiario = request.POST.get('beneficiario', '').strip()
+            beneficiario_segundo = request.POST.get('beneficiario_segundo', '').strip()
+            motivo_rechazo = request.POST.get('motivo_rechazo', '').strip()
+            if (
+                not beneficiario
+                or len(beneficiario) > 100
+                or len(beneficiario_segundo) > 100
+                or valor_total <= 0
+                or valor_total > Decimal('99999999.99')
+            ):
+                messages.error(request, 'Verifica beneficiarios y valor del servicio.')
+                return redirect(destino)
+            if estado == 'Aprobado' and metodo_servicio not in metodos:
+                messages.error(request, 'Selecciona el método recibido para aprobar el servicio.')
+                return redirect(destino)
+            if estado == 'Rechazado' and (not motivo_rechazo or len(motivo_rechazo) > 500):
+                messages.error(request, 'Indica el motivo del rechazo (máximo 500 caracteres).')
+                return redirect(destino)
             servicio_reserva = ServicioReserva.objects.create(
                 reservas=reserva,
                 servicios=servicio,
                 cantidad=cantidad,
                 valor=valor_total,
+                solicitado_por=(request.session.get('usuario_nom') or 'Registro manual')[:100],
+                beneficiario=beneficiario,
+                beneficiario_segundo=beneficiario_segundo,
+                motivo_rechazo=motivo_rechazo if estado == 'Rechazado' else '',
+                metodo_pago_preferido=metodo_servicio,
+                estado=estado,
             )
-            reserva.valortotal += valor_total
-            reserva.save(update_fields=['valortotal'])
-            pago = Pagos.objects.create(
-                reservas=reserva,
-                valor=valor_total,
-                metodopago='Pendiente',
-                concepto='Servicio',
-            )
-            servicio_reserva.pago = pago
-            servicio_reserva.save(update_fields=['pago'])
-            messages.success(request, f'{servicio.nombre} agregado a la reserva CC-{reserva.id:04d}.')
+            if estado != 'Rechazado':
+                reserva.valortotal += valor_total
+                reserva.save(update_fields=['valortotal'])
+                pago = Pagos.objects.create(
+                    reservas=reserva,
+                    valor=valor_total,
+                    metodopago=metodo_servicio if estado == 'Aprobado' else 'Pendiente',
+                    concepto='Servicio',
+                )
+                servicio_reserva.pago = pago
+                servicio_reserva.save(update_fields=['pago'])
+            messages.success(request, f'{servicio.nombre} registrado para la reserva CC-{reserva.id:04d}.')
         else:
             messages.error(request, 'Selecciona si deseas registrar un pago o un servicio.')
-            return redirect('/recepcion')
-    return redirect('/recepcion')
+            return redirect(destino)
+    return redirect(destino)

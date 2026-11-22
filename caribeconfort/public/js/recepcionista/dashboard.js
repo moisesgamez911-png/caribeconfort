@@ -31,7 +31,13 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             servicioFields.querySelectorAll('input, select').forEach(function (field) {
                 field.disabled = esPago;
-                field.required = !esPago;
+                field.required = !esPago && field.hasAttribute('data-service-required');
+            });
+            servicioFields.querySelectorAll('textarea').forEach(function (field) {
+                field.disabled = esPago;
+            });
+            servicioFields.querySelectorAll('.manual-service-status').forEach(function (field) {
+                field.dispatchEvent(new Event('change'));
             });
         }
         accionSelect.addEventListener('change', actualizarCamposPagoServicio);

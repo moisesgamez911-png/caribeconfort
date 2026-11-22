@@ -175,7 +175,12 @@ if not DEBUG:
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATICFILES_DIRS = [BASE_DIR / 'caribeconfort' / 'public']
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'caribeconfort' / 'public' / 'img' / 'imagenes'
+# En Render, apunta MEDIA_ROOT a un disco persistente (por ejemplo /var/data/media).
+# En desarrollo se conserva la carpeta local que ya usa el proyecto.
+MEDIA_ROOT = Path(os.environ.get(
+    'MEDIA_ROOT',
+    str(BASE_DIR / 'caribeconfort' / 'public' / 'img' / 'imagenes'),
+))
 
 
 # Email

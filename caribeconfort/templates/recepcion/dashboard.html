@@ -133,18 +133,21 @@
             </header>
             <div class="reception-table-wrap">
                 <table>
-                    <thead><tr><th>Huésped</th><th>Reserva</th><th>Servicio</th><th>Cantidad</th><th>Valor</th><th>Acción</th></tr></thead>
+                    <thead><tr><th>Huésped</th><th>Beneficiario(s)</th><th>Reserva</th><th>Habitación</th><th>Servicio</th><th>Cantidad</th><th>Valor</th><th>Estado</th><th>Acciones</th></tr></thead>
                     <tbody>
                         {% for item in servicios_pendientes %}
                         <tr>
                             <td><strong>{{ item.reservas.huespedes.nombres }} {{ item.reservas.huespedes.apellidos }}</strong><small>{{ item.reservas.huespedes.identificacion }}</small></td>
+                            <td>{{ item.beneficiario|default:"No indicado" }}{% if item.beneficiario_segundo %}<small>{{ item.beneficiario_segundo }}</small>{% endif %}</td>
                             <td>CC-{{ item.reservas_id|stringformat:"04d" }}</td>
+                            <td>{{ item.reservas.habitaciones.numero|default:"—" }}</td>
                             <td>
                                 {{ item.servicios.nombre }}
                                 {% if item.metodo_pago_preferido == 'Tarjeta' %}<small class="payment-reference">Tarjeta · {{ item.tarjeta_titular }} · •••• {{ item.tarjeta_ultimos4 }}</small>{% elif item.metodo_pago_preferido == 'Nequi' %}<small class="payment-reference">Nequi · {{ item.nequi_titular }} · {{ item.nequi_celular }}</small>{% endif %}
                             </td>
                             <td>{{ item.cantidad }}</td>
                             <td>${{ item.valor|precio:2 }}</td>
+                            <td><span class="status-pill">{{ item.estado }}</span></td>
                             <td>
                                 <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar">
                                     {% csrf_token %}
@@ -155,16 +158,10 @@
                                     </select>
                                     <button class="table-action" type="submit">Aprobar pago</button>
                                 </form>
-                                <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar" class="service-reject-form">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="next" value="/recepcion">
-                                    <input type="hidden" name="accion" value="rechazar">
-                                    <input name="motivo" maxlength="500" required placeholder="Motivo del rechazo" aria-label="Motivo del rechazo">
-                                    <button class="table-action service-reject-button" type="submit">Rechazar</button>
-                                </form>
+                                <button class="table-action service-reject-button" type="button" data-reject-service data-action="/recepcion/servicio/{{ item.id }}/aprobar" data-next="/recepcion">Rechazar</button>
                             </td>
                         </tr>
-                        {% empty %}<tr><td class="table-empty" colspan="6">No hay servicios pendientes de pago.</td></tr>{% endfor %}
+                        {% empty %}<tr><td class="table-empty" colspan="9">No hay servicios pendientes de pago.</td></tr>{% endfor %}
                     </tbody>
                 </table>
             </div>
@@ -226,12 +223,33 @@
             </div>
             <div class="dialog-span-2" data-servicio-fields hidden>
                 <div class="dialog-grid">
-                    <label>Servicio<select name="servicio_id"><option value="">Selecciona un servicio</option>{% for servicio in servicios_disponibles %}<option value="{{ servicio.id }}">{{ servicio.nombre }} · ${{ servicio.precio|precio:2 }}</option>{% endfor %}</select></label>
-                    <label>Cantidad<input name="cantidad" type="number" min="1" max="50" value="1"></label>
+                    <label>Servicio<select name="servicio_id" data-service-required><option value="">Selecciona un servicio</option>{% for servicio in servicios_disponibles %}<option value="{{ servicio.id }}">{{ servicio.nombre }} · ${{ servicio.precio|precio:2 }}</option>{% endfor %}</select></label>
+                    <label>Cantidad<input name="cantidad" type="number" min="1" max="50" value="1" data-service-required></label>
+                    <label>Beneficiario<input name="beneficiario" maxlength="100" data-service-required></label>
+                    <label>Segundo beneficiario (opcional)<input name="beneficiario_segundo" maxlength="100"></label>
+                    <label>Valor total (opcional)<input name="valor" type="number" min="0.01" step="0.01"></label>
+                    <label>Estado<select name="estado" class="manual-service-status" data-service-required><option value="Pendiente">Pendiente</option><option value="Aprobado">Aprobado</option><option value="Rechazado">Rechazado</option></select></label>
+                    <label data-manual-payment-method>Método de pago<select name="metodo_pago_servicio"><option value="">Pendiente de pago</option><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option></select></label>
+                    <label class="dialog-span-2" data-manual-rejection-reason hidden>Motivo del rechazo<textarea name="motivo_rechazo" maxlength="500"></textarea></label>
                 </div>
             </div>
         </div>
         <footer class="dialog-actions"><button type="button" class="secondary-button" data-close-dialog>Cancelar</button><button type="submit" class="primary-button">Guardar</button></footer>
+    </form>
+</dialog>
+
+<dialog class="reception-dialog service-reject-dialog" id="modalRechazoServicio" aria-labelledby="tituloRechazoServicio">
+    <header class="dialog-heading"><div><p class="reception-eyebrow">SOLICITUD DE SERVICIO</p><h2 id="tituloRechazoServicio">Rechazar solicitud</h2></div><button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button></header>
+    <form method="post" id="formRechazoServicio">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="rechazar">
+        <input type="hidden" name="next" value="/recepcion">
+        <div class="dialog-grid">
+            <label class="dialog-span-2">Motivo<select name="motivo_rechazo" id="motivoRechazoServicio" required><option value="">Selecciona el motivo</option><option value="sin_disponibilidad">Sin disponibilidad en el horario solicitado</option><option value="mantenimiento">Servicio en mantenimiento</option><option value="datos_incompletos">Datos incompletos del huésped</option><option value="fuera_horario">Fuera de horario de atención</option><option value="otro">Otro</option></select></label>
+            <label class="dialog-span-2" id="detalleRechazoServicio" hidden>Describe el motivo<textarea name="motivo_detalle" maxlength="500" disabled></textarea></label>
+        </div>
+        <p class="dialog-note">La solicitud se rechazará sin cobrar el servicio. No se realizará un reembolso bancario.</p>
+        <footer class="dialog-actions"><button type="button" class="secondary-button" data-close-dialog>Cancelar</button><button type="submit" class="primary-button service-reject-button">Confirmar rechazo</button></footer>
     </form>
 </dialog>
 
@@ -254,5 +272,6 @@
 <script src="{% static 'js/reembolso_reserva.js' %}?v=1"></script>
 <script src="{% static 'js/barra-encabezado.js' %}?v=15"></script>
 <script src="{% static 'js/recepcionista/dashboard.js' %}?v=3"></script>
+<script src="{% static 'js/gestion-servicios.js' %}?v=1"></script>
 </body>
 </html>

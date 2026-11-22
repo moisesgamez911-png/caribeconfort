@@ -12,11 +12,11 @@ body.admin-dashboard-page .ad-main {
     width: 100%;
     max-width: 1920px;
     margin: 0 auto;
-    padding: 88px 28px 48px 80px;
+    padding: 88px 10px 48px 60px;
 }
 
 body.admin-dashboard-page.menu-abierto .ad-main {
-    padding-left: 270px;
+    padding-left: 260px;
 }
 
 body.admin-dashboard-page .dash-header {
@@ -769,5 +769,62 @@ html[data-theme="dark"] body.admin-dashboard-page .ad-main svg {
 
     body.admin-dashboard-page .kpi-valor {
         font-size: 20px;
+    }
+}
+
+.dash-service-heading-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.dash-link-button {
+    min-height: 38px;
+    padding: 8px 12px;
+    border: 1px solid #DCE3E8;
+    border-radius: 8px;
+    background: #FFFFFF;
+    color: #16484B;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.dash-link-button:hover {
+    background: #F3F7F5;
+}
+
+.dash-service-reject-button {
+    min-height: 38px;
+    padding: 8px 12px;
+    border: 1px solid #A7352D;
+    border-radius: 7px;
+    background: #A7352D;
+    color: #FFFFFF;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+html[data-theme="dark"] .service-management-dialog {
+    border-color: #485252;
+    background: #2B3333;
+    color: #F0F4F3;
+}
+
+@media (max-width: 760px) {
+    body.admin-dashboard-page :is(.dash-service-heading-actions, .dash-service-action) {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    body.admin-dashboard-page .dash-table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
     }
 }

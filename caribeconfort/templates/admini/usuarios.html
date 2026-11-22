@@ -52,12 +52,13 @@
         <div class="adm-card-heading"><div><h2>Clientes</h2><p>{{ clientes.paginator.count }} cuentas de clientes.</p></div></div>
         <div class="adm-table-wrap">
             <table class="adm-table">
-                <thead><tr><th>Nombre</th><th>Correo</th><th>Rol y estado</th><th>Guardar cambios</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>Nombre</th><th>Correo</th><th>Perfil de huésped</th><th>Rol y estado</th><th>Guardar cambios</th><th>Acciones</th></tr></thead>
                 <tbody>
                     {% for usuario in clientes %}
                     <tr>
                         <td><strong>{{ usuario.nombre }} {{ usuario.apellido }}</strong></td>
                         <td>{{ usuario.correo }}</td>
+                        <td>{% if usuario.tiene_perfil_huesped %}<span class="adm-pill green">Perfil completo</span>{% else %}<button class="adm-button secondary" type="button" data-completar-perfil="{{ usuario.id }}">Completar perfil</button>{% endif %}</td>
                         <td>
                             <form id="formUsuario{{ usuario.id }}" method="post" class="user-role-form">
                                 {% csrf_token %}<input type="hidden" name="usuario_id" value="{{ usuario.id }}">
@@ -78,7 +79,7 @@
                             </form>
                         </td>
                     </tr>
-                    {% empty %}<tr><td class="adm-empty" colspan="5">No hay clientes que coincidan con la búsqueda.</td></tr>{% endfor %}
+                    {% empty %}<tr><td class="adm-empty" colspan="6">No hay clientes que coincidan con la búsqueda.</td></tr>{% endfor %}
                 </tbody>
             </table>
         </div>
@@ -148,15 +149,47 @@
             <div class="adm-field adm-span-2"><label for="nuevoRol">Rol</label>
                 <select id="nuevoRol" name="rol_id" required>
                     <option value="">Selecciona un rol</option>
-                    {% for rol_disponible in roles %}<option value="{{ rol_disponible.id }}">{{ rol_disponible.nombre }}</option>{% endfor %}
+                    {% for rol_disponible in roles %}<option value="{{ rol_disponible.id }}" data-role-name="{{ rol_disponible.nombre }}">{{ rol_disponible.nombre }}</option>{% endfor %}
                 </select>
             </div>
+            <fieldset class="adm-span-2" id="datosPerfilHuesped" hidden>
+                <legend>Datos del perfil de huésped</legend>
+                <div class="adm-form-grid">
+                    <div class="adm-field"><label for="nuevoTipoDocumento">Tipo de documento</label>
+                        <select id="nuevoTipoDocumento" name="tipodocumento"><option value="">Selecciona</option><option value="CC">CC</option><option value="CE">CE</option><option value="Pasaporte">Pasaporte</option><option value="TI">TI</option></select>
+                    </div>
+                    <div class="adm-field"><label for="nuevaIdentificacion">Número de documento</label><input id="nuevaIdentificacion" name="identificacion" maxlength="50" autocomplete="off"></div>
+                    <div class="adm-field"><label for="nuevoTelefono">Teléfono</label><input id="nuevoTelefono" name="telefono" maxlength="100" autocomplete="tel"></div>
+                    <div class="adm-field"><label for="nuevaNacionalidad">Nacionalidad</label>
+                        <select id="nuevaNacionalidad" name="nacionalidad"><option value="">Selecciona</option>{% for gentilicio, pais in nacionalidades.items %}<option value="{{ gentilicio }}">{{ gentilicio }}</option>{% endfor %}</select>
+                    </div>
+                    <div class="adm-field adm-span-2"><label for="nuevaDireccion">Dirección</label><input id="nuevaDireccion" name="direccion" maxlength="100" autocomplete="street-address"></div>
+                </div>
+            </fieldset>
         </div>
         <p class="adm-dialog-message" id="nuevoUsuarioMensaje" role="alert" aria-live="polite"></p>
         <footer class="adm-form-actions">
             <button class="adm-button secondary" type="button" id="cancelarNuevoUsuario">Cancelar</button>
             <button class="adm-button" type="submit">Crear usuario</button>
         </footer>
+    </form>
+</dialog>
+<dialog class="adm-dialog" id="completarPerfilDialog" aria-labelledby="completarPerfilTitulo">
+    <header class="adm-dialog-heading">
+        <div><p class="adm-eyebrow">PERFIL DEL CLIENTE</p><h2 id="completarPerfilTitulo">Completar perfil de huésped</h2></div>
+        <button class="room-modal-close" type="button" id="cerrarCompletarPerfil" aria-label="Cerrar">&times;</button>
+    </header>
+    <form id="formCompletarPerfil" method="post">
+        {% csrf_token %}<input type="hidden" name="accion" value="completar_perfil_huesped"><input type="hidden" name="usuario_id" id="perfilUsuarioId">
+        <div class="adm-form-grid">
+            <div class="adm-field"><label for="perfilTipoDocumento">Tipo de documento</label><select id="perfilTipoDocumento" name="tipodocumento" required><option value="">Selecciona</option><option value="CC">CC</option><option value="CE">CE</option><option value="Pasaporte">Pasaporte</option><option value="TI">TI</option></select></div>
+            <div class="adm-field"><label for="perfilIdentificacion">Número de documento</label><input id="perfilIdentificacion" name="identificacion" maxlength="50" required></div>
+            <div class="adm-field"><label for="perfilTelefono">Teléfono</label><input id="perfilTelefono" name="telefono" maxlength="100" required></div>
+            <div class="adm-field"><label for="perfilNacionalidad">Nacionalidad</label><select id="perfilNacionalidad" name="nacionalidad" required><option value="">Selecciona</option>{% for gentilicio, pais in nacionalidades.items %}<option value="{{ gentilicio }}">{{ gentilicio }}</option>{% endfor %}</select></div>
+            <div class="adm-field adm-span-2"><label for="perfilDireccion">Dirección</label><input id="perfilDireccion" name="direccion" maxlength="100" required></div>
+        </div>
+        <p class="adm-dialog-message" id="completarPerfilMensaje" role="alert" aria-live="polite"></p>
+        <footer class="adm-form-actions"><button class="adm-button secondary" type="button" id="cancelarCompletarPerfil">Cancelar</button><button class="adm-button" type="submit">Guardar perfil</button></footer>
     </form>
 </dialog>
 <script>
@@ -188,6 +221,47 @@
     const nuevoUsuarioDialog = document.getElementById('nuevoUsuarioDialog');
     const formNuevoUsuario = document.getElementById('formNuevoUsuario');
     const mensajeNuevoUsuario = document.getElementById('nuevoUsuarioMensaje');
+    const nuevoRol = document.getElementById('nuevoRol');
+    const datosPerfilHuesped = document.getElementById('datosPerfilHuesped');
+    const camposPerfilHuesped = datosPerfilHuesped.querySelectorAll('input, select');
+    function actualizarCamposPerfilHuesped() {
+        const esCliente = nuevoRol.selectedOptions[0]?.dataset.roleName === 'Cliente';
+        datosPerfilHuesped.hidden = !esCliente;
+        camposPerfilHuesped.forEach((campo) => { campo.required = esCliente; });
+    }
+    nuevoRol.addEventListener('change', actualizarCamposPerfilHuesped);
+    actualizarCamposPerfilHuesped();
+    const completarPerfilDialog = document.getElementById('completarPerfilDialog');
+    const formCompletarPerfil = document.getElementById('formCompletarPerfil');
+    const completarPerfilMensaje = document.getElementById('completarPerfilMensaje');
+    document.querySelectorAll('[data-completar-perfil]').forEach((button) => {
+        button.addEventListener('click', () => {
+            document.getElementById('perfilUsuarioId').value = button.dataset.completarPerfil;
+            completarPerfilMensaje.textContent = '';
+            completarPerfilDialog.showModal();
+        });
+    });
+    document.getElementById('cerrarCompletarPerfil').addEventListener('click', () => completarPerfilDialog.close());
+    document.getElementById('cancelarCompletarPerfil').addEventListener('click', () => completarPerfilDialog.close());
+    formCompletarPerfil.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        completarPerfilMensaje.textContent = '';
+        const respuesta = await fetch(window.location.pathname, {
+            method: 'POST',
+            body: new FormData(formCompletarPerfil),
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        }).catch(() => null);
+        if (!respuesta) {
+            completarPerfilMensaje.textContent = 'No se pudo conectar con el servidor. Inténtalo nuevamente.';
+            return;
+        }
+        const resultado = await respuesta.json();
+        if (!respuesta.ok || !resultado.ok) {
+            completarPerfilMensaje.textContent = Object.values(resultado.errors || {}).join(' ');
+            return;
+        }
+        window.location.reload();
+    });
     document.getElementById('abrirNuevoUsuario').addEventListener('click', () => nuevoUsuarioDialog.showModal());
     document.getElementById('cerrarNuevoUsuario').addEventListener('click', () => nuevoUsuarioDialog.close());
     document.getElementById('cancelarNuevoUsuario').addEventListener('click', () => nuevoUsuarioDialog.close());

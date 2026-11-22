@@ -58,8 +58,8 @@
         {% for p in planes %}
             <article class="plan-card{% if forloop.counter == 2 %} plan-card-featured{% endif %}">
                 <div class="plan-image">
-                    {% if p.imagen %}
-                        <img src="/media/{{ p.imagen }}" alt="{{ p.nombre }}" loading="lazy" onerror="this.remove()">
+                    {% if p.url_imagen %}
+                        <img src="{{ p.url_imagen }}" alt="{{ p.nombre }}" loading="lazy" onerror="this.remove()">
                     {% endif %}
                     {% if p.disponibles <= 0 %}
                         <span class="plan-badge plan-badge-sold">{% trans "Agotado" %}</span>
