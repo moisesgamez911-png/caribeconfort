@@ -62,6 +62,7 @@ class Command(BaseCommand):
         contrasena = getpass('Contraseña de aplicación de Gmail (no se mostrará): ')
         if not contrasena:
             raise CommandError('La contraseña de aplicación no puede estar vacía.')
+        contrasena = ''.join(contrasena.split())
 
         if crear_hotel:
             hotel = Hoteles.objects.create(**datos_hotel)

@@ -334,6 +334,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 })
                 .then(function (data) {
+                    if (data.success) cerrarModal(modalValidar);
                     return window.ccAlert(data.message || 'Reserva actualizada.').then(function () {
                         if (data.success) window.location.reload();
                     });

@@ -11,7 +11,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 from pathlib import Path
-from smtplib import SMTPException
+from smtplib import SMTPAuthenticationError, SMTPException
 from uuid import uuid4
 
 from cryptography.fernet import Fernet, InvalidToken
@@ -157,6 +157,13 @@ def _conexion_correo_hotel():
         fail_silently=False,
     )
     return conexion, remitente
+
+
+def _normalizar_contrasena_smtp(host, contrasena):
+    """Google muestra las contraseñas de aplicación agrupadas con espacios."""
+    if (host or '').strip().lower() in {'smtp.gmail.com', 'smtp.googlemail.com'}:
+        return ''.join((contrasena or '').split())
+    return contrasena or ''
 
 
 def _enviar_correo_hotel(asunto, titulo, mensaje, destinatario):
@@ -618,6 +625,18 @@ def cancelar_reserva(request, reserva_id):
                 reserva.habitaciones.save(update_fields=['estado'])
     except Http404:
         return JsonResponse({'success': False, 'message': 'Reserva no encontrada o no te pertenece.'}, status=404)
+    except DatabaseError:
+        logger.exception('Error de base de datos al cancelar la reserva CC-%s.', reserva_id)
+        return JsonResponse({
+            'success': False,
+            'message': 'No se pudo cancelar la reserva por un error de base de datos. El estado no se confirmó; actualiza la página antes de reintentar.',
+        }, status=500)
+    except Exception:
+        logger.exception('Error inesperado al cancelar la reserva CC-%s.', reserva_id)
+        return JsonResponse({
+            'success': False,
+            'message': 'Ocurrió un error al cancelar la reserva. Actualiza la página y verifica su estado antes de reintentar.',
+        }, status=500)
 
     correo_enviado = False
     correo_destino = _correo_huesped(reserva.huespedes)
@@ -4290,6 +4309,9 @@ def configuracionadmin(request):
                     else:
                         try:
                             if smtp_password:
+                                smtp_password = _normalizar_contrasena_smtp(
+                                    smtp_form['host'], smtp_password
+                                )
                                 contrasena_cifrada = _cifrar_contrasena_smtp(smtp_password)
                             elif hotel.smtp_password_encrypted:
                                 _descifrar_contrasena_smtp(hotel.smtp_password_encrypted)
@@ -4315,7 +4337,30 @@ def configuracionadmin(request):
                                 'smtp_password_encrypted',
                                 'smtp_use_tls',
                             ])
-                            messages.success(request, 'La configuración SMTP se guardó de forma cifrada.')
+                            conexion = None
+                            try:
+                                conexion, _ = _conexion_correo_hotel()
+                                conexion.open()
+                            except SMTPAuthenticationError:
+                                logger.exception('Gmail rechazó las credenciales SMTP guardadas para el hotel.')
+                                messages.error(
+                                    request,
+                                    'La configuración se guardó, pero Gmail rechazó la autenticación (535). Verifica que el usuario sea la misma cuenta que creó la contraseña de aplicación y vuelve a guardarla. El puerto 587 con STARTTLS respondió correctamente.',
+                                )
+                            except (OSError, SMTPException, RuntimeError, ValueError):
+                                logger.exception('No se pudo verificar la conexión SMTP guardada para el hotel.')
+                                messages.error(
+                                    request,
+                                    'La configuración se guardó, pero no se pudo verificar la conexión SMTP. Revisa host, puerto, seguridad y credenciales.',
+                                )
+                            else:
+                                messages.success(
+                                    request,
+                                    'Configuración SMTP guardada y conexión con el servidor verificada. No se envió ningún correo.',
+                                )
+                            finally:
+                                if conexion:
+                                    conexion.close()
                             return redirect('/adminconfiguracion')
         else:
             try:

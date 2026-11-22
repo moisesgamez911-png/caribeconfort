@@ -293,14 +293,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 fetch(`/api/cancelar-reserva/${idReservaActual}/`, {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: {
                         'X-CSRFToken': getCookie('csrftoken'),
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-Session-Scope': 'cliente'
                     }
                 })
-                .then(res => {
-                    if (!res.ok) throw new Error('Error en el servidor');
-                    return res.json();
+                .then(async res => {
+                    const text = await res.text();
+                    let data;
+                    try {
+                        data = JSON.parse(text);
+                    } catch (error) {
+                        throw new Error(`El servidor respondió con error ${res.status}. Actualiza la página y verifica el estado antes de reintentar.`);
+                    }
+                    if (!res.ok) throw new Error(data.message || 'No se pudo cancelar la reserva.');
+                    return data;
                 })
                 .then(data => {
                     if (data.success) {
@@ -338,7 +347,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 })
                 .catch(error => {
                     console.error("Error:", error);
-                    window.ccAlert("Error de red o servidor. Revisa la consola de Python.");
+                    window.ccAlert(error.message || "Error de red o servidor. Revisa la consola de Django.");
                     btn.innerHTML = '<i class="bi bi-check2-circle"></i> Sí, cancelar reserva';
                     btn.disabled = false;
                 });
