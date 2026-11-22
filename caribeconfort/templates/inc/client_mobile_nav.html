@@ -1,0 +1,19 @@
+{% load i18n %}
+<nav class="client-mobile-nav" aria-label="{% trans 'Navegación principal' %}">
+    <a href="/home"{% if request.path == '/home' or request.path == '/' %} aria-current="page"{% endif %}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1z"/></svg>
+        <span>{% trans "Inicio" %}</span>
+    </a>
+    <a href="/servicios"{% if request.path == '/servicios' %} aria-current="page"{% endif %}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 5V3m8 2V3M4 10h16"/></svg>
+        <span>{% trans "Servicios" %}</span>
+    </a>
+    <a href="/mis-reservas"{% if request.path == '/mis-reservas' %} aria-current="page"{% endif %}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v14H3zM7 7V4m10 3V4M3 12h18"/></svg>
+        <span>{% trans "Reservas" %}</span>
+    </a>
+    <a href="/perfil"{% if request.path == '/perfil' %} aria-current="page"{% endif %}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        <span>{% trans "Mi perfil" %}</span>
+    </a>
+</nav>

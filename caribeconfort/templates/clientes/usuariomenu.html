@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="{% static 'css/clientes.css' %}?v=2">
     <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=5">
     <link rel="stylesheet" href="{% static 'css/idiomas.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'css/cliente-mobile-app.css' %}?v=1">
 </head>
 <body class="client-home">
     <header class="hero-section">
@@ -365,5 +366,6 @@
 
     <script src="{% static 'js/bootstrap.bundle.js' %}"></script>
     <script src="{% static 'js/caribe.js' %}"></script>
+    {% include 'inc/client_mobile_nav.html' %}
 </body>
 </html>

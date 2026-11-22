@@ -8,7 +8,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var modalProximasReservas = document.getElementById('modalProximasReservas');
     var modalModificarReserva = document.getElementById('modalModificarReserva');
     var tokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
-    var csrfToken = tokenInput ? tokenInput.value : '';
+    var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    var csrfToken = tokenInput ? tokenInput.value : (csrfMeta ? csrfMeta.content : '');
 
     function leerRespuestaJson(response) {
         return response.text().then(function (texto) {
@@ -276,18 +277,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 modalCheckin.classList.add('activo');
             });
         });
-        var btnCancelarCheckin = document.getElementById('btnNoCheckin');
-        var btnCerrarCheckin = document.getElementById('btnCerrarCheckin');
-        [btnCancelarCheckin, btnCerrarCheckin].forEach(function (boton) {
-            if (!boton) return;
-            boton.addEventListener('click', function (event) {
+        // Delegado para que los controles sigan funcionando aunque el contenido
+        // del modal se actualice dinámicamente o se vuelva a renderizar.
+        modalCheckin.addEventListener('click', function (event) {
+            var botonCierre = event.target.closest('#btnNoCheckin, #btnCerrarCheckin');
+            if (botonCierre) {
                 event.preventDefault();
                 event.stopPropagation();
                 modalCheckin.classList.remove('activo');
-            });
-        });
-        modalCheckin.addEventListener('click', function (event) {
+                return;
+            }
             if (event.target === modalCheckin) modalCheckin.classList.remove('activo');
+        });
+        modalCheckin.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') modalCheckin.classList.remove('activo');
         });
     }
 

@@ -2649,3 +2649,67 @@ button {
         grid-auto-columns: 92%;
     }
 }
+
+@media (max-width: 767px) {
+    .reservas-hero { min-height: 286px; }
+    .reservas-hero-content,
+    .reservas-content { width: calc(100% - 28px); }
+    .reservas-hero-content { padding-top: 28px; padding-bottom: 32px; }
+    .reservas-hero-content h1 { font-size: clamp(42px, 12vw, 56px); line-height: .98; }
+    .reservas-hero-content > p:last-child { max-width: 340px; font-size: 14px; line-height: 1.55; }
+    .reservas-content { gap: 32px; padding-top: 26px; padding-bottom: 30px; }
+    .section-heading { gap: 12px; margin-bottom: 14px; }
+    .section-heading h2 { font-size: 30px; }
+    .reservation-heading-actions { width: 100%; align-items: stretch; flex-direction: column; }
+    .section-count { align-self: flex-start; font-size: 12px; }
+    .reservation-heading-actions .payment-button { width: 100%; min-height: 48px; justify-content: center; font-size: 13px; }
+
+    .reservation-carousel,
+    .history-carousel,
+    .services-carousel { margin: 0 -2px; }
+    .reservation-carousel-track { overflow: visible; }
+    .reservation-card { min-height: 0; grid-template-columns: minmax(0, 1fr); border-radius: 20px; }
+    .reservation-photo { min-height: 0; height: 172px; }
+    .reservation-photo-tag { bottom: 12px; left: 12px; font-size: 11px; }
+    .reservation-main { padding: 18px 16px; }
+    .reservation-heading { flex-direction: row; align-items: flex-start; gap: 10px; }
+    .reservation-heading h3 { font-size: 17px; }
+    .reservation-description { font-size: 12px; line-height: 1.45; }
+    .status-pill { min-height: 28px; padding: 6px 10px; font-size: 10px; }
+    .reservation-facts { gap: 12px 8px; margin-top: 17px; padding: 13px 11px; border-radius: 14px; }
+    .reservation-fact { gap: 5px; }
+    .reservation-fact > .ico { width: 16px; height: 16px; }
+    .reservation-fact span { font-size: 9px; }
+    .reservation-fact strong { font-size: 12px; line-height: 1.35; }
+    .reservation-service-list { padding: 12px; }
+    .reservation-service-list h4,
+    .reservation-service-name { font-size: 12px; }
+    .reservation-service-name small { font-size: 11px; }
+    .reservation-actions { gap: 8px; margin-top: 14px; }
+    .reservation-actions .action-link,
+    .reservation-actions .payment-button { min-height: 46px; font-size: 12px; }
+    .reservation-payment { gap: 5px; padding: 17px 16px; border-top: 1px solid #ece9e1; border-left: 0; }
+    .payment-label { font-size: 12px; }
+    .payment-total { margin: 2px 0 8px; font-size: 25px; }
+    .payment-button { min-height: 46px; font-size: 12px; }
+
+    .history-track,
+    .services-track { grid-auto-columns: minmax(0, 88%); gap: 12px; padding: 2px 1px 12px; }
+    .history-card { border-radius: 18px; }
+    .history-card-body { padding: 15px; }
+    .service-row { grid-template-columns: 50px minmax(0, 1fr); gap: 10px; padding: 13px; border-radius: 16px; }
+    .service-image { width: 50px; height: 50px; flex-basis: 50px; }
+    .service-row h3 { font-size: 13px; }
+    .service-row p,
+    .service-row small { font-size: 11px; line-height: 1.4; }
+    .service-status { min-height: 24px; padding: 4px 9px; font-size: 10px; }
+    .service-total { font-size: 12px; }
+
+    .cancel-overlay,
+    .confirm-overlay { padding: 14px; align-items: flex-end; }
+    .confirm-box { width: 100%; max-width: none; padding: 24px 20px max(20px, env(safe-area-inset-bottom)); border-radius: 22px 22px 16px 16px; }
+    .confirm-box h3 { font-size: 22px; }
+    .confirm-box p { font-size: 14px; line-height: 1.55; }
+    .confirm-actions { display: grid; grid-template-columns: 1fr; gap: 9px; }
+    .confirm-actions .boton { width: 100%; min-height: 48px; justify-content: center; font-size: 14px; }
+}

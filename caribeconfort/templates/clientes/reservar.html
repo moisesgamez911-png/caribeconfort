@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/reservar.css' %}?v=106">
     <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=5">
+    <link rel="stylesheet" href="{% static 'css/cliente-mobile-app.css' %}?v=1">
     <link rel="stylesheet" href="{% static 'css/idiomas.css' %}?v=2">
 </head>
 <body class="reservas-page">
@@ -305,5 +306,6 @@
         <button type="button" class="modal-alerta-btn" id="btnCerrarErrorServidor">{% trans "Entendido" %}</button>
     </div>
 </div>
+{% include 'inc/client_mobile_nav.html' %}
 </body>
 </html>

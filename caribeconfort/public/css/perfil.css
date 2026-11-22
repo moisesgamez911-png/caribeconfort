@@ -1130,4 +1130,61 @@ textarea:focus-visible {
     }
 }
 
+@media (max-width: 767px) {
+    body { min-width: 320px; overflow-x: hidden; }
+    .page-container { padding: 16px 14px 24px; }
+    .page-heading { min-height: 0; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .heading-left { gap: 10px; }
+    .heading-icon { width: 43px; height: 45px; border-radius: 14px; }
+    .heading-text h1 { font-size: 22px; }
+    .heading-text p { font-size: 12px; }
+    .back-button { min-height: 42px; padding: 0 12px; border-radius: 13px; font-size: 12px; }
+
+    .profile-layout { gap: 12px; }
+    .profile-card,
+    .details-card,
+    .summary-card,
+    .quick-actions-card { border-radius: 18px; }
+    .profile-card { padding: 0 16px 16px; }
+    .profile-cover { padding-top: 22px; }
+    .profile-cover h2 { margin-top: 10px; font-size: 20px; }
+    .profile-contact { gap: 12px; padding: 15px 0; }
+    .contact-item { grid-template-columns: 40px minmax(0, 1fr); gap: 10px; }
+    .contact-icon { width: 40px; height: 40px; border-radius: 13px; }
+    .contact-text span { font-size: 11px; }
+    .contact-text strong { font-size: 13px; overflow-wrap: anywhere; }
+
+    /* La tarjeta de datos tenía altura fija en escritorio; en móvil debe crecer con su contenido. */
+    .details-card { height: auto; min-height: 0; overflow: hidden !important; }
+    .tabs { display: flex; gap: 4px; padding: 7px; overflow-x: auto; }
+    .tab { min-height: 46px; justify-content: center; gap: 6px; padding: 0 10px; border-radius: 12px; font-size: 11px; white-space: nowrap; }
+    .tab svg { width: 17px; height: 17px; }
+    .tab-panel { padding: 17px 15px 19px; }
+    .section-heading { align-items: center; gap: 10px; }
+    .section-heading h3 { font-size: 16px; }
+    .edit-button { min-height: 42px; padding: 0 12px; border-radius: 12px; }
+    .form-grid { gap: 13px; }
+    .field label { margin-bottom: 6px; font-size: 12px; }
+    .field input { min-height: 46px; padding: 0 12px; border-radius: 12px; font-size: 16px; }
+    .form-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 18px; }
+    .form-actions button { min-height: 46px; padding: 0 10px; border-radius: 12px; font-size: 12px; }
+
+    .right-column { gap: 12px; }
+    .summary-card,
+    .quick-actions-card { padding: 16px; }
+    .card-title { margin-bottom: 13px; font-size: 15px; }
+    .summary-row { grid-template-columns: 38px minmax(0, 1fr) auto; gap: 9px; min-height: 52px; }
+    .summary-icon { width: 36px; height: 36px; border-radius: 12px; }
+    .summary-label,
+    .summary-value { font-size: 12px; }
+    .action-button { min-height: 48px; border-radius: 13px; font-size: 13px; }
+}
+
+@media (max-width: 380px) {
+    .page-heading { align-items: flex-start; }
+    .back-button { min-height: 38px; padding: 0 9px; font-size: 11px; }
+    .tab { gap: 4px; padding: 0 7px; font-size: 10px; }
+    .form-actions { grid-template-columns: 1fr; }
+}
+
 body, body *:not([class*='bi-']) { font-family: 'Segoe UI', Arial, sans-serif !important; }
