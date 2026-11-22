@@ -122,6 +122,12 @@
             </div>
             <span class="adm-stat-icon blue" aria-hidden="true">@</span>
         </div>
+        <p class="adm-help-text">
+            Para Brevo: usa <strong>smtp-relay.brevo.com</strong>, puerto <strong>587</strong> con STARTTLS,
+            el usuario que aparece como <strong>SMTP login</strong> en Brevo, una <strong>SMTP key</strong>
+            (no la API key) como contraseña, y un correo remitente verificado en Brevo.
+            La plataforma de correos transaccionales también debe estar activada.
+        </p>
         {% if smtp_password_configurada %}
             <p class="adm-help-text">Hay una contraseña configurada. Déjala vacía para conservarla.</p>
         {% else %}

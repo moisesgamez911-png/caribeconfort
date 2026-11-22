@@ -7,7 +7,7 @@
     <title>Galería | Caribe Confort</title>
     <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=107">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=103">
-    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}?v=3">
     <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
     <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=10">
 </head>
@@ -112,7 +112,6 @@
             {% for categoria in categorias_galeria %}
             <form method="post" class="adm-category-row">
                 {% csrf_token %}
-                <input type="hidden" name="accion" value="editar_categoria">
                 <input type="hidden" name="categoria_id" value="{{ categoria.id }}">
                 <div class="adm-field">
                     <label for="categoriaEditNombre{{ categoria.id }}">Nombre</label>
@@ -130,7 +129,27 @@
                     <input type="checkbox" name="estado" {% if categoria.estado %}checked{% endif %}>
                     Visible
                 </label>
-                <div class="adm-image-actions"><button class="adm-button" type="submit">Guardar categoría</button></div>
+                {% if categoria.total_imagenes %}
+                <div class="adm-field adm-category-destination">
+                    <label for="categoriaDestino{{ categoria.id }}">Mover {{ categoria.total_imagenes }} imagen(es) a</label>
+                    {% if categoria.tiene_destino_activo %}
+                    <select id="categoriaDestino{{ categoria.id }}" name="destino_categoria_id">
+                        <option value="">Selecciona una categoría destino</option>
+                        {% for destino in categorias_galeria %}
+                        {% if destino.id != categoria.id and destino.estado %}
+                        <option value="{{ destino.id }}">{{ destino.nombre }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <p class="adm-help-text">Crea otra categoría y actívala para mover estas imágenes antes de eliminar.</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <div class="adm-category-actions">
+                    <button class="adm-button" type="submit" name="accion" value="editar_categoria">Guardar categoría</button>
+                    <button class="adm-button adm-button-danger" type="submit" name="accion" value="eliminar_categoria" formnovalidate {% if categoria.total_imagenes and not categoria.tiene_destino_activo %}disabled{% endif %} onclick="return confirm('¿Eliminar esta categoría? Las imágenes se conservarán y pasarán al destino seleccionado.');">Eliminar categoría</button>
+                </div>
             </form>
             {% empty %}
             <p class="adm-empty">Todavía no hay categorías.</p>

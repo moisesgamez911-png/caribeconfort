@@ -4056,7 +4056,7 @@ def galeriaadmin(request):
         return redirect('/login')
 
     if request.method == 'POST':
-        accion = request.POST.get('accion', '')
+        accion = request.POST.get('accion') or request.POST.get('_accion', '')
         if accion == 'crear_categoria':
             nombre = request.POST.get('nombre', '').strip()
             icono = request.POST.get('icono', 'imagen').strip()
@@ -4118,6 +4118,50 @@ def galeriaadmin(request):
             categoria.estado = request.POST.get('estado') == 'on'
             categoria.save(update_fields=['nombre', 'icono', 'estado'])
             messages.success(request, f'Categoría "{nombre}" actualizada correctamente.')
+            return redirect('/admingaleria')
+
+        if accion == 'eliminar_categoria':
+            categoria_id = request.POST.get('categoria_id', '').strip()
+            destino_id = request.POST.get('destino_categoria_id', '').strip()
+            if not categoria_id.isdigit():
+                messages.error(request, 'La categoría seleccionada no es válida.')
+                return redirect('/admingaleria')
+            try:
+                with transaction.atomic():
+                    categoria = get_object_or_404(
+                        CategoriaGaleria.objects.select_for_update(),
+                        id=int(categoria_id),
+                    )
+                    imagenes_categoria = ImagenGaleria.objects.filter(categoria=categoria)
+                    cantidad_imagenes = imagenes_categoria.count()
+                    if cantidad_imagenes:
+                        if not destino_id.isdigit():
+                            messages.error(
+                                request,
+                                f'La categoría tiene {cantidad_imagenes} imágenes. Elige otra categoría para conservarlas antes de eliminarla.',
+                            )
+                            return redirect('/admingaleria')
+                        destino = CategoriaGaleria.objects.filter(
+                            id=int(destino_id),
+                            estado=True,
+                        ).exclude(id=categoria.id).first()
+                        if destino is None:
+                            messages.error(request, 'El destino para las imágenes no es válido.')
+                            return redirect('/admingaleria')
+                        imagenes_categoria.update(categoria=destino)
+                    nombre_eliminado = categoria.nombre
+                    categoria.delete()
+            except ProtectedError:
+                messages.error(
+                    request,
+                    'No se pudo eliminar la categoría porque todavía tiene imágenes asociadas. Reasígnalas a otra categoría e inténtalo de nuevo.',
+                )
+                return redirect('/admingaleria')
+            messages.success(
+                request,
+                f'Categoría "{nombre_eliminado}" eliminada. Las imágenes asociadas se conservaron en la categoría de destino.'
+                if cantidad_imagenes else f'Categoría "{nombre_eliminado}" eliminada correctamente.',
+            )
             return redirect('/admingaleria')
 
         if accion == 'eliminar':
@@ -4242,10 +4286,19 @@ def galeriaadmin(request):
         else:
             imagen.url_gestor = f'{prefijo_media}{imagen.imagen}'
 
+    categorias_galeria = list(CategoriaGaleria.objects.annotate(
+        total_imagenes=Count('imagengaleria'),
+    ).order_by('orden', 'nombre'))
+    categorias_activas = [categoria for categoria in categorias_galeria if categoria.estado]
+    for categoria in categorias_galeria:
+        categoria.tiene_destino_activo = any(
+            destino.id != categoria.id for destino in categorias_activas
+        )
+
     return render(request, 'admini/galeria.html', {
         'imagenes': imagenes,
         'secciones_galeria': ImagenGaleria.SECCIONES,
-        'categorias_galeria': CategoriaGaleria.objects.order_by('orden', 'nombre'),
+        'categorias_galeria': categorias_galeria,
         'iconos_categoria_galeria': sorted(ICONOS_CATEGORIA_GALERIA),
         'nombre': request.session.get('usuario_nom', 'Administrador'),
         'rol': request.session.get('rol', 'Administrador'),
