@@ -80,6 +80,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .reception-welcome h1 { margin: 0 0 7px; color: var(--reception-teal); font-size: clamp(28px, 3vw, 36px); }
 .reception-welcome p:last-child { margin: 0; color: var(--reception-muted); }
 .reception-welcome time { color: #60797e; font-size: 13px; }
+.reception-card-actions { display: flex; align-items: center; gap: 12px; }
+.service-rejected { border-color: #f1c7c9; background: #fff4f4; color: #a52c35; }
 
 .reception-messages { display: grid; gap: 8px; margin-bottom: 18px; }
 .reception-messages p { margin: 0; padding: 12px 15px; border: 1px solid #cfe6d9; border-radius: 8px; background: #eff8f2; color: #236449; }
@@ -238,6 +240,7 @@ html[data-theme="dark"] .primary-button {
 
 html[data-theme="dark"] .status-pill.confirmed { background: #214638; color: #8de0bc; }
 html[data-theme="dark"] .status-pill.in-progress { background: #253f4c; color: #a3d8ed; }
+html[data-theme="dark"] .status-pill.service-rejected { border-color: #754448; background: #492f32; color: #ffc2c4; }
 html[data-theme="dark"] .checkout-balance strong { color: #75d9af; }
 
 @media (max-width: 850px) {

@@ -281,6 +281,7 @@ class Pagos (models.Model):
         ('Efectivo','Efectivo'),
         ('Tarjeta','Tarjeta'),
         ('Transferencia','Transferencia'),
+        ('Nequi','Nequi'),
     ]
     metodopago=models.CharField(max_length=60, choices=estados)
     conceptos=[

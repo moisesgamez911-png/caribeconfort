@@ -13,6 +13,7 @@ from caribeconfort.views import (home, galeria, servicios, habitaciones, imagene
                                 pagosadmin, registrar_huesped_recepcion,
                                 crear_reserva_recepcion, registrar_pago_servicio_recepcion,
                                 servicios_pendientes_recepcion, aprobar_servicio_recepcion,
+                                registrar_solicitud_servicio_recepcion,
                                 reglas_descuento_admin, modificar_reserva, procesar_reembolso,
                                 dejar_resena, descargar_factura_reserva, reenviar_confirmacion_reserva,
                                 descargar_certificado_pagos, servir_logo_hotel)
@@ -36,6 +37,7 @@ urlpatterns = [
     path('recepcion/reserva/crear', crear_reserva_recepcion, name='recepcion_reserva_crear'),
     path('recepcion/pago-servicio', registrar_pago_servicio_recepcion, name='recepcion_pago_servicio'),
     path('recepcion/servicios-pendientes', servicios_pendientes_recepcion, name='servicios_pendientes_recepcion'),
+    path('recepcion/servicio/registrar-solicitud', registrar_solicitud_servicio_recepcion, name='registrar_solicitud_servicio_recepcion'),
     path('recepcion/servicio/<int:servicio_reserva_id>/aprobar', aprobar_servicio_recepcion, name='aprobar_servicio_recepcion'),
     path('logout', logout_view, name='logout'),
     path('planes', planes, name='planes'),

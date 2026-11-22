@@ -39,7 +39,7 @@ body:not(.admin-dashboard-page) .reception-main {
     width: 100%;
     max-width: 1920px;
     margin: 0 auto 60px;
-    padding: 84px clamp(18px, 2.2vw, 36px) 48px 80px;
+    padding: 84px 10px 48px 60px;
 }
 
 body.menu-abierto:not(.admin-dashboard-page) .reception-main {

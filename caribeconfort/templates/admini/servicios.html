@@ -7,7 +7,7 @@
     <title>Servicios | Caribe Confort</title>
     <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=107">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
-    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
+    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}?v=4">
     <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=11">
 </head>
 <body>
@@ -43,13 +43,69 @@
                             <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar">
                                 {% csrf_token %}<input type="hidden" name="next" value="/adminservicios"><input type="hidden" name="accion" value="aprobar">
                                 <label class="sr-only" for="metodoPagoServicio{{ item.id }}">Método de pago de CC-{{ item.reservas_id|stringformat:"04d" }}</label>
-                                <select id="metodoPagoServicio{{ item.id }}" name="metodopago" required><option value="Efectivo">Efectivo</option><option value="Tarjeta">Tarjeta</option><option value="Transferencia">Transferencia</option></select>
+                                <select id="metodoPagoServicio{{ item.id }}" name="metodopago" required><option value="Efectivo">Efectivo</option><option value="Tarjeta">Tarjeta</option><option value="Transferencia">Transferencia</option><option value="Nequi">Nequi</option></select>
                                 <button class="adm-button" type="submit">Aprobar solicitud</button>
                             </form>
                             <button class="adm-button danger service-reject-button" type="button" data-reject-service data-action="/recepcion/servicio/{{ item.id }}/aprobar" data-next="/adminservicios">Rechazar</button>
                         </td>
                     </tr>
                     {% empty %}<tr><td class="adm-empty" colspan="9">No hay solicitudes de servicio pendientes.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <section class="adm-card service-history-card" id="historialServicios">
+        <div class="adm-card-heading">
+            <div>
+                <h2>Servicios de los últimos 3 días</h2>
+                <p>Solicitudes nuevas y procesadas, con sus datos de pago. Los servicios aprobados permiten registrar una devolución cuando corresponda.</p>
+            </div>
+            <span class="adm-pill gray">{{ servicios_recientes|length }} registros</span>
+        </div>
+        <div class="adm-table-wrap">
+            <table class="adm-table">
+                <thead><tr><th>Huésped y contacto</th><th>Beneficiario(s)</th><th>Reserva / habitación</th><th>Servicio</th><th>Fecha</th><th>Cant.</th><th>Valor</th><th>Estado / pago</th><th>Reembolso</th></tr></thead>
+                <tbody>
+                    {% for item in servicios_recientes %}
+                    <tr>
+                        <td>
+                            <strong>{{ item.reservas.huespedes.nombres }} {{ item.reservas.huespedes.apellidos }}</strong>
+                            <small>{{ item.reservas.huespedes.identificacion }} · {{ item.reservas.huespedes.telefono }}</small>
+                            {% if item.correo_huesped %}<small>{{ item.correo_huesped }}</small>{% endif %}
+                            <small>Solicitó: {{ item.solicitado_por|default:item.reservas.huespedes.nombres }}</small>
+                        </td>
+                        <td>{{ item.beneficiario|default:"No indicado" }}{% if item.beneficiario_segundo %}<small>{{ item.beneficiario_segundo }}</small>{% endif %}</td>
+                        <td>CC-{{ item.reservas_id|stringformat:"04d" }}<small>Hab. {{ item.reservas.habitaciones.numero|default:"—" }}</small></td>
+                        <td><strong>{{ item.servicios.nombre }}</strong><small>{{ item.servicios.descripcion|default:"" }}</small></td>
+                        <td>{{ item.fecha|date:"d/m/Y H:i" }}</td>
+                        <td>{{ item.cantidad }}</td>
+                        <td>${{ item.valor|precio:2 }}</td>
+                        <td>
+                            <span class="adm-pill {% if item.estado == 'Aprobado' %}green{% elif item.estado == 'Rechazado' %}red{% else %}amber{% endif %}">{{ item.estado }}</span>
+                            <small>Preferido: {{ item.get_metodo_pago_preferido_display|default:"No indicado" }}</small>
+                            {% if item.metodo_pago_registrado %}<small>Registrado: {{ item.metodo_pago_registrado }}</small>{% endif %}
+                            {% if item.metodo_pago_preferido == 'Tarjeta' %}<small>{{ item.tarjeta_titular }} · termina en {{ item.tarjeta_ultimos4 }}</small>{% elif item.metodo_pago_preferido == 'Nequi' %}<small>{{ item.nequi_titular }} · {{ item.nequi_celular }}</small>{% endif %}
+                            {% if item.motivo_rechazo %}<small>Motivo: {{ item.motivo_rechazo }}</small>{% endif %}
+                        </td>
+                        <td>
+                            {% if item.reembolso_disponible > 0 %}
+                                <small>Disponible: ${{ item.reembolso_disponible|precio:2 }}</small>
+                                <button type="button" class="adm-button secondary btn-procesar-reembolso"
+                                    data-id="{{ item.reservas_id }}"
+                                    data-pago-id="{{ item.pago_id }}"
+                                    data-monto="{{ item.reembolso_disponible|unlocalize }}"
+                                    data-nombre="{{ item.reservas.huespedes.nombres }} {{ item.reservas.huespedes.apellidos }}">Procesar devolución</button>
+                            {% elif item.reembolso_realizado > 0 %}
+                                <span class="adm-pill gray">Devolución registrada</span>
+                                <small>${{ item.reembolso_realizado|precio:2 }}</small>
+                            {% elif item.estado == 'Aprobado' %}
+                                <small>Sin saldo disponible para reembolsar.</small>
+                            {% else %}
+                                <small>No aplica. El servicio no fue cobrado.</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}<tr><td class="adm-empty" colspan="9">No hay solicitudes de servicio en los últimos tres días.</td></tr>{% endfor %}
                 </tbody>
             </table>
         </div>
@@ -115,6 +171,7 @@
         <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-dialog>Cancelar</button><button class="adm-button danger service-reject-button" type="submit">Confirmar rechazo</button></footer>
     </form>
 </dialog>
+{% include 'inc/modal_reembolso.html' %}
 <script>
     document.querySelectorAll('[data-service-image-input]').forEach((input) => {
         input.addEventListener('change', () => {
@@ -135,6 +192,7 @@
     });
 </script>
 <script src="{% static 'js/gestion-servicios.js' %}?v=2"></script>
+<script src="{% static 'js/reembolso_reserva.js' %}?v=3"></script>
 <script src="{% static 'js/barra-encabezado.js' %}?v=15"></script>
 </body>
 </html>

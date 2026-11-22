@@ -168,6 +168,11 @@
 .adm-table tbody tr:hover { background: #fbfcfb; }
 .adm-table td strong { color: #21484a; }
 .service-requests-card .adm-table td small { display: block; margin-top: 4px; color: #718587; line-height: 1.45; }
+.service-history-card .adm-table td small { display: block; margin-top: 4px; color: #718587; line-height: 1.45; }
+.service-history-card .adm-table td { min-width: 100px; }
+.service-history-card .adm-table td:first-child { min-width: 210px; }
+.service-history-card .adm-table td:last-child { min-width: 180px; }
+.service-history-card .btn-procesar-reembolso { margin-top: 6px; white-space: nowrap; }
 .service-requests-card .service-request-actions { min-width: 175px; }
 .service-requests-card .service-request-actions form { display: grid; gap: 8px; }
 .service-requests-card .service-request-actions select { width: 100%; min-height: 40px; }
@@ -185,6 +190,8 @@
     font-weight: 700;
 }
 .adm-pill.green { color: #13835e; background: #e0f3ea; }
+.adm-pill.red { color: #b4232d; background: #fbe5e5; }
+.adm-pill.amber { color: #8a5b00; background: #fff1cc; }
 .adm-pill.blue { color: #367fa0; background: #dfedf5; }
 .adm-pill.gray { color: #697b80; background: #edf0ef; }
 
@@ -580,3 +587,9 @@ html[data-theme="dark"] .adm-pill {
     background: #333;
     color: #fff;
 }
+
+html[data-theme="dark"] .service-requests-card .adm-table td small,
+html[data-theme="dark"] .service-history-card .adm-table td small { color: #bdc9c7; }
+
+html[data-theme="dark"] .adm-pill.red { color: #ffc3c6; background: #512e31; }
+html[data-theme="dark"] .adm-pill.amber { color: #f3d48d; background: #514123; }

@@ -1,4 +1,4 @@
-{% load static precio_format %}
+{% load static l10n precio_format %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -14,7 +14,8 @@
 {% include 'inc/admin_nav.html' %}
 <main class="reception-main">
     <section class="reception-welcome">
-        <div><p class="reception-eyebrow">CUENTA DE HUÉSPEDES</p><h1>Servicios pendientes</h1><p>Aprueba los servicios y registra el método de pago recibido.</p></div>
+        <div><p class="reception-eyebrow">CUENTA DE HUÉSPEDES</p><h1>Solicitudes de servicio</h1><p>Registra, revisa y gestiona los servicios asociados a las reservas.</p></div>
+        <button class="primary-button" type="button" data-open-service-manual="modalRegistrarSolicitud">＋ Registrar solicitud</button>
     </section>
     {% if messages %}
     <section class="reception-messages" aria-live="polite">
@@ -22,6 +23,7 @@
     </section>
     {% endif %}
     <article class="reception-card">
+        <header class="reception-card-heading"><div><h2>Solicitudes pendientes</h2><p>Aprueba el servicio al registrar el método de pago, o recházalo indicando el motivo.</p></div><span class="reception-count">{{ notificaciones_servicios }}</span></header>
         <div class="reception-table-wrap">
             <table>
                 <thead><tr><th>Huésped</th><th>Beneficiario(s)</th><th>Reserva</th><th>Habitación</th><th>Servicio</th><th>Cantidad</th><th>Valor</th><th>Estado</th><th>Acciones</th></tr></thead>
@@ -55,6 +57,7 @@
                                     <option value="Efectivo">Efectivo</option>
                                     <option value="Tarjeta">Tarjeta</option>
                                     <option value="Transferencia">Transferencia</option>
+                                    <option value="Nequi">Nequi</option>
                                 </select>
                                 <button class="table-action" type="submit">Aprobar pago</button>
                             </form>
@@ -66,7 +69,44 @@
             </table>
         </div>
     </article>
+    <article class="reception-card" id="historialServicios">
+        <header class="reception-card-heading"><div><h2>Solicitudes de los últimos 3 días</h2><p>Historial con huésped, beneficiarios, reserva, pago y opción de reembolso cuando hay saldo.</p></div><span class="reception-count">{{ servicios_recientes|length }}</span></header>
+        <div class="reception-table-wrap">
+            <table>
+                <thead><tr><th>Huésped y contacto</th><th>Beneficiario(s)</th><th>Reserva / habitación</th><th>Servicio</th><th>Fecha</th><th>Cant.</th><th>Valor</th><th>Estado / pago</th><th>Reembolso</th></tr></thead>
+                <tbody>
+                    {% for item in servicios_recientes %}
+                    <tr>
+                        <td><strong>{{ item.reservas.huespedes.nombres }} {{ item.reservas.huespedes.apellidos }}</strong><small>{{ item.reservas.huespedes.identificacion }} · {{ item.reservas.huespedes.telefono }}</small>{% if item.correo_huesped %}<small>{{ item.correo_huesped }}</small>{% endif %}<small>Solicitó: {{ item.solicitado_por|default:item.reservas.huespedes.nombres }}</small></td>
+                        <td>{{ item.beneficiario|default:"No indicado" }}{% if item.beneficiario_segundo %}<small>{{ item.beneficiario_segundo }}</small>{% endif %}</td>
+                        <td>CC-{{ item.reservas_id|stringformat:"04d" }}<small>Hab. {{ item.reservas.habitaciones.numero|default:"—" }}</small></td>
+                        <td><strong>{{ item.servicios.nombre }}</strong><small>{{ item.servicios.descripcion|default:"" }}</small></td>
+                        <td>{{ item.fecha|date:"d/m/Y H:i" }}</td><td>{{ item.cantidad }}</td><td>${{ item.valor|precio:2 }}</td>
+                        <td><span class="status-pill {% if item.estado == 'Aprobado' %}confirmed{% elif item.estado == 'Rechazado' %}service-rejected{% endif %}">{{ item.estado }}</span><small>Pago preferido: {{ item.get_metodo_pago_preferido_display|default:"No indicado" }}</small>{% if item.metodo_pago_preferido == 'Tarjeta' %}<small>{{ item.tarjeta_titular }} · termina en {{ item.tarjeta_ultimos4 }}</small>{% elif item.metodo_pago_preferido == 'Nequi' %}<small>{{ item.nequi_titular }} · {{ item.nequi_celular }}</small>{% endif %}{% if item.metodo_pago_registrado %}<small>Pago registrado: {{ item.metodo_pago_registrado }}</small>{% endif %}{% if item.motivo_rechazo %}<small>Motivo: {{ item.motivo_rechazo }}</small>{% endif %}</td>
+                        <td>{% if item.reembolso_disponible > 0 %}<small>Disponible: ${{ item.reembolso_disponible|precio:2 }}</small><button type="button" class="table-action btn-procesar-reembolso" data-id="{{ item.reservas_id }}" data-pago-id="{{ item.pago_id }}" data-monto="{{ item.reembolso_disponible|unlocalize }}" data-nombre="{{ item.reservas.huespedes.nombres }} {{ item.reservas.huespedes.apellidos }}">Procesar devolución</button>{% elif item.reembolso_realizado > 0 %}<span class="status-pill">Devolución registrada</span><small>${{ item.reembolso_realizado|precio:2 }}</small>{% elif item.estado == 'Aprobado' %}<small>Sin saldo disponible para reembolsar.</small>{% else %}<small>No aplica. El servicio no fue cobrado.</small>{% endif %}</td>
+                    </tr>
+                    {% empty %}<tr><td class="table-empty" colspan="9">No hay solicitudes registradas en los últimos tres días.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
 </main>
+<dialog class="reception-dialog" id="modalRegistrarSolicitud" aria-labelledby="tituloRegistrarSolicitud">
+    <header class="dialog-heading"><div><p class="reception-eyebrow">CUENTA DE HUÉSPEDES</p><h2 id="tituloRegistrarSolicitud">Registrar solicitud de servicio</h2><p>La solicitud quedará pendiente para que recepción valide el servicio y el pago.</p></div><button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button></header>
+    <form method="post" action="/recepcion/servicio/registrar-solicitud">
+        {% csrf_token %}
+        <div class="dialog-grid">
+            <label class="dialog-span-2">Reserva<select name="reserva_id" required><option value="">Selecciona una reserva</option>{% for reserva in reservas_para_servicio %}<option value="{{ reserva.id }}">CC-{{ reserva.id|stringformat:"04d" }} · {{ reserva.huespedes.nombres }} {{ reserva.huespedes.apellidos }} · Hab. {{ reserva.habitaciones.numero|default:"—" }} · {{ reserva.get_estado_display }}</option>{% endfor %}</select></label>
+            <label class="dialog-span-2">Servicio<select name="servicio_id" required><option value="">Selecciona un servicio</option>{% for servicio in servicios_disponibles %}<option value="{{ servicio.id }}">{{ servicio.nombre }} · ${{ servicio.precio|precio:2 }}</option>{% endfor %}</select></label>
+            <label>Cantidad<input name="cantidad" type="number" min="1" max="50" value="1" required></label>
+            <label>Tipo de pago<select name="metodo_pago_preferido" required><option value="">Selecciona el método</option><option value="Efectivo">Efectivo</option><option value="Tarjeta">Tarjeta</option><option value="Transferencia">Transferencia</option><option value="Nequi">Nequi</option></select></label>
+            <label>Beneficiario<input name="beneficiario" maxlength="100" required></label>
+            <label class="dialog-span-2">Segundo beneficiario (opcional)<input name="beneficiario_segundo" maxlength="100"></label>
+        </div>
+        <p class="dialog-note">Se guardará el método preferido, con el valor vigente del catálogo. La solicitud quedará pendiente; seleccionar un método no registra el pago.</p>
+        <footer class="dialog-actions"><button type="button" class="secondary-button" data-close-dialog>Cancelar</button><button type="submit" class="primary-button">Registrar solicitud</button></footer>
+    </form>
+</dialog>
 <dialog class="reception-dialog service-reject-dialog" id="modalRechazoServicio" aria-labelledby="tituloRechazoServicio">
     <header class="dialog-heading"><div><p class="reception-eyebrow">SOLICITUD DE SERVICIO</p><h2 id="tituloRechazoServicio">Rechazar solicitud</h2></div><button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button></header>
     <form method="post" id="formRechazoServicio">
@@ -83,5 +123,11 @@
 </dialog>
 <script src="{% static 'js/barra-encabezado.js' %}?v=15"></script>
 <script src="{% static 'js/gestion-servicios.js' %}?v=1"></script>
+{% include 'inc/modal_reembolso.html' %}
+<script src="{% static 'js/reembolso_reserva.js' %}?v=3"></script>
+<script>
+document.querySelectorAll('[data-open-service-manual]').forEach(function (button) { button.addEventListener('click', function () { var dialog = document.getElementById(button.dataset.openServiceManual); if (dialog) dialog.showModal(); }); });
+document.querySelectorAll('[data-close-dialog]').forEach(function (button) { button.addEventListener('click', function () { var dialog = button.closest('dialog'); if (dialog && dialog.open) dialog.close(); }); });
+</script>
 </body>
 </html>

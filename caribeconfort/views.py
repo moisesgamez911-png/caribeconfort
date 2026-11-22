@@ -3014,9 +3014,49 @@ def serviciosadmin(request):
         'servicios',
         'pago',
     ).order_by('fecha')
+    fecha_limite_servicios = timezone.now() - timedelta(days=3)
+    servicios_recientes = list(ServicioReserva.objects.filter(
+        fecha__gte=fecha_limite_servicios,
+    ).select_related(
+        'reservas__huespedes__usuarios',
+        'reservas__habitaciones',
+        'servicios',
+        'pago',
+    ).order_by('-fecha'))
+    ids_pagos_servicio = [item.pago_id for item in servicios_recientes if item.pago_id]
+    reembolsos_servicio = {
+        fila['pago_origen_id']: fila['total'] or Decimal('0.00')
+        for fila in Pagos.objects.filter(
+            concepto='Reembolso',
+            pago_origen_id__in=ids_pagos_servicio,
+        ).values('pago_origen_id').annotate(total=Sum('valor'))
+    }
+    ids_reservas_servicio = {item.reservas_id for item in servicios_recientes}
+    pagos_netos_reserva = {
+        fila['reservas_id']: fila['total'] or Decimal('0.00')
+        for fila in Pagos.objects.filter(
+            reservas_id__in=ids_reservas_servicio,
+        ).exclude(metodopago='Pendiente').values('reservas_id').annotate(total=Sum('valor'))
+    }
+    for item in servicios_recientes:
+        item.correo_huesped = _correo_huesped(item.reservas.huespedes)
+        item.metodo_pago_registrado = item.pago.metodopago if item.pago_id else ''
+        item.reembolso_disponible = Decimal('0.00')
+        item.reembolso_realizado = Decimal('0.00')
+        if item.estado == 'Aprobado' and item.pago_id and item.pago.valor > 0:
+            reembolsado = reembolsos_servicio.get(item.pago_id, Decimal('0.00'))
+            item.reembolso_realizado = abs(reembolsado)
+            disponible_pago = max(Decimal('0.00'), item.pago.valor + reembolsado)
+            disponible_reserva = max(
+                Decimal('0.00'),
+                pagos_netos_reserva.get(item.reservas_id, Decimal('0.00')),
+            )
+            item.reembolso_disponible = min(disponible_pago, disponible_reserva)
     return render(request, 'admini/servicios.html', {
         'servicios': servicios,
         'servicios_pendientes': servicios_pendientes,
+        'servicios_recientes': servicios_recientes,
+        'fecha_limite_servicios': fecha_limite_servicios,
         'notificaciones_servicios': servicios_pendientes.count(),
         'nombre': request.session.get('usuario_nom', 'Administrador'),
         'rol': request.session.get('rol', 'Administrador'),
@@ -5471,8 +5511,48 @@ def servicios_pendientes_recepcion(request):
         'servicios',
         'pago',
     ).order_by('fecha')
+    fecha_limite_servicios = timezone.now() - timedelta(days=3)
+    servicios_recientes = list(ServicioReserva.objects.filter(
+        fecha__gte=fecha_limite_servicios,
+    ).select_related(
+        'reservas__huespedes__usuarios',
+        'reservas__habitaciones',
+        'servicios',
+        'pago',
+    ).order_by('-fecha'))
+    ids_pagos_servicio = [item.pago_id for item in servicios_recientes if item.pago_id]
+    reembolsos_servicio = {
+        fila['pago_origen_id']: fila['total'] or Decimal('0.00')
+        for fila in Pagos.objects.filter(
+            concepto='Reembolso', pago_origen_id__in=ids_pagos_servicio,
+        ).values('pago_origen_id').annotate(total=Sum('valor'))
+    }
+    ids_reservas_servicio = {item.reservas_id for item in servicios_recientes}
+    pagos_netos_reserva = {
+        fila['reservas_id']: fila['total'] or Decimal('0.00')
+        for fila in Pagos.objects.filter(reservas_id__in=ids_reservas_servicio)
+        .exclude(metodopago='Pendiente')
+        .values('reservas_id').annotate(total=Sum('valor'))
+    }
+    for item in servicios_recientes:
+        item.correo_huesped = _correo_huesped(item.reservas.huespedes)
+        item.metodo_pago_registrado = item.pago.metodopago if item.pago_id else ''
+        item.reembolso_disponible = Decimal('0.00')
+        item.reembolso_realizado = Decimal('0.00')
+        if item.estado == 'Aprobado' and item.pago_id and item.pago.valor > 0:
+            reembolsado = reembolsos_servicio.get(item.pago_id, Decimal('0.00'))
+            item.reembolso_realizado = abs(reembolsado)
+            item.reembolso_disponible = min(
+                max(Decimal('0.00'), item.pago.valor + reembolsado),
+                max(Decimal('0.00'), pagos_netos_reserva.get(item.reservas_id, Decimal('0.00'))),
+            )
     return render(request, 'recepcion/servicios_pendientes.html', {
         'servicios_pendientes': servicios_pendientes,
+        'servicios_recientes': servicios_recientes,
+        'servicios_disponibles': Servicios.objects.filter(estado=True).order_by('nombre'),
+        'reservas_para_servicio': Reservas.objects.filter(
+            estado__in=['Pendiente', 'Pagada - Por validar', 'Confirmada', 'En curso'],
+        ).select_related('huespedes', 'habitaciones').order_by('-fechaentrada'),
         'notificaciones_pendientes': Reservas.objects.filter(estado='Pagada - Por validar').count(),
         'notificaciones_servicios': servicios_pendientes.count(),
         'nombre': request.session.get('usuario_nom', 'Recepcionista'),
@@ -5500,7 +5580,7 @@ def aprobar_servicio_recepcion(request, servicio_reserva_id):
     codigo_motivo = request.POST.get('motivo_rechazo', '').strip()
     detalle_motivo = request.POST.get('motivo_detalle', '').strip()
     motivo = ''
-    if accion == 'aprobar' and metodo not in {'Efectivo', 'Tarjeta', 'Transferencia'}:
+    if accion == 'aprobar' and metodo not in {'Efectivo', 'Tarjeta', 'Transferencia', 'Nequi'}:
         messages.error(request, 'Selecciona un método de pago válido.')
         return redirect(destino)
     if accion == 'rechazar':
@@ -5608,6 +5688,97 @@ def aprobar_servicio_recepcion(request, servicio_reserva_id):
         )
         messages.warning(request, 'La solicitud se procesó, pero el huésped no tiene correo registrado.')
     return redirect(destino)
+
+
+def registrar_solicitud_servicio_recepcion(request):
+    if request.session.get('rol') not in {'Recepcionista', 'Administrador'}:
+        return redirect('/login')
+    if request.method != 'POST':
+        return redirect('/recepcion/servicios-pendientes')
+
+    try:
+        reserva_id = int(request.POST.get('reserva_id', ''))
+        servicio_id = int(request.POST.get('servicio_id', ''))
+        cantidad = int(request.POST.get('cantidad', '1'))
+    except (TypeError, ValueError):
+        messages.error(request, 'Selecciona una reserva, un servicio y una cantidad válidos.')
+        return redirect('/recepcion/servicios-pendientes')
+    beneficiario = request.POST.get('beneficiario', '').strip()
+    beneficiario_segundo = request.POST.get('beneficiario_segundo', '').strip()
+    metodo_pago_preferido = request.POST.get('metodo_pago_preferido', '').strip()
+    if metodo_pago_preferido not in {'Efectivo', 'Tarjeta', 'Transferencia', 'Nequi'}:
+        messages.error(request, 'Selecciona un tipo de pago válido.')
+        return redirect('/recepcion/servicios-pendientes')
+    if not beneficiario or len(beneficiario) > 100 or len(beneficiario_segundo) > 100:
+        messages.error(request, 'Indica un beneficiario válido (máximo 100 caracteres).')
+        return redirect('/recepcion/servicios-pendientes')
+    if cantidad < 1 or cantidad > 50:
+        messages.error(request, 'La cantidad debe estar entre 1 y 50.')
+        return redirect('/recepcion/servicios-pendientes')
+
+    servicio = Servicios.objects.filter(id=servicio_id, estado=True).first()
+    if not servicio:
+        messages.error(request, 'El servicio seleccionado no está disponible.')
+        return redirect('/recepcion/servicios-pendientes')
+    valor_total = (servicio.precio * cantidad).quantize(Decimal('0.01'))
+    if valor_total <= 0 or valor_total > Decimal('99999999.99'):
+        messages.error(request, 'El valor total del servicio excede el límite permitido.')
+        return redirect('/recepcion/servicios-pendientes')
+    try:
+        with transaction.atomic():
+            reserva = Reservas.objects.select_for_update().select_related('huespedes').get(
+                id=reserva_id,
+                estado__in=['Pendiente', 'Pagada - Por validar', 'Confirmada', 'En curso'],
+            )
+            solicitud = ServicioReserva.objects.create(
+                reservas=reserva,
+                servicios=servicio,
+                cantidad=cantidad,
+                valor=valor_total,
+                solicitado_por=(request.session.get('usuario_nom') or 'Recepción')[:100],
+                beneficiario=beneficiario,
+                beneficiario_segundo=beneficiario_segundo,
+                metodo_pago_preferido=metodo_pago_preferido,
+                estado='Pendiente',
+            )
+            pago = Pagos.objects.create(
+                reservas=reserva,
+                valor=valor_total,
+                metodopago='Pendiente',
+                concepto='Servicio',
+            )
+            solicitud.pago = pago
+            solicitud.save(update_fields=['pago'])
+    except Reservas.DoesNotExist:
+        messages.error(request, 'La reserva seleccionada no existe o ya no admite servicios.')
+        return redirect('/recepcion/servicios-pendientes')
+
+    correo_destino = _correo_huesped(reserva.huespedes)
+    if correo_destino:
+        try:
+            _enviar_correo_hotel(
+                'Solicitud de servicio recibida',
+                'Recibimos tu solicitud',
+                (
+                    f'Hola {reserva.huespedes.nombres},\n\n'
+                    f'Recepción registró una solicitud de {servicio.nombre} para la reserva '
+                    f'CC-{reserva.id:04d}.\nCantidad: {cantidad}\n'
+                    f'Beneficiario(s): {beneficiario}'
+                    + (f' y {beneficiario_segundo}' if beneficiario_segundo else '')
+                    + f'\nMétodo de pago preferido: {metodo_pago_preferido}'
+                    + f'\nValor: ${formato_numero_colombiano(valor_total, 2)} COP.\n\n'
+                    'La solicitud está pendiente de aprobación y registro del pago.'
+                ),
+                correo_destino,
+            )
+        except Exception:
+            logger.exception('No se pudo enviar el aviso de la solicitud manual %s.', solicitud.id)
+            messages.warning(request, f'Solicitud de {servicio.nombre} registrada y pendiente, pero no se pudo enviar el correo al huésped.')
+        else:
+            messages.success(request, f'Solicitud de {servicio.nombre} registrada para la reserva CC-{reserva.id:04d}; quedó pendiente y se notificó al huésped.')
+    else:
+        messages.warning(request, f'Solicitud registrada para la reserva CC-{reserva.id:04d}, pero el huésped no tiene correo registrado.')
+    return redirect('/recepcion/servicios-pendientes')
 
 
 def registrar_huesped_recepcion(request):
@@ -5793,7 +5964,7 @@ def registrar_pago_servicio_recepcion(request):
         messages.error(request, 'Selecciona una reserva válida.')
         return redirect(destino)
 
-    metodos = {'Efectivo', 'Tarjeta', 'Transferencia'}
+    metodos = {'Efectivo', 'Tarjeta', 'Transferencia', 'Nequi'}
     with transaction.atomic():
         reserva = Reservas.objects.select_for_update().filter(id=reserva_id).first()
         if not reserva or reserva.estado not in {'Pendiente', 'Pagada - Por validar', 'Confirmada', 'En curso'}:
