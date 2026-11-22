@@ -2016,6 +2016,54 @@ button {
     font-weight: 700;
 }
 
+.reservation-service-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 11px 13px;
+    border: 1px solid #e5ece8;
+    border-radius: 12px;
+    background: #fbfcfb;
+}
+
+.reservation-service-list h4 {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0;
+    color: #183d3d;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.reservation-service-list h4 i {
+    color: #a98745;
+}
+
+.reservation-service-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 7px;
+    border-top: 1px solid #edf0ee;
+}
+
+.reservation-service-name {
+    min-width: 0;
+    color: #263d3d;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.reservation-service-name small {
+    display: block;
+    margin-top: 3px;
+    color: #788587;
+    font-size: 9px;
+    font-weight: 500;
+}
+
 .reservation-actions {
     display: grid;
     gap: 8px;

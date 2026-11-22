@@ -195,7 +195,7 @@
 
                 <div class="form-group-servicio">
                     <label for="selectReservaServicio">{% trans "¿A qué reserva deseas adjuntarlo?" %}</label>
-                    <select id="selectReservaServicio" name="reserva_id" class="input-servicio" required>
+                    <select id="selectReservaServicio" name="reserva_id" class="input-servicio" data-reserva-preseleccionada="{{ reserva_preseleccionada }}" required>
                         <option value="">{% trans "Selecciona una reserva activa" %}</option>
                         {% for r in reservas_activas %}
                             <option value="{{ r.id }}">
@@ -302,7 +302,7 @@
     <section class="modal-servicio-box modal-servicio-success" role="dialog" aria-modal="true" aria-labelledby="tituloServicioAgregado">
         <span class="service-success-icon" aria-hidden="true">✓</span>
         <h2 id="tituloServicioAgregado">{% trans "Servicio agregado" %}</h2>
-        <p>{% trans "El consumo quedó asociado a tu reserva y pendiente de pago." %}</p>
+        <p>{% trans "La solicitud quedó vinculada a tu reserva. No se cobrará hasta que recepción la apruebe." %}</p>
         <button type="button" class="boton boton-principal" id="btnCerrarExitoServicio">{% trans "Entendido" %}</button>
     </section>
 </div>
@@ -317,6 +317,6 @@
 
 <script src="{% static 'js/bootstrap.bundle.js' %}"></script>
 <script src="{% static 'js/feedback.js' %}?v=1"></script>
-<script src="{% static 'js/servicios.js' %}?v=23"></script>
+<script src="{% static 'js/servicios.js' %}?v=24"></script>
 </body>
 </html>

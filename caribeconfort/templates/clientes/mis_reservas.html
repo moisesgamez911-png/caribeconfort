@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis Reservas | {{ nombre_hotel }}</title>
 
-    <link rel="stylesheet" href="{% static 'css/mi_reserva.css' %}?v=28">
+    <link rel="stylesheet" href="{% static 'css/mi_reserva.css' %}?v=29">
     <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
     <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=5">
     <link rel="stylesheet" href="{% static 'css/idiomas.css' %}?v=2">
@@ -99,6 +99,23 @@
                             </div>
                         </div>
 
+                        {% with servicios_reserva=r.servicioreserva_set.all %}
+                        {% if servicios_reserva %}
+                        <section class="reservation-service-list" aria-label="Servicios asociados a esta reserva">
+                            <h4><i class="bi bi-stars" aria-hidden="true"></i> Servicios de esta reserva</h4>
+                            {% for servicio_reserva in servicios_reserva %}
+                            <div class="reservation-service-item">
+                                <span class="reservation-service-name">
+                                    {{ servicio_reserva.servicios.nombre }}
+                                    <small>{{ servicio_reserva.cantidad }} unidad{% if servicio_reserva.cantidad != 1 %}es{% endif %} · $ {{ servicio_reserva.valor|precio:0 }} COP</small>
+                                </span>
+                                <span class="service-status {% if servicio_reserva.estado == 'Aprobado' %}service-approved{% elif servicio_reserva.estado == 'Rechazado' %}service-rejected{% else %}service-pending{% endif %}">{{ servicio_reserva.estado }}</span>
+                            </div>
+                            {% endfor %}
+                        </section>
+                        {% endif %}
+                        {% endwith %}
+
                     </div>
 
                     <aside class="reservation-payment">
@@ -115,7 +132,7 @@
                             <span class="payment-note">Sin pagos registrados</span>
                         {% endif %}
                         <div class="reservation-actions">
-                            <a href="/servicios" class="payment-button">
+                            <a href="/servicios?reserva_id={{ r.id }}" class="payment-button">
                                 <i class="bi bi-stars" aria-hidden="true"></i>
                                 Agregar servicio
                             </a>

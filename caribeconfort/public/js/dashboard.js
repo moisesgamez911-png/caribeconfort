@@ -129,12 +129,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 const response = await fetch(url, {
                     method: 'POST',
                     body: formData,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-Session-Scope': 'admin'
+                    }
                 });
-                
-                if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
-                
-                const data = await response.json();
+
+                const responseText = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    throw new Error(
+                        `El servidor respondió con error ${response.status}. Recarga la página y verifica el estado de la reserva.`
+                    );
+                }
+                if (!response.ok) throw new Error(data.message || `Error del servidor: ${response.status}`);
                 
                 if (data.success) {
                     modalReserva.classList.remove('activo');
@@ -145,7 +155,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             } catch (error) {
                 console.error("Detalle del error:", error);
-                mostrarNotificacion('Error', 'No se pudo procesar la solicitud. Intenta de nuevo.', false);
+                mostrarNotificacion('Error', error.message || 'No se pudo procesar la solicitud. Intenta de nuevo.', false);
             }
         }
 

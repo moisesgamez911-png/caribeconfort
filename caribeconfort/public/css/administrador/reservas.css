@@ -435,6 +435,24 @@ html[data-theme="dark"] {
     border-color: var(--color-borde);
 }
 
+.rv-actions .btn-abrir-validacion {
+    min-height: 34px;
+    padding: 6px 10px;
+    border-color: transparent;
+    border-radius: 7px;
+    background: var(--rv-alert-button);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.rv-actions .btn-abrir-validacion:hover {
+    border-color: transparent;
+    background: var(--rv-alert-button-hover);
+    color: #fff;
+}
+
 .rv-actions .btn-cancelar-reserva {
     color: var(--rojo);
 }

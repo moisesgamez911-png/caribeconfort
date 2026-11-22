@@ -562,7 +562,7 @@ def servicios(request):
             reservas_activas = Reservas.objects.filter(
                 huespedes=huesped,
                 fechasalida__gte=hoy,
-                estado__in=['Pendiente', 'Confirmada']
+                estado__in=['Pendiente', 'Confirmada', 'En curso']
             ).select_related('habitaciones', 'planes')
             
         except Huespedes.DoesNotExist:
@@ -576,6 +576,7 @@ def servicios(request):
         'categoria_activa': categoria_activa,
         'total_general': total_general,
         'reservas_activas': reservas_activas,
+        'reserva_preseleccionada': request.GET.get('reserva_id', ''),
         'huesped': huesped,
     }
     return render(request, 'clientes/servicios.html', context)
@@ -591,7 +592,7 @@ def cancelar_reserva(request, reserva_id):
 
     try:
         with transaction.atomic():
-            reservas_bloqueadas = Reservas.objects.select_for_update().select_related('huespedes', 'habitaciones')
+            reservas_bloqueadas = Reservas.objects.select_for_update()
             if es_personal:
                 reserva = get_object_or_404(reservas_bloqueadas, id=reserva_id)
             else:
@@ -734,8 +735,6 @@ def solicitar_servicio(request):
                 nequi_titular=nequi_titular,
                 nequi_celular=nequi_celular,
             )
-            reserva.valortotal += valor_total
-            reserva.save(update_fields=['valortotal'])
             pago = Pagos.objects.create(
                 reservas=reserva,
                 valor=valor_total,
@@ -2039,7 +2038,7 @@ def checkin_reserva(request, reserva_id):
     try:
         with transaction.atomic():
             reserva = get_object_or_404(
-                Reservas.objects.select_for_update().select_related('huespedes', 'habitaciones', 'planes'),
+                Reservas.objects.select_for_update(),
                 id=reserva_id,
             )
             if reserva.estado != 'Confirmada':
@@ -2176,11 +2175,7 @@ def checkout_reserva(request, reserva_id):
     metodo = request.POST.get('metodopago', '')
     with transaction.atomic():
         reserva = get_object_or_404(
-            Reservas.objects.select_for_update().select_related(
-                'huespedes',
-                'habitaciones__tipohabitacion',
-                'planes',
-            ),
+            Reservas.objects.select_for_update(),
             id=reserva_id,
         )
         if reserva.estado != 'En curso':
@@ -3269,7 +3264,7 @@ def pagosadmin(request):
     })
 
 
-def _crear_pdf_movimientos(titulo, subtitulo, datos, encabezados, anchos):
+def _crear_pdf_movimientos(titulo, subtitulo, datos, encabezados, anchos, resumen=None):
     salida = BytesIO()
     documento = SimpleDocTemplate(
         salida,
@@ -3281,47 +3276,53 @@ def _crear_pdf_movimientos(titulo, subtitulo, datos, encabezados, anchos):
         title=titulo,
     )
     estilos = getSampleStyleSheet()
+    teal = colors.HexColor('#183D3D')
+    teal_claro = colors.HexColor('#EAF1EF')
+    dorado = colors.HexColor('#C6A15B')
+    borde = colors.HexColor('#DCE4E1')
     estilo_titulo = ParagraphStyle(
-        'HotelTitle',
-        parent=estilos['Title'],
-        textColor=colors.HexColor('#16484b'),
-        fontName='Helvetica-Bold',
-        fontSize=20,
-        alignment=0,
-        spaceAfter=8,
+        'HotelTitle', parent=estilos['Title'], textColor=teal,
+        fontName='Helvetica-Bold', fontSize=21, leading=25,
+        alignment=0, spaceAfter=4,
+    )
+    estilo_seccion = ParagraphStyle(
+        'HotelSection', parent=estilos['Heading2'], textColor=teal,
+        fontName='Helvetica-Bold', fontSize=12, leading=16,
+        spaceBefore=0, spaceAfter=8,
     )
     estilo_detalle = ParagraphStyle(
         'HotelDetail',
         parent=estilos['BodyText'],
-        textColor=colors.HexColor('#42595a'),
-        fontSize=9,
-        leading=13,
+        textColor=colors.HexColor('#64747A'), fontSize=9, leading=13,
     )
     estilo_celda = ParagraphStyle(
-        'HotelCell',
-        parent=estilo_detalle,
-        fontSize=8,
+        'HotelCell', parent=estilo_detalle, fontSize=8.5, leading=11,
+    )
+    estilo_encabezado = ParagraphStyle(
+        'HotelTableHeader', parent=estilo_celda,
+        textColor=colors.white, fontName='Helvetica-Bold', fontSize=8,
         leading=10,
     )
-    tabla_datos = [[Paragraph(escape_html(str(valor)), estilo_celda) for valor in encabezados]]
+    tabla_datos = [[Paragraph(escape_html(str(valor)), estilo_encabezado) for valor in encabezados]]
     tabla_datos.extend([
         [Paragraph(escape_html(str(valor)), estilo_celda) for valor in fila]
         for fila in datos
     ])
     tabla = Table(tabla_datos, colWidths=anchos, repeatRows=1, hAlign='LEFT')
     tabla.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#16484b')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('BACKGROUND', (0, 0), (-1, 0), teal),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [
             colors.white,
-            colors.HexColor('#f4f7f5'),
+            colors.HexColor('#F7F9F8'),
         ]),
-        ('GRID', (0, 0), (-1, -1), 0.35, colors.HexColor('#dce5e1')),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-        ('TOPPADDING', (0, 0), (-1, -1), 7),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, dorado),
+        ('LINEBELOW', (0, 1), (-1, -1), .45, borde),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (-1, 1), (-1, -1), 'RIGHT'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 9),
     ]))
     hotel = Hoteles.objects.order_by('id').first()
     nombre_hotel = hotel.nombre if hotel else 'Caribe Confort'
@@ -3331,15 +3332,79 @@ def _crear_pdf_movimientos(titulo, subtitulo, datos, encabezados, anchos):
             hotel.municipio if hotel else '',
         ) if valor
     )
+    def dibujar_pie(canvas, doc):
+        canvas.saveState()
+        canvas.setStrokeColor(borde)
+        canvas.setLineWidth(.5)
+        canvas.line(18 * mm, 13 * mm, A4[0] - 18 * mm, 13 * mm)
+        canvas.setFont('Helvetica', 8)
+        canvas.setFillColor(colors.HexColor('#748184'))
+        canvas.drawString(18 * mm, 8 * mm, escape_html(nombre_hotel))
+        canvas.drawRightString(A4[0] - 18 * mm, 8 * mm, f'Página {doc.page}')
+        canvas.restoreState()
+
     contenido = [
-        Paragraph(escape_html(nombre_hotel), estilo_titulo),
-        Paragraph(escape_html(titulo), estilos['Heading2']),
+        Table([[Paragraph(escape_html(nombre_hotel), ParagraphStyle(
+            'HotelBrand', parent=estilo_titulo, fontSize=10, leading=12,
+            textColor=colors.white,
+        )), Paragraph(escape_html(ubicacion or 'Riohacha, La Guajira'), ParagraphStyle(
+            'HotelLocation', parent=estilo_detalle, fontSize=8,
+            textColor=colors.HexColor('#D6E2DF'), alignment=2,
+        ))]], colWidths=[documento.width * .56, documento.width * .44],
+            style=TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), teal),
+                ('LINEBEFORE', (0, 0), (0, 0), 3, dorado),
+                ('LEFTPADDING', (0, 0), (-1, -1), 12),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+                ('TOPPADDING', (0, 0), (-1, -1), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ])),
+        Spacer(1, 9 * mm),
+        Paragraph(escape_html(titulo), estilo_titulo),
+        Paragraph('CERTIFICADO OFICIAL DE MOVIMIENTOS', estilo_seccion),
         Paragraph(escape_html(subtitulo), estilo_detalle),
     ]
     if ubicacion:
         contenido.extend([Paragraph(escape_html(ubicacion), estilo_detalle)])
-    contenido.extend([Spacer(1, 10 * mm), tabla])
-    documento.build(contenido)
+    contenido.append(Spacer(1, 8 * mm))
+    if resumen:
+        estilo_resumen_label = ParagraphStyle(
+            'HotelSummaryLabel', parent=estilo_detalle,
+            fontName='Helvetica-Bold', fontSize=8,
+            textColor=colors.HexColor('#64747A'),
+        )
+        estilo_resumen_valor = ParagraphStyle(
+            'HotelSummaryValue', parent=estilo_titulo,
+            fontSize=14, leading=17,
+        )
+        contenido.append(Table(
+            [[
+                Paragraph('TOTAL PAGADO REGISTRADO', estilo_resumen_label),
+                Paragraph(escape_html(resumen['total']), estilo_resumen_valor),
+                Paragraph(
+                    f"{int(resumen['movimientos'])} movimiento(s)",
+                    ParagraphStyle(
+                        'HotelSummaryCount', parent=estilo_detalle,
+                        alignment=2, fontName='Helvetica-Bold',
+                        textColor=teal,
+                    ),
+                ),
+            ]],
+            colWidths=[documento.width * .43, documento.width * .34, documento.width * .23],
+            style=TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), teal_claro),
+                ('LINEBEFORE', (0, 0), (0, 0), 3, dorado),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+                ('TOPPADDING', (0, 0), (-1, -1), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+            ]),
+        ))
+        contenido.append(Spacer(1, 7 * mm))
+    contenido.append(tabla)
+    documento.build(contenido, onFirstPage=dibujar_pie, onLaterPages=dibujar_pie)
     return salida.getvalue()
 
 
@@ -3685,6 +3750,10 @@ def descargar_certificado_pagos(request):
         filas,
         ('Fecha', 'Reserva', 'Concepto', 'Método', 'Valor'),
         (30 * mm, 25 * mm, 38 * mm, 35 * mm, 38 * mm),
+        resumen={
+            'total': f"${formato_numero_colombiano(total_neto, 2)} COP",
+            'movimientos': len(filas),
+        },
     )
     return _respuesta_pdf(
         contenido,
@@ -3753,7 +3822,7 @@ def modificar_reserva(request, reserva_id):
 
     with transaction.atomic():
         reserva = get_object_or_404(
-            Reservas.objects.select_for_update().select_related('huespedes', 'habitaciones', 'planes'),
+            Reservas.objects.select_for_update(),
             id=reserva_id,
         )
         if reserva.estado in {'Cancelada', 'Finalizada'}:
@@ -5107,116 +5176,109 @@ def reenviar_confirmacion_reserva(request, reserva_id):
 def gestionar_reserva(request, reserva_id):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Método no permitido'}, status=405)
-    
-    if request.session.get('rol') not in ['Administrador', 'Recepcionista']:
+
+    if request.session.get('rol') not in {'Administrador', 'Recepcionista'}:
         return JsonResponse({'success': False, 'message': 'No autorizado'}, status=403)
-        
+
+    accion = (request.POST.get('accion') or '').strip()
+    if accion not in {'aprobar', 'rechazar'}:
+        return JsonResponse({'success': False, 'message': 'Acción no válida.'}, status=400)
+
     try:
-        reserva = Reservas.objects.select_related('huespedes', 'habitaciones__tipohabitacion', 'planes').get(id=reserva_id)
-    except Reservas.DoesNotExist:
-        return JsonResponse({'success': False, 'message': 'Reserva no encontrada'}, status=404)
+        with transaction.atomic():
+            reserva = Reservas.objects.select_for_update().filter(id=reserva_id).first()
+            if reserva is None:
+                return JsonResponse({'success': False, 'message': 'Reserva no encontrada'}, status=404)
+            if reserva.estado != 'Pagada - Por validar':
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Esta reserva no está pendiente de validación.',
+                }, status=409)
 
-    accion = request.POST.get('accion')
-    
-    if reserva.estado != 'Pagada - Por validar':
-        return JsonResponse({'success': False, 'message': 'Esta reserva no está pendiente de validación.'})
+            huesped = reserva.huespedes
+            habitacion = reserva.habitaciones if reserva.habitaciones_id else None
+            plan = reserva.planes if reserva.planes_id else None
+            if accion == 'aprobar':
+                reserva.estado = 'Confirmada'
+                reserva.save(update_fields=['estado'])
+            else:
+                reserva.estado = 'Cancelada'
+                reserva.save(update_fields=['estado'])
+                if habitacion and not Reservas.objects.filter(
+                    habitaciones_id=habitacion.id,
+                    estado__in=['Pendiente', 'Pagada - Por validar', 'Confirmada', 'En curso'],
+                    fechaentrada__lt=reserva.fechasalida,
+                    fechasalida__gt=reserva.fechaentrada,
+                ).exclude(id=reserva.id).exists():
+                    habitacion.estado = 'Disponible'
+                    habitacion.save(update_fields=['estado'])
+    except Exception:
+        logger.exception('No se pudo %s la reserva CC-%s.', accion, reserva_id)
+        return JsonResponse({
+            'success': False,
+            'message': 'No se pudo actualizar la reserva. Revisa el estado actual antes de volver a intentarlo.',
+        }, status=500)
 
-    # Obtener el correo del huésped (con fallback al correo del usuario)
-    correo_destino = _correo_huesped(reserva.huespedes)
-    
-    # Construir el detalle de la habitación o plan
-    if reserva.habitaciones:
-        detalle = f"Habitación {reserva.habitaciones.numero}"
-        if hasattr(reserva.habitaciones, 'tipohabitacion') and reserva.habitaciones.tipohabitacion:
-            detalle += f" - {reserva.habitaciones.tipohabitacion.nombre}"
-    elif reserva.planes:
-        detalle = f"Plan: {reserva.planes.nombre}"
-    else:
-        detalle = "Reserva general"
+    correo_destino = _correo_huesped(huesped)
+    detalle = (
+        f'Habitación {habitacion.numero}' if habitacion
+        else f'Plan: {plan.nombre}' if plan
+        else 'Reserva general'
+    )
+    if habitacion and habitacion.tipohabitacion:
+        detalle += f' - {habitacion.tipohabitacion.nombre}'
 
     if accion == 'aprobar':
-        reserva.estado = 'Confirmada'
-        reserva.save()
-        
-        asunto = f"✅ Reserva Confirmada #CC-{reserva.id:04d} - Caribe Confort"
-        mensaje = f"""¡Hola {reserva.huespedes.nombres} {reserva.huespedes.apellidos}!
-
-¡Tenemos buenas noticias! Tu reserva ha sido CONFIRMADA exitosamente.
-
-═══════════════════════════════
-DETALLES DE TU RESERVA
-═══════════════════════════════
-Número de reserva: CC-{reserva.id:04d}
-Fecha de entrada: {reserva.fechaentrada.strftime('%d/%m/%Y')}
-Fecha de salida: {reserva.fechasalida.strftime('%d/%m/%Y')}
-{detalle}
-Huéspedes: {reserva.cantidadacompañantes} persona(s)
-Total pagado: ${formato_numero_colombiano(reserva.valortotal, 0)} COP
-
-═══════════════════════════════
-¡Te esperamos en Caribe Confort!
-— El equipo del Hotel Caribe Confort
-Riohacha, La Guajira
-"""
-        try:
-            if not correo_destino:
-                raise RuntimeError('El huésped no tiene un correo válido registrado.')
-            _enviar_correo_hotel(
-                asunto,
-                'Tu reserva fue confirmada',
-                mensaje,
-                correo_destino,
-            )
-            mensaje_respuesta = 'Reserva aprobada y correo enviado exitosamente.'
-        except Exception:
-            logger.exception('No se pudo enviar la confirmación de la reserva CC-%s.', reserva.id)
-            mensaje_respuesta = 'Reserva aprobada. (El correo no pudo enviarse)'
-        
-        return JsonResponse({'success': True, 'message': mensaje_respuesta})
-        
-    elif accion == 'rechazar':
-        reserva.estado = 'Cancelada'
-        reserva.save()
-        
-        if reserva.habitaciones:
-            reserva.habitaciones.estado = 'Disponible'
-            reserva.habitaciones.save()
-            
-        asunto = f"❌ Reserva No Confirmada #CC-{reserva.id:04d} - Caribe Confort"
-        mensaje = f"""Hola {reserva.huespedes.nombres} {reserva.huespedes.apellidos},
-
-Lamentamos informarte que tu reserva CC-{reserva.id:04d} no ha podido ser confirmada.
-
-═══════════════════════════════
-DETALLES DE LA RESERVA
-═══════════════════════════════
-Número de reserva: CC-{reserva.id:04d}
-Fecha de entrada: {reserva.fechaentrada.strftime('%d/%m/%Y')}
-Fecha de salida: {reserva.fechasalida.strftime('%d/%m/%Y')}
-
-Si tienes alguna duda o crees que esto es un error, por favor contacta con nuestra recepción.
-
-— El equipo del Hotel Caribe Confort
-Riohacha, La Guajira
-"""
-        try:
-            if not correo_destino:
-                raise RuntimeError('El huésped no tiene un correo válido registrado.')
-            _enviar_correo_hotel(
-                asunto,
-                'No fue posible confirmar tu reserva',
-                mensaje,
-                correo_destino,
-            )
-            mensaje_respuesta = 'Reserva rechazada y correo enviado exitosamente.'
-        except Exception:
-            logger.exception('No se pudo enviar la notificación de rechazo de la reserva CC-%s.', reserva.id)
-            mensaje_respuesta = 'Reserva rechazada. (El correo no pudo enviarse)'
-        
-        return JsonResponse({'success': True, 'message': mensaje_respuesta})
-    
+        asunto = f'Reserva Confirmada #CC-{reserva.id:04d} - Caribe Confort'
+        titulo = 'Tu reserva fue confirmada'
+        mensaje = (
+            f'Hola {huesped.nombres} {huesped.apellidos},\n\n'
+            f'Tu reserva CC-{reserva.id:04d} ha sido confirmada.\n'
+            f'{detalle}\n'
+            f'Entrada: {reserva.fechaentrada:%d/%m/%Y}\n'
+            f'Salida: {reserva.fechasalida:%d/%m/%Y}\n'
+            f'Huéspedes: {reserva.cantidadacompañantes}\n'
+            f'Total: ${formato_numero_colombiano(reserva.valortotal, 0)} COP.\n\n'
+            'Te esperamos en Caribe Confort, Riohacha.'
+        )
+        accion_texto = 'aprobada'
     else:
-        return JsonResponse({'success': False, 'message': 'Acción no válida.'}, status=400)
+        asunto = f'Reserva No Confirmada #CC-{reserva.id:04d} - Caribe Confort'
+        titulo = 'No fue posible confirmar tu reserva'
+        mensaje = (
+            f'Hola {huesped.nombres} {huesped.apellidos},\n\n'
+            f'Tu reserva CC-{reserva.id:04d} no pudo ser confirmada y fue cancelada.\n'
+            f'{detalle}\n'
+            f'Entrada: {reserva.fechaentrada:%d/%m/%Y}\n'
+            f'Salida: {reserva.fechasalida:%d/%m/%Y}\n\n'
+            'Comunícate con recepción si necesitas ayuda.'
+        )
+        accion_texto = 'rechazada'
+
+    correo_enviado = False
+    if correo_destino:
+        try:
+            _enviar_correo_hotel(asunto, titulo, mensaje, correo_destino)
+            correo_enviado = True
+        except Exception:
+            logger.exception(
+                'La reserva CC-%s fue %s, pero no se pudo enviar el correo.',
+                reserva.id,
+                accion_texto,
+            )
+    else:
+        logger.warning('No se pudo notificar la reserva CC-%s: huésped sin correo.', reserva.id)
+
+    mensaje_respuesta = f'Reserva {accion_texto}.'
+    if correo_enviado:
+        mensaje_respuesta += f' Correo enviado a {correo_destino}.'
+    else:
+        mensaje_respuesta += ' El cambio quedó guardado, pero el correo no se pudo enviar.'
+    return JsonResponse({
+        'success': True,
+        'correo_enviado': correo_enviado,
+        'message': mensaje_respuesta,
+    })
 
 def recepcionista(request):
     if request.session.get('rol') not in {'Recepcionista', 'Administrador'}:
@@ -5380,6 +5442,8 @@ def aprobar_servicio_recepcion(request, servicio_reserva_id):
 
         reserva = Reservas.objects.select_for_update().get(id=servicio_reserva.reservas_id)
         if accion == 'aprobar':
+            reserva.valortotal += servicio_reserva.valor
+            reserva.save(update_fields=['valortotal'])
             pago.metodopago = metodo
             pago.concepto = 'Servicio'
             pago.fecha = timezone.now()
@@ -5387,11 +5451,6 @@ def aprobar_servicio_recepcion(request, servicio_reserva_id):
             servicio_reserva.estado = 'Aprobado'
             servicio_reserva.save(update_fields=['estado'])
         else:
-            reserva.valortotal = max(
-                Decimal('0.00'),
-                reserva.valortotal - servicio_reserva.valor,
-            )
-            reserva.save(update_fields=['valortotal'])
             pago.delete()
             servicio_reserva.pago = None
             servicio_reserva.estado = 'Rechazado'
@@ -5730,8 +5789,9 @@ def registrar_pago_servicio_recepcion(request):
                 estado=estado,
             )
             if estado != 'Rechazado':
-                reserva.valortotal += valor_total
-                reserva.save(update_fields=['valortotal'])
+                if estado == 'Aprobado':
+                    reserva.valortotal += valor_total
+                    reserva.save(update_fields=['valortotal'])
                 pago = Pagos.objects.create(
                     reservas=reserva,
                     valor=valor_total,

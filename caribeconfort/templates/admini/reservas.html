@@ -11,7 +11,7 @@
     
     <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=107">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=999">
-    <link rel="stylesheet" href="{% static 'css/administrador/reservas.css' %}?v=4">
+    <link rel="stylesheet" href="{% static 'css/administrador/reservas.css' %}?v=5">
     <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
     <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
     <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=10">
@@ -176,6 +176,22 @@
                                 </span>
                             </td>
                             <td class="text-right rv-actions">
+                                    {% if r.estado == 'Pagada - Por validar' %}
+                                    <button type="button" class="rv-btn-validar btn-abrir-validacion"
+                                            title="Revisar pago y aprobar o rechazar reserva"
+                                            aria-label="Revisar pago de la reserva CC-{{ r.id|stringformat:'04d' }}"
+                                            data-id="{{ r.id }}"
+                                            data-nombre="{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}"
+                                            data-documento="{{ r.huespedes.tipodocumento }} {{ r.huespedes.identificacion }}"
+                                            data-correo="{{ r.huespedes.correo }}"
+                                            data-telefono="{{ r.huespedes.telefono }}"
+                                            data-hab="{% if r.habitaciones %}Hab. {{ r.habitaciones.numero }}{% else %}Plan: {{ r.planes.nombre }}{% endif %}"
+                                            data-entrada="{{ r.fechaentrada|date:'d/m/Y' }}"
+                                            data-salida="{{ r.fechasalida|date:'d/m/Y' }}"
+                                            data-total="$ {{ r.valortotal|precio:0 }}">
+                                        Revisar pago
+                                    </button>
+                                    {% endif %}
                                     {% if r.estado != 'Cancelada' and r.estado != 'Finalizada' %}
                                     <button type="button" title="Modificar fechas" class="btn-modificar-reserva"
                                             data-id="{{ r.id }}"
@@ -726,7 +742,7 @@
 </div>
 
 {% include 'inc/modal_reembolso.html' %}
-<script src="{% static 'js/administrador/reservas_admin.js' %}?v=10008"></script>
+<script src="{% static 'js/administrador/reservas_admin.js' %}?v=10009"></script>
 <script src="{% static 'js/reembolso_reserva.js' %}?v=1"></script>
 <script src="{% static 'js/admin-pagination-scroll.js' %}?v=2"></script>
 <script src="{% static 'js/barra-encabezado.js' %}?v=15"></script>

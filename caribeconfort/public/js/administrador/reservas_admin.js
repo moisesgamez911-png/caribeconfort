@@ -10,6 +10,19 @@ document.addEventListener('DOMContentLoaded', function () {
     var tokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
     var csrfToken = tokenInput ? tokenInput.value : '';
 
+    function leerRespuestaJson(response) {
+        return response.text().then(function (texto) {
+            try {
+                return JSON.parse(texto);
+            } catch (error) {
+                throw new Error(
+                    'El servidor respondió con error ' + response.status +
+                    ' en lugar de confirmar la acción. Recarga la página y verifica el estado antes de repetirla.'
+                );
+            }
+        });
+    }
+
     if (modalProximasReservas) {
         var btnAbrirProximas = document.getElementById('abrirProximasReservas');
         var btnCerrarProximas = document.getElementById('cerrarProximasReservas');
@@ -64,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 })
                     .then(function (response) {
-                        return response.json().then(function (data) {
+                        return leerRespuestaJson(response).then(function (data) {
                             if (!response.ok || !data.ok) {
                                 throw new Error(data.error || data.message || 'No se pudo guardar la reserva.');
                             }
@@ -199,7 +212,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     method: 'POST',
                     headers: { 'X-CSRFToken': csrfToken },
                 }).then(function (response) {
-                    return response.json().then(function (data) {
+                    return leerRespuestaJson(response).then(function (data) {
                         if (!response.ok || !data.success) {
                             throw new Error(data.message || 'No se pudo reenviar la confirmación.');
                         }
@@ -229,9 +242,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 boton.disabled = true;
                 fetch('/api/cancelar-reserva/' + reservaId + '/', {
                     method: 'POST',
-                    headers: { 'X-CSRFToken': csrfToken },
+                    headers: { 'X-CSRFToken': csrfToken, 'X-Session-Scope': 'admin' },
                 }).then(function (response) {
-                    return response.json().then(function (data) {
+                    return leerRespuestaJson(response).then(function (data) {
                         if (!response.ok || !data.success) {
                             throw new Error(data.message || 'No se pudo cancelar la reserva.');
                         }
@@ -309,12 +322,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': csrfToken,
+                    'X-Session-Scope': 'admin',
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 body: new URLSearchParams({ accion: accion }),
             })
                 .then(function (response) {
-                    return response.json().then(function (data) {
+                    return leerRespuestaJson(response).then(function (data) {
                         if (!response.ok) throw new Error(data.message || 'No se pudo procesar la reserva.');
                         return data;
                     });
@@ -407,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: { 'X-CSRFToken': csrfToken },
                 body: new FormData(formModificar)
             }).then(function (response) {
-                return response.json().then(function (data) {
+                return leerRespuestaJson(response).then(function (data) {
                     if (!response.ok && !data.success) {
                         throw new Error(data.message || 'No se pudo modificar la reserva.');
                     }
@@ -451,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     metodo: document.getElementById('metodoReembolso').value
                 })
             }).then(function (response) {
-                return response.json().then(function (data) {
+                return leerRespuestaJson(response).then(function (data) {
                     if (!response.ok || !data.success) throw new Error(data.message || 'No se pudo procesar el reembolso.');
                     return data;
                 });

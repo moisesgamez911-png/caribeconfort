@@ -86,6 +86,10 @@ document.addEventListener("DOMContentLoaded", function () {
             formSolicitar.reset();
             setSecondBeneficiaryVisible(false);
             syncPaymentDetails();
+            const reservationSelect = document.getElementById("selectReservaServicio");
+            if (reservationSelect.dataset.reservaPreseleccionada) {
+                reservationSelect.value = reservationSelect.dataset.reservaPreseleccionada;
+            }
             document.getElementById("txtServicioNombre").textContent = service;
             document.getElementById("hdnServicioId").value = serviceId;
             document.getElementById("hdnServicioNombre").value = service;

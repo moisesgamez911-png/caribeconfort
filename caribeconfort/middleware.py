@@ -38,6 +38,20 @@ class MultiSessionMiddleware(SessionMiddleware):
         if self._is_admin_path(path):
             return self.admin_cookie_name
 
+        # Estas rutas sirven tanto a clientes como a personal. Usa el contexto
+        # de la página que inició el fetch para recuperar la sesión correcta.
+        if (
+            path.startswith('/api/cancelar-reserva/')
+            or path.startswith('/api/validar-reserva/')
+            or path.startswith('/gestionar-reserva/')
+        ):
+            if request.headers.get('X-Session-Scope') == 'admin':
+                return self.admin_cookie_name
+            referer_path = urlsplit(request.META.get('HTTP_REFERER', '')).path
+            if self._is_admin_path(referer_path):
+                return self.admin_cookie_name
+            return self.client_cookie_name
+
         if path.rstrip('/') == '/logout':
             scope = request.GET.get('scope') or request.POST.get('scope')
             if scope == 'admin':
