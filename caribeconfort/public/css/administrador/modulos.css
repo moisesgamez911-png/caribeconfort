@@ -167,6 +167,12 @@
 .adm-table td { padding: 15px 14px; border-bottom: 1px solid #edf0ef; color: #42636a; font-size: 13px; }
 .adm-table tbody tr:hover { background: #fbfcfb; }
 .adm-table td strong { color: #21484a; }
+.service-requests-card .adm-table td small { display: block; margin-top: 4px; color: #718587; line-height: 1.45; }
+.service-requests-card .service-request-actions { min-width: 175px; }
+.service-requests-card .service-request-actions form { display: grid; gap: 8px; }
+.service-requests-card .service-request-actions select { width: 100%; min-height: 40px; }
+.service-requests-card .service-request-actions > .adm-button { width: 100%; margin-top: 7px; }
+.service-requests-card .adm-pill.amber { color: #8a5b00; background: #fff1cc; }
 .adm-empty { padding: 32px !important; color: #71878c !important; text-align: center; }
 
 .adm-pill {

@@ -443,6 +443,82 @@ body {
     transform: translateY(0);
 }
 
+/* El navegador Edge agrega su propio botón de revelado al input type=password. */
+#cardCvv::-ms-reveal,
+#cardCvv::-ms-clear {
+    display: none;
+}
+
+.cvv-field {
+    position: relative;
+    width: 100%;
+}
+
+.cvv-field input {
+    padding-right: 48px;
+}
+
+.cvv-toggle {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    display: grid;
+    width: 34px;
+    height: 34px;
+    padding: 7px;
+    place-items: center;
+    transform: translateY(-50%);
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #55747a;
+    cursor: pointer;
+    transition: color 160ms ease, background-color 160ms ease;
+}
+
+.cvv-toggle svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+}
+
+.cvv-toggle:hover,
+.cvv-toggle:focus-visible {
+    background: #eaf2ef;
+    color: #16484b;
+}
+
+.cvv-toggle:focus-visible {
+    outline: 2px solid #16484b;
+    outline-offset: 2px;
+}
+
+.global-language-switcher {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px;
+    border: 1px solid #dce3e1;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 4px 14px rgba(22, 72, 75, 0.12);
+    color: #16484b;
+}
+
+.global-language-switcher .language-switcher-button {
+    color: #426b78;
+}
+
+.global-language-switcher .language-switcher-button:hover,
+.global-language-switcher .language-switcher-button:focus-visible {
+    background: #eaf2ef;
+    color: #16484b;
+}
+
+.global-language-switcher .language-switcher-button.is-active {
+    background: #16484b;
+    color: #fff;
+}
+
 @media (max-width: 600px) {
     .opciones-pago {
         grid-template-columns: 1fr;
@@ -456,7 +532,7 @@ body {
         width: 100%;
     }
     .pago-container {
-        padding: 20px;
+        padding: 20px 16px;
     }
     .total-box {
         flex-direction: column;

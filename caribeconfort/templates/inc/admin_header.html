@@ -42,7 +42,7 @@
                     </a>
                     {% endfor %}
                     {% for item in servicios_notificaciones %}
-                    <a class="ad-notification-item" href="/recepcion/servicios-pendientes">
+                    <a class="ad-notification-item" href="{% if rol == 'Administrador' or request.session.rol == 'Administrador' %}/adminservicios#solicitudesServicio{% else %}/recepcion/servicios-pendientes{% endif %}">
                         <span class="ad-notification-kind">{% trans "Servicio pendiente" %}</span>
                         <strong>{{ item.servicios.nombre }} · {{ item.reservas.huespedes.nombres }} {{ item.reservas.huespedes.apellidos }}</strong>
                         <small>CC-{{ item.reservas_id|stringformat:"04d" }} · {{ item.fecha|date:"d/m/Y H:i" }}</small>
@@ -54,7 +54,7 @@
                 </div>
                 <footer class="ad-notification-footer">
                     <a href="/adminreserva?estado=Pagada%20-%20Por%20validar">{% trans "Ver reservas pendientes" %}</a>
-                    <a href="/recepcion/servicios-pendientes">{% trans "Ver servicios pendientes" %}</a>
+                    <a href="{% if rol == 'Administrador' or request.session.rol == 'Administrador' %}/adminservicios#solicitudesServicio{% else %}/recepcion/servicios-pendientes{% endif %}">{% trans "Ver servicios pendientes" %}</a>
                 </footer>
             </section>
         </div>
@@ -75,7 +75,7 @@
             <div class="ad-usuario-menu" id="adUsuarioMenu">
                 <p>{{ nombre|default:request.session.usuario_nom|default:"Administrador" }}<small>{{ rol|default:request.session.rol|default:"Administrador" }}</small></p>
                 <a href="/home">{% trans "Ver sitio del hotel" %}</a>
-                <a href="/logout" class="salir">{% trans "Cerrar sesión" %}</a>
+                <a href="/logout?scope=admin" class="salir">{% trans "Cerrar sesión" %}</a>
             </div>
         </div>
     </div>

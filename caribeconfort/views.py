@@ -372,28 +372,6 @@ NACIONALIDADES = {
     'Otra':                'Otra',
 }
 
-class MultiSessionMiddleware:
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        rutas_admin = (
-            '/administrador', '/adminreserva', '/rhabitaciones',
-            '/adminhabitaciones', '/adminhuespedes', '/adminhuéspedes',
-            '/adminpagos', '/adminservicios', '/adminusuarios',
-            '/admintiposhabitacion',
-            '/adminconfiguracion', '/admingaleria', '/adminconvenios',
-            '/adminreportes', '/recepcion',
-            '/adminreglas-descuento',
-        )
-        
-        if any(request.path.startswith(r) for r in rutas_admin):
-            settings.SESSION_COOKIE_NAME = 'sessionid_admin'
-        else:
-            settings.SESSION_COOKIE_NAME = 'sessionid_cliente'
-        
-        return self.get_response(request)
-
 def home(request):
     hotel = Hoteles.objects.order_by('id').first()
     direccion_mapa = (hotel.direccion or '').strip() if hotel else ''
@@ -3013,8 +2991,19 @@ def serviciosadmin(request):
     servicios = list(Servicios.objects.order_by('nombre'))
     for servicio in servicios:
         servicio.url_imagen = _url_imagen_local(servicio.imagen)
+    servicios_pendientes = ServicioReserva.objects.filter(
+        estado='Pendiente',
+        pago__metodopago='Pendiente',
+    ).select_related(
+        'reservas__huespedes__usuarios',
+        'reservas__habitaciones',
+        'servicios',
+        'pago',
+    ).order_by('fecha')
     return render(request, 'admini/servicios.html', {
         'servicios': servicios,
+        'servicios_pendientes': servicios_pendientes,
+        'notificaciones_servicios': servicios_pendientes.count(),
         'nombre': request.session.get('usuario_nom', 'Administrador'),
         'rol': request.session.get('rol', 'Administrador'),
     })
@@ -5335,7 +5324,10 @@ def aprobar_servicio_recepcion(request, servicio_reserva_id):
     if request.session.get('rol') not in {'Recepcionista', 'Administrador'}:
         return redirect('/login')
     destino = request.POST.get('next', '/recepcion/servicios-pendientes')
-    if destino not in {'/administrador', '/recepcion', '/recepcion/servicios-pendientes'}:
+    destinos_permitidos = {'/administrador', '/recepcion', '/recepcion/servicios-pendientes'}
+    if request.session.get('rol') == 'Administrador':
+        destinos_permitidos.add('/adminservicios')
+    if destino not in destinos_permitidos:
         destino = '/recepcion/servicios-pendientes'
     if request.method != 'POST':
         return redirect(destino)
@@ -5366,7 +5358,6 @@ def aprobar_servicio_recepcion(request, servicio_reserva_id):
     with transaction.atomic():
         servicio_reserva = get_object_or_404(
             ServicioReserva.objects.select_for_update().select_related(
-                'pago',
                 'reservas__huespedes',
                 'servicios',
             ),

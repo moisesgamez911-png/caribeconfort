@@ -19,6 +19,41 @@
         <button class="adm-button" type="button" data-open-dialog="crearServicio">+ Nuevo servicio</button>
     </header>
     {% if messages %}<div class="adm-messages" role="status">{% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}</div>{% endif %}
+    <section class="adm-card service-requests-card" id="solicitudesServicio">
+        <div class="adm-card-heading">
+            <div><h2>Solicitudes pendientes ({{ notificaciones_servicios }})</h2><p>Revisa quién solicitó cada servicio, sus beneficiarios y el método de pago antes de aprobar o rechazar.</p></div>
+        </div>
+        <div class="adm-table-wrap">
+            <table class="adm-table">
+                <thead><tr><th>Huésped y solicitud</th><th>Beneficiario(s)</th><th>Reserva</th><th>Habitación</th><th>Servicio</th><th>Cantidad</th><th>Valor</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody>
+                    {% for item in servicios_pendientes %}
+                    <tr>
+                        <td><strong>{{ item.reservas.huespedes.nombres }} {{ item.reservas.huespedes.apellidos }}</strong><small>{{ item.reservas.huespedes.identificacion }}</small><small>Solicitó: {{ item.solicitado_por|default:item.reservas.huespedes.nombres }}</small></td>
+                        <td>{{ item.beneficiario|default:"No indicado" }}{% if item.beneficiario_segundo %}<small>{{ item.beneficiario_segundo }}</small>{% endif %}</td>
+                        <td>CC-{{ item.reservas_id|stringformat:"04d" }}</td>
+                        <td>{{ item.reservas.habitaciones.numero|default:"—" }}</td>
+                        <td><strong>{{ item.servicios.nombre }}</strong><small>{{ item.servicios.descripcion|default:"" }}</small>
+                            {% if item.metodo_pago_preferido == 'Tarjeta' %}<small>Tarjeta · {{ item.tarjeta_titular }} · termina en {{ item.tarjeta_ultimos4 }}</small>{% elif item.metodo_pago_preferido == 'Nequi' %}<small>Nequi · {{ item.nequi_titular }} · {{ item.nequi_celular }}</small>{% else %}<small>Pago preferido: {{ item.get_metodo_pago_preferido_display|default:"No indicado" }}</small>{% endif %}
+                        </td>
+                        <td>{{ item.cantidad }}</td>
+                        <td>${{ item.valor|precio:2 }}</td>
+                        <td><span class="adm-pill amber">{{ item.estado }}</span></td>
+                        <td class="service-request-actions">
+                            <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar">
+                                {% csrf_token %}<input type="hidden" name="next" value="/adminservicios"><input type="hidden" name="accion" value="aprobar">
+                                <label class="sr-only" for="metodoPagoServicio{{ item.id }}">Método de pago de CC-{{ item.reservas_id|stringformat:"04d" }}</label>
+                                <select id="metodoPagoServicio{{ item.id }}" name="metodopago" required><option value="Efectivo">Efectivo</option><option value="Tarjeta">Tarjeta</option><option value="Transferencia">Transferencia</option></select>
+                                <button class="adm-button" type="submit">Aprobar solicitud</button>
+                            </form>
+                            <button class="adm-button danger service-reject-button" type="button" data-reject-service data-action="/recepcion/servicio/{{ item.id }}/aprobar" data-next="/adminservicios">Rechazar</button>
+                        </td>
+                    </tr>
+                    {% empty %}<tr><td class="adm-empty" colspan="9">No hay solicitudes de servicio pendientes.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
     <section class="adm-card">
         <div class="adm-card-heading"><div><h2>Servicios registrados</h2><p>{{ servicios|length }} servicios en el catálogo.</p></div></div>
         <div class="adm-table-wrap">
@@ -68,6 +103,18 @@
         <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-dialog>Cancelar</button><button class="adm-button" type="submit">Crear servicio</button></footer>
     </form>
 </dialog>
+<dialog class="adm-dialog service-reject-dialog" id="modalRechazoServicio" aria-labelledby="tituloRechazoServicio">
+    <header class="adm-dialog-heading"><div><p class="adm-eyebrow">SOLICITUD DE SERVICIO</p><h2 id="tituloRechazoServicio">Rechazar solicitud</h2></div><button type="button" class="room-modal-close" data-close-dialog aria-label="Cerrar">&times;</button></header>
+    <form method="post" id="formRechazoServicio">
+        {% csrf_token %}<input type="hidden" name="accion" value="rechazar"><input type="hidden" name="next" value="/adminservicios">
+        <div class="adm-form-grid">
+            <div class="adm-field adm-span-2"><label for="motivoRechazoServicio">Motivo</label><select name="motivo_rechazo" id="motivoRechazoServicio" required><option value="">Selecciona el motivo</option><option value="sin_disponibilidad">Sin disponibilidad en el horario solicitado</option><option value="mantenimiento">Servicio en mantenimiento</option><option value="datos_incompletos">Datos incompletos del huésped</option><option value="fuera_horario">Fuera de horario de atención</option><option value="otro">Otro</option></select></div>
+            <div class="adm-field adm-span-2" id="detalleRechazoServicio" hidden><label for="detalleMotivoServicio">Describe el motivo</label><textarea id="detalleMotivoServicio" name="motivo_detalle" maxlength="500" disabled></textarea></div>
+        </div>
+        <p class="adm-dialog-message">La solicitud rechazada se quitará del saldo pendiente; no se procesará ningún cobro.</p>
+        <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-dialog>Cancelar</button><button class="adm-button danger service-reject-button" type="submit">Confirmar rechazo</button></footer>
+    </form>
+</dialog>
 <script>
     document.querySelectorAll('[data-service-image-input]').forEach((input) => {
         input.addEventListener('change', () => {
@@ -87,6 +134,7 @@
         button.addEventListener('click', () => button.closest('dialog').close());
     });
 </script>
+<script src="{% static 'js/gestion-servicios.js' %}?v=2"></script>
 <script src="{% static 'js/barra-encabezado.js' %}?v=15"></script>
 </body>
 </html>

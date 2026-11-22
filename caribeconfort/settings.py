@@ -67,7 +67,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'caribeconfort.middleware.MultiSessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'caribeconfort.middleware.IdiomaGlobalMiddleware',
     'django.middleware.common.CommonMiddleware',

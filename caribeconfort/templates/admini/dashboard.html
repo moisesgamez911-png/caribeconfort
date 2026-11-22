@@ -256,7 +256,7 @@
                     <h2 class="dash-card-title">Solicitudes de servicio pendientes ({{ notificaciones_servicios }})</h2>
                     <div class="dash-service-heading-actions">
                         <button type="button" class="dash-link-button" data-open-service-manual="modalServicioManualAdmin">Registrar servicio manualmente</button>
-                        <a href="/recepcion/servicios-pendientes" class="dash-link">Ver solicitudes →</a>
+                        <a href="/adminservicios#solicitudesServicio" class="dash-link">Ver solicitudes →</a>
                     </div>
                 </div>
                 <div class="dash-table-scroll">
@@ -317,6 +317,19 @@
                     </div>
                     <p class="dialog-note">El valor vacío se calcula con la tarifa del catálogo y la cantidad. Los servicios pendientes no se cobran hasta su aprobación.</p>
                     <footer class="dialog-actions"><button type="button" class="secondary-button" data-close-dialog>Cancelar</button><button type="submit" class="primary-button">Guardar servicio</button></footer>
+                </form>
+            </dialog>
+
+            <dialog class="service-management-dialog service-reject-dialog" id="modalRechazoServicio" aria-labelledby="tituloRechazoServicio">
+                <header class="dialog-heading"><div><p class="reception-eyebrow">SOLICITUD DE SERVICIO</p><h2 id="tituloRechazoServicio">Rechazar solicitud</h2></div><button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button></header>
+                <form method="post" id="formRechazoServicio">
+                    {% csrf_token %}<input type="hidden" name="accion" value="rechazar"><input type="hidden" name="next" value="/administrador">
+                    <div class="dialog-grid">
+                        <label class="dialog-span-2">Motivo<select name="motivo_rechazo" id="motivoRechazoServicio" required><option value="">Selecciona el motivo</option><option value="sin_disponibilidad">Sin disponibilidad en el horario solicitado</option><option value="mantenimiento">Servicio en mantenimiento</option><option value="datos_incompletos">Datos incompletos del huésped</option><option value="fuera_horario">Fuera de horario de atención</option><option value="otro">Otro</option></select></label>
+                        <label class="dialog-span-2" id="detalleRechazoServicio" hidden>Describe el motivo<textarea name="motivo_detalle" maxlength="500" disabled></textarea></label>
+                    </div>
+                    <p class="dialog-note">La solicitud rechazada se quitará del saldo pendiente; no se procesará ningún cobro.</p>
+                    <footer class="dialog-actions"><button type="button" class="secondary-button" data-close-dialog>Cancelar</button><button type="submit" class="primary-button service-reject-button">Confirmar rechazo</button></footer>
                 </form>
             </dialog>
 
