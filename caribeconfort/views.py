@@ -1146,7 +1146,7 @@ def crear_reserva(request):
     try:
         with transaction.atomic():
             habitaciones = list(
-                Habitaciones.objects.select_for_update()
+                Habitaciones.objects.select_for_update(of=('self',))
                 .select_related('tipohabitacion')
                 .filter(id__in=[int(item) for item in lista_ids])
                 .order_by('id')
