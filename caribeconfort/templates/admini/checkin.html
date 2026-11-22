@@ -1,4 +1,4 @@
-{% load static %}
+{% load static precio_format %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -79,7 +79,7 @@
                         </div>
                         <div class="ck-summary-item">
                             <div class="lbl">Total</div>
-                            <div class="val">${{ reserva.valortotal|floatformat:"0g" }}</div>
+                            <div class="val">${{ reserva.valortotal|precio:0 }}</div>
                         </div>
                     </div>
                 </div>

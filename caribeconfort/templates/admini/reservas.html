@@ -1,4 +1,4 @@
-{% load static i18n %}
+{% load static i18n l10n precio_format %}
 {% get_current_language as CURRENT_LANGUAGE %}
 <!DOCTYPE html>
 <html lang="es">
@@ -51,7 +51,7 @@
                 <div class="rv-alerta-info">
                     <strong>{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}</strong>
                     <span>{% if r.habitaciones %}Hab. {{ r.habitaciones.numero }}{% elif r.planes %}Plan: {{ r.planes.nombre }}{% else %}Reserva{% endif %} | {{ r.fechaentrada|date:"d/m/Y" }} al {{ r.fechasalida|date:"d/m/Y" }}</span>
-                    <span class="rv-monto">$ {{ r.valortotal|floatformat:"0g" }}</span>
+                    <span class="rv-monto">$ {{ r.valortotal|precio:0 }}</span>
                 </div>
                 <button type="button" class="rv-btn-validar btn-abrir-validacion"
                         data-id="{{ r.id }}"
@@ -62,7 +62,7 @@
                         data-hab="{% if r.habitaciones %}{{ r.habitaciones.numero }}{% else %}Plan: {{ r.planes.nombre }}{% endif %}"
                         data-entrada="{{ r.fechaentrada|date:'d/m/Y' }}"
                         data-salida="{{ r.fechasalida|date:'d/m/Y' }}"
-                        data-total="$ {{ r.valortotal|floatformat:'0g' }}">
+                        data-total="$ {{ r.valortotal|precio:0 }}">
                     Revisar pago
                 </button>
             </div>
@@ -198,7 +198,7 @@
                                     {% elif r.estado == 'En curso' %}
                                     <button type="button" title="Registrar check-out" class="btn-checkout"
                                             data-id="{{ r.id }}"
-                                            data-saldo="{{ r.saldo_pendiente|default_if_none:'0.00'|floatformat:'2' }}"
+                                            data-saldo="{{ r.saldo_pendiente|default_if_none:'0.00'|unlocalize }}"
                                             data-nombre="{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}">
                                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
                                     </button>
@@ -219,7 +219,7 @@
                                     {% if r.saldo_pendiente > 0 and r.estado != 'Cancelada' and r.estado != 'Finalizada' %}
                                     <button type="button" title="Registrar pago" class="btn-pago-reserva"
                                             data-id="{{ r.id }}"
-                                            data-saldo="{{ r.saldo_pendiente|default_if_none:'0.00'|floatformat:'2' }}"
+                                            data-saldo="{{ r.saldo_pendiente|default_if_none:'0.00'|unlocalize }}"
                                             data-nombre="{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}">
                                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
                                     </button>
@@ -229,7 +229,7 @@
                                     <button type="button" class="btn-procesar-reembolso"
                                             data-id="{{ r.id }}"
                                             data-nombre="{{ r.huespedes.nombres }} {{ r.huespedes.apellidos }}"
-                                            data-monto="{{ r.saldo_favor|floatformat:'2' }}">
+                                            data-monto="{{ r.saldo_favor|unlocalize }}">
                                         Procesar reembolso
                                     </button>
                                     {% endif %}
@@ -468,8 +468,8 @@
                     <select id="nuevaHabitacion" name="habitacion" required disabled>
                         <option value="">Primero selecciona un tipo</option>
                         {% for habitacion in habitaciones_disponibles %}
-                        <option value="{{ habitacion.id }}" data-tipo-id="{{ habitacion.tipohabitacion_id }}" data-capacidad="{{ habitacion.capacidad }}" data-precio="{{ habitacion.precio }}">
-                            Hab. {{ habitacion.numero }} · Capacidad {{ habitacion.capacidad }} · ${{ habitacion.precio|floatformat:0 }}
+                        <option value="{{ habitacion.id }}" data-tipo-id="{{ habitacion.tipohabitacion_id }}" data-capacidad="{{ habitacion.capacidad }}" data-precio="{{ habitacion.precio|unlocalize }}">
+                            Hab. {{ habitacion.numero }} · Capacidad {{ habitacion.capacidad }} · ${{ habitacion.precio|precio:0 }}
                         </option>
                         {% endfor %}
                     </select>

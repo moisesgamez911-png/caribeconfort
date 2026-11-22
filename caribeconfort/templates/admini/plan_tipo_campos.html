@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n l10n %}
 <div class="adm-form-grid plan-type-fields">
     <div class="adm-field adm-span-2">
         <label for="planNombre{{ form_id }}">{% trans "Nombre" %}</label>
@@ -14,7 +14,7 @@
     </div>
     <div class="adm-field">
         <label for="planPrecio{{ form_id }}">{% trans "Precio (COP)" %}</label>
-        <input id="planPrecio{{ form_id }}" name="precio" type="number" min="0.01" step="0.01" value="{% if plan %}{{ plan.precio }}{% endif %}" required>
+        <input id="planPrecio{{ form_id }}" name="precio" type="number" min="0.01" step="0.01" value="{% if plan %}{{ plan.precio|unlocalize }}{% endif %}" required>
     </div>
     <div class="adm-field">
         <label for="planImagen{{ form_id }}">{% trans "Ruta de imagen (opcional)" %}</label>

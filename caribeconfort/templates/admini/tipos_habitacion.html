@@ -1,4 +1,4 @@
-{% load static i18n %}
+{% load static i18n l10n precio_format %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -33,7 +33,7 @@
                     <tr>
                         <td><strong>{{ tipo.nombre }}</strong></td>
                         <td>{{ tipo.capacidad }} {% trans "huéspedes" %}</td>
-                        <td>${{ tipo.tarifa|floatformat:2 }}</td>
+                        <td>${{ tipo.tarifa|precio:2 }}</td>
                         <td><button class="adm-button secondary" type="button" data-open-tipo="editarTipo{{ tipo.id }}">{% trans "Editar" %}</button></td>
                     </tr>
                     {% empty %}<tr><td class="adm-empty" colspan="4">{% trans "Aún no hay tipos de habitación registrados." %}</td></tr>{% endfor %}
@@ -53,7 +53,7 @@
             <div class="adm-form-grid">
                 <div class="adm-field adm-span-2"><label for="editarTipoNombre{{ tipo.id }}">{% trans "Nombre" %}</label><input id="editarTipoNombre{{ tipo.id }}" name="nombre" maxlength="100" value="{{ tipo.nombre }}" required></div>
                 <div class="adm-field"><label for="editarTipoCapacidad{{ tipo.id }}">{% trans "Capacidad" %}</label><input id="editarTipoCapacidad{{ tipo.id }}" name="capacidad" type="number" min="1" max="100" value="{{ tipo.capacidad }}" required></div>
-                <div class="adm-field"><label for="editarTipoTarifa{{ tipo.id }}">{% trans "Tarifa" %}</label><input id="editarTipoTarifa{{ tipo.id }}" name="tarifa" type="number" min="0.01" step="0.01" value="{{ tipo.tarifa }}" required></div>
+                <div class="adm-field"><label for="editarTipoTarifa{{ tipo.id }}">{% trans "Tarifa" %}</label><input id="editarTipoTarifa{{ tipo.id }}" name="tarifa" type="number" min="0.01" step="0.01" value="{{ tipo.tarifa|unlocalize }}" required></div>
             </div>
             <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-tipo>{% trans "Cancelar" %}</button><button class="adm-button" type="submit">{% trans "Guardar cambios" %}</button></footer>
         </form>
@@ -69,7 +69,7 @@
                         {% for plan in planes_admin %}
                         <tr>
                             <td><strong>{{ plan.nombre }}</strong><small class="adm-table-subtext">{{ plan.descripcion|default:"—" }}</small></td>
-                            <td>${{ plan.precio|floatformat:2 }}</td>
+                            <td>${{ plan.precio|precio:2 }}</td>
                             <td>{{ plan.duracion_dias }} {% trans "días" %}</td>
                             <td>{{ plan.disponibles }}</td>
                             <td>{% if plan.estado %}{% trans "Activo" %}{% else %}{% trans "Inactivo" %}{% endif %}</td>

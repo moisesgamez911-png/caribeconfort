@@ -22,6 +22,7 @@ from caribeconfort.context_processors import identidad_hotel, notificaciones_adm
 from caribeconfort.models import (
     CategoriaGaleria,
     CaracteristicaPlan,
+    Habitaciones,
     Huespedes,
     Hoteles,
     ImagenGaleria,
@@ -32,6 +33,7 @@ from caribeconfort.models import (
     Roles,
     ServicioReserva,
     Servicios,
+    TipoHabitacion,
     Usuarios,
 )
 from caribeconfort.views import (
@@ -509,12 +511,68 @@ class PublicGalleryCategoryTests(TestCase):
         self.assertEqual(len(context['imagenes']), 2)
 
 
+class AdminGalleryCategoryTests(TestCase):
+    def test_admin_can_create_and_assign_a_custom_category(self):
+        create_category = RequestFactory().post('/admingaleria', {
+            'accion': 'crear_categoria',
+            'nombre': 'Exteriores',
+            'icono': 'exterior',
+        })
+        create_category.session = {'rol': 'Administrador'}
+        create_category._messages = Mock()
+
+        response = galeriaadmin(create_category)
+
+        self.assertEqual(response.status_code, 302)
+        categoria = CategoriaGaleria.objects.get(nombre='Exteriores')
+
+        upload = RequestFactory().post(
+            '/admingaleria',
+            {
+                'accion': 'crear',
+                'titulo': 'Terraza',
+                'seccion': 'galeria',
+                'categoria_id': str(categoria.pk),
+                'archivo': SimpleUploadedFile(
+                    'terraza.jpg',
+                    b'imagen-de-prueba',
+                    content_type='image/jpeg',
+                ),
+            },
+        )
+        upload.session = {'rol': 'Administrador'}
+        upload._messages = Mock()
+
+        with patch(
+            'caribeconfort.views._guardar_imagen_galeria',
+            return_value='uploads/galeria/terraza.jpg',
+        ):
+            response = galeriaadmin(upload)
+
+        self.assertEqual(response.status_code, 302)
+        imagen = ImagenGaleria.objects.get(titulo='Terraza')
+        self.assertEqual(imagen.categoria_id, categoria.pk)
+        self.assertEqual(imagen.seccion, 'galeria')
+
+        client = Client()
+        session = client.session
+        session['rol'] = 'Administrador'
+        session['usuario_nom'] = 'Admin de prueba'
+        session.save()
+        response = client.get('/admingaleria')
+
+        self.assertContains(response, 'Crear categoría')
+        self.assertContains(response, 'Exteriores')
+
+
 class AdminGalleryImageUpdateTests(TestCase):
     def test_replacing_an_image_updates_the_public_gallery_url(self):
-        categoria = CategoriaGaleria.objects.create(
+        categoria, _ = CategoriaGaleria.objects.get_or_create(
             nombre='Carrusel',
-            estado=False,
+            defaults={'estado': False},
         )
+        categoria.estado = False
+        categoria.save(update_fields=['estado'])
         imagen = ImagenGaleria.objects.create(
             categoria=categoria,
             titulo='Imagen anterior',
@@ -545,8 +603,8 @@ class AdminGalleryImageUpdateTests(TestCase):
             imagen.refresh_from_db()
             self.assertNotEqual(imagen.imagen, 'uploads/galeria/anterior.png')
             self.assertTrue(Path(media_root, imagen.imagen).is_file())
-            categoria.refresh_from_db()
-            self.assertTrue(categoria.estado)
+            imagen.categoria.refresh_from_db()
+            self.assertTrue(imagen.categoria.estado)
 
             with patch(
                 'caribeconfort.views.render',
@@ -591,6 +649,62 @@ class BookingDateDefaultsTests(TestCase):
         today = timezone.localdate()
         self.assertEqual(context['fecha_entrada'], today.isoformat())
         self.assertEqual(context['fecha_salida'], (today + timedelta(days=1)).isoformat())
+
+    def test_search_renders_fifteen_available_rooms_as_available(self):
+        tipo = TipoHabitacion.objects.create(
+            nombre='Estándar',
+            capacidad=2,
+            tarifa=Decimal('50000.00'),
+        )
+        TipoHabitacion.objects.create(
+            nombre='Tipo sin inventario',
+            capacidad=2,
+            tarifa=Decimal('50000.00'),
+        )
+        for numero in range(1, 16):
+            Habitaciones.objects.create(
+                tipohabitacion=tipo,
+                numero=f'T{numero:02d}',
+                capacidad=2,
+                precio=Decimal('50000.00'),
+                estado='Disponible',
+            )
+
+        response = self.client.get('/reservas')
+
+        self.assertContains(response, '15 disponibles')
+        self.assertContains(response, 'tag-disponible')
+        self.assertNotContains(response, 'tag-agotado')
+        tipos_renderizados = response.context['tipos']
+        self.assertEqual(len(tipos_renderizados), 1)
+        tipo_renderizado = tipos_renderizados[0]
+        self.assertEqual(tipo_renderizado.cant_disponibles, 15)
+        self.assertEqual(len(tipo_renderizado.ids_disponibles), 15)
+
+    @patch('caribeconfort.views.render', return_value=HttpResponse())
+    def test_search_capacity_includes_children(self, render_view):
+        tipo = TipoHabitacion.objects.create(
+            nombre='Individual',
+            capacidad=2,
+            tarifa=Decimal('50000.00'),
+        )
+        Habitaciones.objects.create(
+            tipohabitacion=tipo,
+            numero='I01',
+            capacidad=1,
+            precio=Decimal('50000.00'),
+            estado='Disponible',
+        )
+
+        response = buscar_disponibilidad(RequestFactory().get(
+            '/reservas',
+            {'adultos': '1', 'ninos': '1'},
+        ))
+
+        self.assertEqual(response.status_code, 200)
+        tipo_renderizado = render_view.call_args.args[2]['tipos'][0]
+        self.assertEqual(tipo_renderizado.cant_disponibles, 0)
+        self.assertEqual(tipo_renderizado.ids_disponibles, [])
 
 
 class HomeHotelMapTests(TestCase):
@@ -1025,3 +1139,32 @@ class ResenaSubmissionTests(SimpleTestCase):
             'comentario',
             'fecha',
         ])
+
+
+class AssignLocalImagesCommandTests(TestCase):
+    def test_assigns_static_service_images_and_creates_gallery_rows_idempotently(self):
+        servicio = Servicios.objects.create(
+            nombre='Desayuno',
+            precio=Decimal('25000.00'),
+        )
+
+        with TemporaryDirectory() as static_root:
+            directorio_imagenes = Path(static_root) / 'img' / 'imagenes'
+            directorio_imagenes.mkdir(parents=True)
+            for nombre in ('foto1.png', 'foto2.png', 'foto3.png', 'foto4.png'):
+                (directorio_imagenes / nombre).write_bytes(b'image')
+
+            with override_settings(STATICFILES_DIRS=[Path(static_root)]):
+                call_command('asignar_imagenes_locales', stdout=StringIO())
+                call_command('asignar_imagenes_locales', stdout=StringIO())
+
+        servicio.refresh_from_db()
+        self.assertEqual(servicio.imagen, 'img/imagenes/foto1.png')
+        categoria = CategoriaGaleria.objects.get(nombre='Galería')
+        self.assertEqual(
+            ImagenGaleria.objects.filter(
+                categoria=categoria,
+                seccion='galeria',
+            ).count(),
+            4,
+        )

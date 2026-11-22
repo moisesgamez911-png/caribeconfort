@@ -1,4 +1,4 @@
-{% load static %}
+{% load static l10n precio_format %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -11,7 +11,7 @@
 <body>
 
 <div class="pago-wrapper">
-    <div class="pago-container" id="pagoContainer" data-total="{{ reserva.valortotal|floatformat:'0' }}" data-pagado="{{ pagos_realizados|default:'0'|floatformat:'0' }}">
+    <div class="pago-container" id="pagoContainer" data-total="{{ reserva.valortotal|unlocalize }}" data-pagado="{{ pagos_realizados|default:'0'|unlocalize }}">
         
         <div class="pago-header">
             <div class="icono-header">
@@ -27,13 +27,13 @@
             <div class="resumen-pagos">
                 <div class="fila-resumen">
                     <span>Valor total de la estancia</span>
-                    <strong>$ {{ reserva.valortotal|floatformat:"0g" }}</strong>
+                    <strong>$ {{ reserva.valortotal|precio:0 }}</strong>
                 </div>
                 
                 {% if pagos_realizados > 0 %}
                 <div class="fila-resumen">
                     <span>Pagado previamente</span>
-                    <strong class="texto-verde">-$ {{ pagos_realizados|floatformat:"0g" }}</strong>
+                    <strong class="texto-verde">-$ {{ pagos_realizados|precio:0 }}</strong>
                 </div>
                 {% endif %}
             </div>
@@ -75,7 +75,7 @@
                     <span class="total-sub">Monto calculado para esta solicitud</span>
                 </div>
                 <div class="total-monto" id="txtMontoAbono">
-                    $ {{ saldo_pendiente|default:"0"|floatformat:"0g" }}
+                    $ {{ saldo_pendiente|default:"0"|precio:0 }}
                 </div>
             </div>
 

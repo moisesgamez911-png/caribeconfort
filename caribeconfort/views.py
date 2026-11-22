@@ -31,6 +31,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.utils.crypto import get_random_string
+from caribeconfort.formato import formato_numero_colombiano
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -708,7 +709,7 @@ def solicitar_servicio(request):
                     f'Cantidad: {cantidad}\n'
                     f'Solicitado por: {solicitado_por}\n'
                     f'Método de pago preferido: {metodo_pago_preferido}\n'
-                    f'Valor: ${valor_total:,.2f} COP\n\n'
+                    f'Valor: ${formato_numero_colombiano(valor_total, 2)} COP\n\n'
                     'Recepción revisará la solicitud y te notificará cuando sea aprobada '
                     'y registrada en tu cuenta.'
                 ),
@@ -768,6 +769,39 @@ def _guardar_imagen_habitacion(archivo):
 def _eliminar_imagen_habitacion(ruta):
     if ruta.startswith('uploads/habitaciones/') and '..' not in Path(ruta).parts:
         FileSystemStorage(location=settings.MEDIA_ROOT).delete(ruta)
+
+
+def _guardar_imagen_servicio(archivo):
+    extension = Path(archivo.name).suffix.lower()
+    firmas = {
+        '.jpg': lambda header: header.startswith(b'\xff\xd8\xff'),
+        '.jpeg': lambda header: header.startswith(b'\xff\xd8\xff'),
+        '.png': lambda header: header.startswith(b'\x89PNG\r\n\x1a\n'),
+        '.gif': lambda header: header.startswith((b'GIF87a', b'GIF89a')),
+        '.webp': lambda header: header.startswith(b'RIFF') and header[8:12] == b'WEBP',
+    }
+    if extension not in firmas:
+        raise ValueError('La imagen debe ser JPG, PNG, WEBP o GIF.')
+    if archivo.size > TAMANO_MAXIMO_IMAGEN:
+        raise ValueError('La imagen no puede superar los 10 MB.')
+    encabezado = archivo.read(12)
+    archivo.seek(0)
+    if not firmas[extension](encabezado):
+        raise ValueError('El contenido del archivo no coincide con un formato de imagen permitido.')
+    almacenamiento = FileSystemStorage(location=settings.MEDIA_ROOT)
+    return almacenamiento.save(f'uploads/servicios/{uuid4().hex}{extension}', archivo)
+
+
+def _eliminar_imagen_servicio(ruta):
+    if not ruta.startswith('uploads/servicios/') or '..' in Path(ruta).parts:
+        return
+    try:
+        if Servicios.objects.filter(imagen=ruta).exists():
+            return
+    except DatabaseError:
+        logger.exception('No se pudo comprobar si la imagen del servicio sigue en uso: %s', ruta)
+        return
+    FileSystemStorage(location=settings.MEDIA_ROOT).delete(ruta)
 
 
 def _url_imagen_habitacion(ruta):
@@ -973,9 +1007,9 @@ def procesar_pago(request, reserva_id):
                 'Recibimos tu pago',
                 (
                     f'Hola {reserva.huespedes.nombres},\n\n'
-                    f'Registramos un pago de ${monto_a_pagar:,.2f} COP para tu reserva '
+                    f'Registramos un pago de ${formato_numero_colombiano(monto_a_pagar, 2)} COP para tu reserva '
                     f'CC-{reserva.id:04d}. El saldo pendiente es '
-                    f'${max(Decimal("0.00"), saldo_pendiente - monto_a_pagar):,.2f} COP.\n\n'
+                    f'${formato_numero_colombiano(max(Decimal("0.00"), saldo_pendiente - monto_a_pagar), 2)} COP.\n\n'
                     'El hotel verificará el pago antes de confirmarlo.'
                 ),
                 correo_destino,
@@ -1722,7 +1756,7 @@ def _enviar_confirmacion_reserva(reserva):
                 f'{alojamiento}\n'
                 f'Check-in: {reserva.fechaentrada:%d/%m/%Y}\n'
                 f'Check-out: {reserva.fechasalida:%d/%m/%Y}\n'
-                f'Total de la estadía: ${reserva.valortotal:,.2f}\n'
+                f'Total de la estadía: ${formato_numero_colombiano(reserva.valortotal, 2)}\n'
             ),
             correo_destino,
         )
@@ -2070,14 +2104,14 @@ def registrar_pago_reserva(request, reserva_id):
                 'Recibimos tu pago',
                 (
                     f'Hola {reserva.huespedes.nombres} {reserva.huespedes.apellidos},\n\n'
-                    f'Registramos un pago de ${monto:,.2f} COP para tu reserva CC-{reserva.id:04d}. '
+                    f'Registramos un pago de ${formato_numero_colombiano(monto, 2)} COP para tu reserva CC-{reserva.id:04d}. '
                     'El hotel verificará el pago antes de confirmarlo.'
                 ),
                 correo_destino,
             ))
         except Exception:
             logger.exception('El pago de la reserva CC-%s se registró, pero falló el correo.', reserva.id)
-    messages.success(request, f'Pago de ${monto:,.2f} registrado para la reserva CC-{reserva.id:04d}.')
+    messages.success(request, f'Pago de ${formato_numero_colombiano(monto, 2)} registrado para la reserva CC-{reserva.id:04d}.')
     if not correo_enviado:
         messages.warning(request, 'El pago se registró, pero no se pudo enviar el correo. Verifica el email del huésped y la configuración SMTP.')
     return redirect(destino)
@@ -2744,16 +2778,40 @@ def serviciosadmin(request):
         else:
             servicio = Servicios()
 
+        archivo = request.FILES.get('imagen') or request.FILES.get('txtImg')
+        ruta_anterior = servicio.imagen or ''
+        ruta_nueva = ''
+        if archivo:
+            try:
+                ruta_nueva = _guardar_imagen_servicio(archivo)
+            except ValueError as error:
+                messages.error(request, str(error))
+                return redirect('/adminservicios')
+
         servicio.nombre = nombre
         servicio.descripcion = descripcion
         servicio.precio = precio
         servicio.estado = estado
-        servicio.save()
+        if ruta_nueva:
+            servicio.imagen = ruta_nueva
+        try:
+            servicio.save()
+        except Exception:
+            if ruta_nueva:
+                _eliminar_imagen_servicio(ruta_nueva)
+            logger.exception('No se pudo guardar el servicio %s.', nombre)
+            messages.error(request, 'No se pudo guardar el servicio. Vuelve a intentarlo.')
+            return redirect('/adminservicios')
+        if ruta_nueva and ruta_anterior:
+            _eliminar_imagen_servicio(ruta_anterior)
         messages.success(request, 'Servicio guardado correctamente.')
         return redirect('/adminservicios')
 
+    servicios = list(Servicios.objects.order_by('nombre'))
+    for servicio in servicios:
+        servicio.url_imagen = _url_imagen_local(servicio.imagen)
     return render(request, 'admini/servicios.html', {
-        'servicios': Servicios.objects.order_by('nombre'),
+        'servicios': servicios,
         'nombre': request.session.get('usuario_nom', 'Administrador'),
         'rol': request.session.get('rol', 'Administrador'),
     })
@@ -3132,7 +3190,7 @@ def _crear_pdf_factura_reserva(reserva, hotel, huesped, alojamiento, pagos):
     )
 
     def moneda(valor):
-        return '$' + f'{valor:,.0f}'.replace(',', '.') + ' COP'
+        return '$' + formato_numero_colombiano(valor, 0) + ' COP'
 
     telefono = getattr(hotel, 'telefono', '') if hotel else ''
     correo = getattr(hotel, 'correo', '') if hotel else ''
@@ -3311,14 +3369,14 @@ def descargar_certificado_pagos(request):
             f'CC-{pago.reservas_id:04d}',
             pago.get_concepto_display(),
             pago.metodopago,
-            f'${pago.valor:,.2f} COP',
+            f'${formato_numero_colombiano(pago.valor, 2)} COP',
         )
         for pago in pagos
     ]
     total_neto = sum((pago.valor for pago in pagos), Decimal('0.00'))
     subtitulo = (
         f'Certificado de movimientos de {huesped.nombres} {huesped.apellidos}. '
-        f'Total neto registrado: ${total_neto:,.2f} COP.'
+        f'Total neto registrado: ${formato_numero_colombiano(total_neto, 2)} COP.'
     )
     contenido = _crear_pdf_movimientos(
         'Certificado de pagos',
@@ -3439,8 +3497,8 @@ def modificar_reserva(request, reserva_id):
                 f'Tu reserva CC-{reserva.id:04d} fue modificada.\n'
                 f'Fechas anteriores: {entrada_anterior:%d/%m/%Y} al {salida_anterior:%d/%m/%Y}\n'
                 f'Fechas nuevas: {nueva_entrada:%d/%m/%Y} al {nueva_salida:%d/%m/%Y}\n'
-                f'Nuevo total: ${nuevo_total:,.2f} COP\n'
-                f'Monto a reembolsar (si aplica): ${reembolso:,.2f} COP\n'
+                f'Nuevo total: ${formato_numero_colombiano(nuevo_total, 2)} COP\n'
+                f'Monto a reembolsar (si aplica): ${formato_numero_colombiano(reembolso, 2)} COP\n'
             ),
             correo_destino,
         )
@@ -3534,7 +3592,7 @@ def procesar_reembolso(request, reserva_id):
             'Tu reembolso fue procesado',
             (
                 f'Hola {reserva.huespedes.nombres} {reserva.huespedes.apellidos},\n\n'
-                f'Te confirmamos la devolución de ${monto:,.2f} COP por el método {metodo} '
+                f'Te confirmamos la devolución de ${formato_numero_colombiano(monto, 2)} COP por el método {metodo} '
                 f'para la reserva CC-{reserva.id:04d}.\n'
             ),
             correo_destino,
@@ -3554,6 +3612,17 @@ SECCION_CATEGORIA_GALERIA = {
     'portada': ('Portadas', 'imagen'),
     'servicio': ('Servicios', 'estrella'),
     'galeria': ('Galería', 'imagen'),
+}
+ICONOS_CATEGORIA_GALERIA = {
+    'imagen',
+    'estrella',
+    'cama',
+    'personas',
+    'restaurante',
+    'piscina',
+    'exterior',
+    'edificio',
+    'sol',
 }
 SECCIONES_GALERIA_PUBLICA = ('carrusel', 'galeria')
 EXTENSIONES_IMAGEN_PERMITIDAS = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
@@ -3599,6 +3668,38 @@ def galeriaadmin(request):
 
     if request.method == 'POST':
         accion = request.POST.get('accion', '')
+        if accion == 'crear_categoria':
+            nombre = request.POST.get('nombre', '').strip()
+            icono = request.POST.get('icono', 'imagen').strip()
+            if (
+                not nombre
+                or len(nombre) > 100
+                or icono not in ICONOS_CATEGORIA_GALERIA
+            ):
+                messages.error(request, 'Ingresa un nombre e icono válidos para la categoría.')
+                return redirect('/admingaleria')
+            nombres_existentes = CategoriaGaleria.objects.values_list(
+                'nombre',
+                flat=True,
+            )
+            if any(
+                existente.strip().casefold() == nombre.casefold()
+                for existente in nombres_existentes
+            ):
+                messages.error(request, 'Ya existe una categoría con ese nombre.')
+                return redirect('/admingaleria')
+            ultimo_orden = CategoriaGaleria.objects.order_by(
+                '-orden',
+            ).values_list('orden', flat=True).first()
+            CategoriaGaleria.objects.create(
+                nombre=nombre,
+                icono=icono,
+                orden=ultimo_orden + 1 if ultimo_orden is not None else 0,
+                estado=True,
+            )
+            messages.success(request, f'Categoría "{nombre}" creada correctamente.')
+            return redirect('/admingaleria')
+
         if accion == 'eliminar':
             imagen_id = request.POST.get('imagen_id', '')
             if not imagen_id.isdigit():
@@ -3628,6 +3729,19 @@ def galeriaadmin(request):
             messages.error(request, 'Revisa el título y la sección seleccionada.')
             return redirect('/admingaleria')
 
+        categoria_id = request.POST.get('categoria_id', '').strip()
+        categoria_seleccionada = None
+        if categoria_id:
+            if not categoria_id.isdigit():
+                messages.error(request, 'La categoría seleccionada no es válida.')
+                return redirect('/admingaleria')
+            categoria_seleccionada = CategoriaGaleria.objects.filter(
+                id=int(categoria_id),
+            ).first()
+            if categoria_seleccionada is None:
+                messages.error(request, 'La categoría seleccionada ya no existe.')
+                return redirect('/admingaleria')
+
         archivo = request.FILES.get('archivo')
         if accion == 'crear' and not archivo:
             messages.error(request, 'Selecciona una imagen para subir.')
@@ -3645,23 +3759,29 @@ def galeriaadmin(request):
         nombre_categoria, icono_categoria = SECCION_CATEGORIA_GALERIA[seccion]
         try:
             with transaction.atomic():
-                categoria = CategoriaGaleria.objects.filter(
-                    nombre__iexact=nombre_categoria,
-                ).order_by('id').first()
-                if categoria is None:
-                    categoria = CategoriaGaleria.objects.create(
-                        nombre=nombre_categoria,
-                        icono=icono_categoria,
-                        orden=len(SECCION_CATEGORIA_GALERIA),
-                        estado=True,
-                    )
-                elif (
-                    categoria.icono != icono_categoria
-                    or not categoria.estado
-                ):
-                    categoria.icono = icono_categoria
-                    categoria.estado = True
-                    categoria.save(update_fields=['icono', 'estado'])
+                if categoria_seleccionada:
+                    categoria = categoria_seleccionada
+                    if not categoria.estado:
+                        categoria.estado = True
+                        categoria.save(update_fields=['estado'])
+                else:
+                    categoria = CategoriaGaleria.objects.filter(
+                        nombre__iexact=nombre_categoria,
+                    ).order_by('id').first()
+                    if categoria is None:
+                        categoria = CategoriaGaleria.objects.create(
+                            nombre=nombre_categoria,
+                            icono=icono_categoria,
+                            orden=len(SECCION_CATEGORIA_GALERIA),
+                            estado=True,
+                        )
+                    elif (
+                        categoria.icono != icono_categoria
+                        or not categoria.estado
+                    ):
+                        categoria.icono = icono_categoria
+                        categoria.estado = True
+                        categoria.save(update_fields=['icono', 'estado'])
 
                 if imagen:
                     imagen.titulo = titulo
@@ -3705,6 +3825,7 @@ def galeriaadmin(request):
     return render(request, 'admini/galeria.html', {
         'imagenes': imagenes,
         'secciones_galeria': ImagenGaleria.SECCIONES,
+        'categorias_galeria': CategoriaGaleria.objects.order_by('orden', 'nombre'),
         'nombre': request.session.get('usuario_nom', 'Administrador'),
         'rol': request.session.get('rol', 'Administrador'),
     })
@@ -3871,20 +3992,41 @@ def configuracionadmin(request):
     })
 
 def registrarservicio(request):
-    if request.method == "POST":
+    if request.session.get('rol') != 'Administrador':
+        return redirect('/login')
+    if request.method == 'POST':
         servicio = Servicios()
-        servicio.nombre = request.POST.get('txtNombre')
-        servicio.descripcion = request.POST.get('txtDescripcion', '')
-        servicio.precio = request.POST.get('txtPrecio')
+        servicio.nombre = (request.POST.get('txtNombre') or '').strip()
+        servicio.descripcion = (request.POST.get('txtDescripcion') or '').strip()
+        try:
+            servicio.precio = Decimal(request.POST.get('txtPrecio', '').strip()).quantize(Decimal('0.01'))
+        except (InvalidOperation, AttributeError):
+            messages.error(request, 'Ingresa un precio válido para el servicio.')
+            return redirect('/adminservicios')
+        if not servicio.nombre or len(servicio.nombre) > 100 or len(servicio.descripcion) > 255:
+            messages.error(request, 'Verifica el nombre y la descripción del servicio.')
+            return redirect('/adminservicios')
+        if servicio.precio < 0 or servicio.precio > Decimal('99999999.99'):
+            messages.error(request, 'Ingresa un precio válido para el servicio.')
+            return redirect('/adminservicios')
         servicio.estado = True
-
-        if request.FILES.get('txtImg'):
-            imagen = request.FILES['txtImg']
-            fs = FileSystemStorage(location='caribeconfort/public/img/imagenes')
-            servicio.imagen = fs.save(imagen.name, imagen)
-
-        servicio.save()
-        return redirect('/galeria')
+        archivo = request.FILES.get('txtImg') or request.FILES.get('imagen')
+        ruta_nueva = ''
+        try:
+            if archivo:
+                ruta_nueva = _guardar_imagen_servicio(archivo)
+                servicio.imagen = ruta_nueva
+            servicio.save()
+        except ValueError as error:
+            messages.error(request, str(error))
+            return redirect('/adminservicios')
+        except Exception:
+            if ruta_nueva:
+                _eliminar_imagen_servicio(ruta_nueva)
+            logger.exception('No se pudo registrar el servicio %s.', servicio.nombre)
+            messages.error(request, 'Verifica los datos y el formato de imagen del servicio.')
+            return redirect('/adminservicios')
+        return redirect('/adminservicios')
 
     return render(request, 'admini/registrarservicio.html')
 
@@ -3892,8 +4034,8 @@ def buscar_disponibilidad(request):
     hoy = timezone.localdate()
     fecha_entrada = request.GET.get('entrada') or hoy.isoformat()
     fecha_salida  = request.GET.get('salida') or (hoy + timedelta(days=1)).isoformat()
-    adultos       = request.GET.get('adultos') or '2'
-    ninos         = request.GET.get('ninos')   or '0'
+    adultos       = int(request.GET.get('adultos') or 2)
+    ninos         = int(request.GET.get('ninos') or 0)
     habitaciones_n = request.GET.get('habitaciones') or '1'
     tipo          = request.GET.get('tipo', '')
     codigo        = request.GET.get('codigo', '').strip()
@@ -3908,7 +4050,10 @@ def buscar_disponibilidad(request):
         else:
             codigo_error = 'El código no existe, venció o ya fue utilizado.'
 
-    habitaciones_qs = Habitaciones.objects.filter(estado='Disponible', capacidad__gte=adultos)
+    habitaciones_qs = Habitaciones.objects.filter(
+        estado='Disponible',
+        capacidad__gte=adultos + ninos,
+    )
     try:
         entrada_filtro = date.fromisoformat(fecha_entrada)
         salida_filtro = date.fromisoformat(fecha_salida)
@@ -3927,7 +4072,9 @@ def buscar_disponibilidad(request):
     if tipo:
         habitaciones_qs = habitaciones_qs.filter(tipohabitacion__nombre=tipo)
 
-    tipos_qs = TipoHabitacion.objects.all()
+    tipos_qs = TipoHabitacion.objects.filter(
+        habitaciones__isnull=False,
+    ).distinct()
     if tipo:
         tipos_qs = tipos_qs.filter(nombre=tipo)
     tipos_qs = list(tipos_qs)
@@ -3969,8 +4116,8 @@ def buscar_disponibilidad(request):
         'tipos': tipos_qs,
         'fecha_entrada':  fecha_entrada,
         'fecha_salida':   fecha_salida,
-        'adultos':        adultos,
-        'ninos':          ninos,
+        'adultos':        str(adultos),
+        'ninos':          str(ninos),
         'habitaciones_n': habitaciones_n,
         'tipo':           tipo,
         'codigo':         codigo,
@@ -4347,7 +4494,7 @@ def administrador(request):
     for p in Pagos.objects.order_by('-fecha')[:3]:
 
         movs.append({
-            'texto': f'Cobro generado · ${p.valor:,.0f}'.replace(',', '.'),
+            'texto': f'Cobro generado · ${formato_numero_colombiano(p.valor, 0)}',
             'fecha': p.fecha,
             'hace': hace(p.fecha)
         })
@@ -4448,7 +4595,7 @@ def administrador(request):
     max_y = math.ceil(max_total / 5000000) * 5000000 if max_total > 0 else 5000000
 
     def format_monto(val):
-        return f"${val:,.0f}".replace(',', '.')
+        return f"${formato_numero_colombiano(val, 0)}"
 
     ticks_y = [
         format_monto(max_y),
@@ -4602,7 +4749,7 @@ def reenviar_confirmacion_reserva(request, reserva_id):
                 f'{alojamiento}\n'
                 f'Entrada: {reserva.fechaentrada:%d/%m/%Y}\n'
                 f'Salida: {reserva.fechasalida:%d/%m/%Y}\n'
-                f'Total: ${reserva.valortotal:,.2f} COP.'
+                f'Total: ${formato_numero_colombiano(reserva.valortotal, 2)} COP.'
             ),
             correo_destino,
         )
@@ -4663,7 +4810,7 @@ Fecha de entrada: {reserva.fechaentrada.strftime('%d/%m/%Y')}
 Fecha de salida: {reserva.fechasalida.strftime('%d/%m/%Y')}
 {detalle}
 Huéspedes: {reserva.cantidadacompañantes} persona(s)
-Total pagado: ${reserva.valortotal:,.0f} COP
+Total pagado: ${formato_numero_colombiano(reserva.valortotal, 0)} COP
 
 ═══════════════════════════════
 ¡Te esperamos en Caribe Confort!
@@ -4910,7 +5057,7 @@ def aprobar_servicio_recepcion(request, servicio_reserva_id):
                     (
                         f'Hola {huesped.nombres},\n\n'
                         f'Usted solicitó {servicio_reserva.servicios.nombre}, por un valor de '
-                        f'${servicio_reserva.valor:,.2f} COP. Ha sido aprobado y cargado a su cuenta.\n'
+                        f'${formato_numero_colombiano(servicio_reserva.valor, 2)} COP. Ha sido aprobado y cargado a su cuenta.\n'
                         f'Reserva: CC-{servicio_reserva.reservas_id:04d}.\n'
                         f'Método de pago registrado: {metodo}.'
                     ),
@@ -5162,7 +5309,7 @@ def registrar_pago_servicio_recepcion(request):
             if reserva.estado == 'Pendiente':
                 reserva.estado = 'Pagada - Por validar'
                 reserva.save(update_fields=['estado'])
-            messages.success(request, f'Pago de ${monto:,.2f} registrado para la reserva CC-{reserva.id:04d}.')
+            messages.success(request, f'Pago de ${formato_numero_colombiano(monto, 2)} registrado para la reserva CC-{reserva.id:04d}.')
         elif accion == 'servicio':
             if reserva.estado != 'En curso':
                 messages.error(request, 'Solo se pueden agregar servicios a una estadía en curso.')

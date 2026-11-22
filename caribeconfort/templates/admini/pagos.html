@@ -1,4 +1,4 @@
-{% load static %}
+{% load static l10n precio_format %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -29,7 +29,7 @@
             <div class="adm-table-wrap"><table class="adm-table">
                 <thead><tr><th>Fecha</th><th>Huésped</th><th>Reserva</th><th>Valor</th><th>Método</th><th>Acciones</th></tr></thead>
                 <tbody>{% for pago in pagos_reservas %}
-                    <tr><td>{{ pago.fecha|date:"d/m/Y H:i" }}</td><td><strong>{{ pago.reservas.huespedes.nombres }} {{ pago.reservas.huespedes.apellidos }}</strong></td><td>CC-{{ pago.reservas_id|stringformat:"04d" }}</td><td>${{ pago.valor|floatformat:2 }}</td><td><span class="adm-pill {% if pago.metodopago == 'Pendiente' %}gray{% else %}green{% endif %}">{{ pago.metodopago }}</span></td><td>{% if pago.monto_reembolsable > 0 %}<button type="button" class="adm-button secondary btn-procesar-reembolso" data-id="{{ pago.reservas_id }}" data-pago-id="{{ pago.id }}" data-nombre="{{ pago.reservas.huespedes.nombres }} {{ pago.reservas.huespedes.apellidos }}" data-monto="{{ pago.monto_reembolsable|floatformat:'2' }}">Reembolsar</button>{% else %}—{% endif %}</td></tr>
+                    <tr><td>{{ pago.fecha|date:"d/m/Y H:i" }}</td><td><strong>{{ pago.reservas.huespedes.nombres }} {{ pago.reservas.huespedes.apellidos }}</strong></td><td>CC-{{ pago.reservas_id|stringformat:"04d" }}</td><td>${{ pago.valor|precio:2 }}</td><td><span class="adm-pill {% if pago.metodopago == 'Pendiente' %}gray{% else %}green{% endif %}">{{ pago.metodopago }}</span></td><td>{% if pago.monto_reembolsable > 0 %}<button type="button" class="adm-button secondary btn-procesar-reembolso" data-id="{{ pago.reservas_id }}" data-pago-id="{{ pago.id }}" data-nombre="{{ pago.reservas.huespedes.nombres }} {{ pago.reservas.huespedes.apellidos }}" data-monto="{{ pago.monto_reembolsable|unlocalize }}">Reembolsar</button>{% else %}—{% endif %}</td></tr>
                 {% empty %}<tr><td class="adm-empty" colspan="6">Aún no hay pagos de reservas.</td></tr>{% endfor %}</tbody>
             </table></div>
         </section>
@@ -37,7 +37,7 @@
             <div class="adm-table-wrap"><table class="adm-table">
                 <thead><tr><th>Fecha</th><th>Huésped</th><th>Reserva</th><th>Valor</th><th>Método</th><th>Acciones</th></tr></thead>
                 <tbody>{% for pago in pagos_servicios %}
-                    <tr><td>{{ pago.fecha|date:"d/m/Y H:i" }}</td><td><strong>{{ pago.reservas.huespedes.nombres }} {{ pago.reservas.huespedes.apellidos }}</strong></td><td>CC-{{ pago.reservas_id|stringformat:"04d" }}</td><td>${{ pago.valor|floatformat:2 }}</td><td><span class="adm-pill {% if pago.metodopago == 'Pendiente' %}gray{% else %}green{% endif %}">{{ pago.metodopago }}</span></td><td>{% if pago.monto_reembolsable > 0 %}<button type="button" class="adm-button secondary btn-procesar-reembolso" data-id="{{ pago.reservas_id }}" data-pago-id="{{ pago.id }}" data-nombre="{{ pago.reservas.huespedes.nombres }} {{ pago.reservas.huespedes.apellidos }}" data-monto="{{ pago.monto_reembolsable|floatformat:'2' }}">Reembolsar</button>{% else %}—{% endif %}</td></tr>
+                    <tr><td>{{ pago.fecha|date:"d/m/Y H:i" }}</td><td><strong>{{ pago.reservas.huespedes.nombres }} {{ pago.reservas.huespedes.apellidos }}</strong></td><td>CC-{{ pago.reservas_id|stringformat:"04d" }}</td><td>${{ pago.valor|precio:2 }}</td><td><span class="adm-pill {% if pago.metodopago == 'Pendiente' %}gray{% else %}green{% endif %}">{{ pago.metodopago }}</span></td><td>{% if pago.monto_reembolsable > 0 %}<button type="button" class="adm-button secondary btn-procesar-reembolso" data-id="{{ pago.reservas_id }}" data-pago-id="{{ pago.id }}" data-nombre="{{ pago.reservas.huespedes.nombres }} {{ pago.reservas.huespedes.apellidos }}" data-monto="{{ pago.monto_reembolsable|unlocalize }}">Reembolsar</button>{% else %}—{% endif %}</td></tr>
                 {% empty %}<tr><td class="adm-empty" colspan="6">Aún no hay pagos de servicios.</td></tr>{% endfor %}</tbody>
             </table></div>
         </section>
@@ -45,7 +45,7 @@
             <div class="adm-table-wrap"><table class="adm-table">
                 <thead><tr><th>Fecha</th><th>Huésped</th><th>Reserva</th><th>Valor</th><th>Método</th></tr></thead>
                 <tbody>{% for pago in reembolsos %}
-                    <tr><td>{{ pago.fecha|date:"d/m/Y H:i" }}</td><td><strong>{{ pago.reservas.huespedes.nombres }} {{ pago.reservas.huespedes.apellidos }}</strong></td><td>CC-{{ pago.reservas_id|stringformat:"04d" }}</td><td class="refund-value">-$ {{ pago.valor|stringformat:"s"|cut:"-" }}</td><td>{{ pago.metodopago }}</td></tr>
+                    <tr><td>{{ pago.fecha|date:"d/m/Y H:i" }}</td><td><strong>{{ pago.reservas.huespedes.nombres }} {{ pago.reservas.huespedes.apellidos }}</strong></td><td>CC-{{ pago.reservas_id|stringformat:"04d" }}</td><td class="refund-value">-$ {{ pago.valor|absoluto|precio:2 }}</td><td>{{ pago.metodopago }}</td></tr>
                 {% empty %}<tr><td class="adm-empty" colspan="5">Aún no hay reembolsos registrados.</td></tr>{% endfor %}</tbody>
             </table></div>
         </section>

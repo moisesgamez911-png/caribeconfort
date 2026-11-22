@@ -1,4 +1,4 @@
-{% load static i18n %}
+{% load static i18n precio_format %}
 {% get_current_language as CURRENT_LANGUAGE %}
 <!DOCTYPE html>
 <html lang="{{ CURRENT_LANGUAGE }}">
@@ -94,7 +94,7 @@
                     <div class="plan-card-footer">
                         <div class="plan-price">
                             <span>{% trans "Desde" %}</span>
-                            <strong>$ {{ p.precio_fmt }} <small>COP</small></strong>
+                            <strong>$ {{ p.precio|precio:0 }} <small>COP</small></strong>
                         </div>
                         {% if p.disponibles > 0 %}
                             {% if request.session.usuario_id %}

@@ -1,4 +1,4 @@
-{% load static i18n l10n %}
+{% load static i18n l10n precio_format %}
 {% get_current_language as CURRENT_LANGUAGE %}
 <!DOCTYPE html>
 <html lang="{{ CURRENT_LANGUAGE }}">
@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% trans "Servicios" %} | Caribe Confort</title>
-    <link rel="stylesheet" href="{% static 'css/servicios.css' %}?v=22">
+    <link rel="stylesheet" href="{% static 'css/servicios.css' %}?v=23">
     <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=5">
     <link rel="stylesheet" href="{% static 'css/idiomas.css' %}?v=2">
     <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
@@ -86,7 +86,7 @@
                 <div class="featured-footer">
                     <div class="service-price">
                         <span>{% trans "Desde" %}</span>
-                        <strong>${{ servicio_destacado.precio|floatformat:"0g" }}</strong>
+                        <strong>${{ servicio_destacado.precio|precio:0 }}</strong>
                     </div>
                     {% if request.session.usuario_id %}
                         <button type="button" class="btn-solicitar" data-servicio-id="{{ servicio_destacado.id }}" data-servicio="{{ servicio_destacado.nombre }}" data-precio="{{ servicio_destacado.precio|unlocalize }}">
@@ -134,7 +134,7 @@
                         <div class="service-card-footer">
                             <div class="service-price">
                                 <span>{% trans "Desde" %}</span>
-                                <strong>${{ s.precio|floatformat:"0g" }}</strong>
+                                <strong>${{ s.precio|precio:0 }}</strong>
                             </div>
                             {% if request.session.usuario_id %}
                                 <button type="button" class="btn-solicitar" data-servicio-id="{{ s.id }}" data-servicio="{{ s.nombre }}" data-precio="{{ s.precio|unlocalize }}">

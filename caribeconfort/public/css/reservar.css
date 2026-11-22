@@ -3132,6 +3132,46 @@ body.gallery-open {
     object-fit: contain;
 }
 
+.reservas-page .room-card {
+    position: relative;
+    padding-top: 58px;
+}
+
+.reservas-page .room-availability {
+    position: static;
+    inset: auto;
+    margin: 0;
+}
+
+.reservas-page .room-availability .tag {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 10;
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 7px 12px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    box-shadow: 0 3px 10px rgba(23, 40, 41, .12);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.reservas-page .room-availability .tag-disponible {
+    border-color: rgba(31, 112, 76, .2);
+    background-color: #E5F4EB;
+    color: #1F704C;
+}
+
+.reservas-page .room-availability .tag-agotado {
+    border-color: rgba(141, 11, 20, .16) !important;
+    background-color: #FCEBEC !important;
+    color: #A7352D !important;
+}
+
 .reservas-page .room-gallery-navigation {
     display: none;
     align-items: center;

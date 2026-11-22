@@ -1,4 +1,4 @@
-{% load static i18n %}
+{% load static i18n l10n precio_format %}
 {% get_current_language as CURRENT_LANGUAGE %}
 <!DOCTYPE html>
 <html lang="{{ CURRENT_LANGUAGE }}">
@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/reservar.css' %}?v=105">
+    <link rel="stylesheet" href="{% static 'css/reservar.css' %}?v=106">
     <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=5">
     <link rel="stylesheet" href="{% static 'css/idiomas.css' %}?v=2">
 </head>
@@ -111,21 +111,19 @@
                                 <div class="room-availability">
                                     {% if t.cant_disponibles <= 0 %}
                                         <span class="tag tag-agotado">{% trans "Agotado" %}</span>
-                                    {% elif t.cant_disponibles <= 3 %}
-                                        <span class="tag tag-pocos"><span class="tag-dot"></span> {% trans "Últimas" %} {{ t.cant_disponibles }}</span>
                                     {% else %}
-                                        <span class="tag">{{ t.cant_disponibles }} {% trans "disponibles" %}</span>
+                                        <span class="tag tag-disponible">{{ t.cant_disponibles }} {% trans "disponibles" %}</span>
                                     {% endif %}
                                 </div>
                             </div>
 
                             <div class="room-top-actions">
                                 <div class="price">
-                                    <strong>${{ t.tarifa|floatformat:"0g" }}</strong>
+                                    <strong>${{ t.tarifa|precio:0 }}</strong>
                                     <em>{% trans "por noche" %}</em>
                                 </div>
                                 {% if t.cant_disponibles > 0 %}
-                                    <button class="reserve btn-anadir" type="button" data-nombre="{{ t.nombre }}" data-precio="{{ t.tarifa }}" data-ids="{{ t.ids_disponibles|join:',' }}">{% trans "Añadir" %}</button>
+                                    <button class="reserve btn-anadir" type="button" data-nombre="{{ t.nombre }}" data-precio="{{ t.tarifa|unlocalize }}" data-ids="{{ t.ids_disponibles|join:',' }}">{% trans "Añadir" %}</button>
                                 {% else %}
                                     <button class="reserve" type="button" disabled>{% trans "Agotado" %}</button>
                                 {% endif %}
@@ -188,8 +186,8 @@
                                 {% if t.precio_desayuno > 0 %}
                                     <div class="breakfast-option">
                                         <label>
-                                            <input type="checkbox" class="breakfast-check" data-precio="{{ t.precio_desayuno }}">
-                                            <span>{% trans "Agregar desayuno" %} (+ ${{ t.precio_desayuno|floatformat:"0g" }})</span>
+                                            <input type="checkbox" class="breakfast-check" data-precio="{{ t.precio_desayuno|unlocalize }}">
+                                            <span>{% trans "Agregar desayuno" %} (+ ${{ t.precio_desayuno|precio:0 }})</span>
                                         </label>
                                     </div>
                                 {% endif %}

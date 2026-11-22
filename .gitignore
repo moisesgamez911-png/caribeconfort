@@ -155,6 +155,7 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+backup_caribeconfort.json
 
 # Pyre type checker
 .pyre/

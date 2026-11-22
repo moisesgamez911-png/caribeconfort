@@ -1,4 +1,4 @@
-{% load static %}
+{% load static l10n precio_format %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -81,9 +81,9 @@
                         <tr>
                             <td><strong>{{ reserva.huespedes.nombres }} {{ reserva.huespedes.apellidos }}</strong><small>{{ reserva.huespedes.identificacion }}</small></td>
                             <td>{% if reserva.habitaciones %}{{ reserva.habitaciones.numero }}{% else %}{{ reserva.planes.nombre|default:"—" }}{% endif %}</td>
-                            <td>${{ reserva.saldo_pendiente|floatformat:2 }}</td>
+                            <td>${{ reserva.saldo_pendiente|precio:2 }}</td>
                             <td><span class="status-pill in-progress">{{ reserva.estado }}</span></td>
-                            <td><button class="table-action" type="button" data-open-checkout data-id="{{ reserva.id }}" data-nombre="{{ reserva.huespedes.nombres }} {{ reserva.huespedes.apellidos }}" data-saldo="{{ reserva.saldo_pendiente }}">Check-out</button></td>
+                            <td><button class="table-action" type="button" data-open-checkout data-id="{{ reserva.id }}" data-nombre="{{ reserva.huespedes.nombres }} {{ reserva.huespedes.apellidos }}" data-saldo="{{ reserva.saldo_pendiente|unlocalize }}">Check-out</button></td>
                         </tr>
                         {% empty %}<tr><td class="table-empty" colspan="5">No hay salidas en curso para hoy.</td></tr>{% endfor %}
                     </tbody>
@@ -116,7 +116,7 @@
                                 <button type="button" class="table-action btn-procesar-reembolso"
                                         data-id="{{ reserva.id }}"
                                         data-nombre="{{ reserva.huespedes.nombres }} {{ reserva.huespedes.apellidos }}"
-                                        data-monto="{{ reserva.saldo_favor|floatformat:'2' }}">Procesar reembolso</button>
+                                        data-monto="{{ reserva.saldo_favor|unlocalize }}">Procesar reembolso</button>
                                 {% endif %}
                             </td>
                         </tr>
@@ -144,7 +144,7 @@
                                 {% if item.metodo_pago_preferido == 'Tarjeta' %}<small class="payment-reference">Tarjeta · {{ item.tarjeta_titular }} · •••• {{ item.tarjeta_ultimos4 }}</small>{% elif item.metodo_pago_preferido == 'Nequi' %}<small class="payment-reference">Nequi · {{ item.nequi_titular }} · {{ item.nequi_celular }}</small>{% endif %}
                             </td>
                             <td>{{ item.cantidad }}</td>
-                            <td>${{ item.valor|floatformat:2 }}</td>
+                            <td>${{ item.valor|precio:2 }}</td>
                             <td>
                                 <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar">
                                     {% csrf_token %}
@@ -198,7 +198,7 @@
         {% csrf_token %}
         <div class="dialog-grid">
             <label class="dialog-span-2">Huésped<select name="huesped_id" required><option value="">Selecciona un huésped</option>{% for huesped in huespedes %}<option value="{{ huesped.id }}">{{ huesped.apellidos }}, {{ huesped.nombres }} · {{ huesped.identificacion }}</option>{% endfor %}</select></label>
-            <label class="dialog-span-2">Habitación<select name="habitacion_id" required><option value="">Selecciona una habitación</option>{% for habitacion in habitaciones_disponibles %}<option value="{{ habitacion.id }}" data-capacidad="{{ habitacion.capacidad }}" data-precio="{{ habitacion.precio }}">Hab. {{ habitacion.numero }} · {{ habitacion.tipohabitacion.nombre|default:"Habitación" }} · capacidad {{ habitacion.capacidad }} · ${{ habitacion.precio|floatformat:0 }}</option>{% endfor %}</select></label>
+            <label class="dialog-span-2">Habitación<select name="habitacion_id" required><option value="">Selecciona una habitación</option>{% for habitacion in habitaciones_disponibles %}<option value="{{ habitacion.id }}" data-capacidad="{{ habitacion.capacidad }}" data-precio="{{ habitacion.precio|unlocalize }}">Hab. {{ habitacion.numero }} · {{ habitacion.tipohabitacion.nombre|default:"Habitación" }} · capacidad {{ habitacion.capacidad }} · ${{ habitacion.precio|precio:0 }}</option>{% endfor %}</select></label>
             <label>Cantidad de huéspedes<input name="cantidad_huespedes" type="number" min="1" value="1" required></label>
             <label>Entrada<input name="fechaentrada" type="date" min="{{ hoy|date:'Y-m-d' }}" value="{{ hoy|date:'Y-m-d' }}" required></label>
             <label>Salida<input name="fechasalida" type="date" min="{{ manana|date:'Y-m-d' }}" value="{{ manana|date:'Y-m-d' }}" required></label>
@@ -226,7 +226,7 @@
             </div>
             <div class="dialog-span-2" data-servicio-fields hidden>
                 <div class="dialog-grid">
-                    <label>Servicio<select name="servicio_id"><option value="">Selecciona un servicio</option>{% for servicio in servicios_disponibles %}<option value="{{ servicio.id }}">{{ servicio.nombre }} · ${{ servicio.precio|floatformat:2 }}</option>{% endfor %}</select></label>
+                    <label>Servicio<select name="servicio_id"><option value="">Selecciona un servicio</option>{% for servicio in servicios_disponibles %}<option value="{{ servicio.id }}">{{ servicio.nombre }} · ${{ servicio.precio|precio:2 }}</option>{% endfor %}</select></label>
                     <label>Cantidad<input name="cantidad" type="number" min="1" max="50" value="1"></label>
                 </div>
             </div>

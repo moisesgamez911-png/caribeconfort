@@ -54,12 +54,53 @@
                         {% endfor %}
                     </select>
                 </div>
+                <div class="adm-field">
+                    <label for="imagenCategoria">Categoría</label>
+                    <select id="imagenCategoria" name="categoria_id">
+                        <option value="">Asignar automáticamente por sección</option>
+                        {% for categoria in categorias_galeria %}
+                        <option value="{{ categoria.id }}">{{ categoria.nombre }}{% if not categoria.estado %} (inactiva){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <div class="adm-field adm-span-2">
                     <label for="imagenArchivo">Archivo de imagen</label>
                     <input id="imagenArchivo" name="archivo" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" required>
                 </div>
             </div>
             <div class="adm-form-actions"><button class="adm-button" type="submit">Subir imagen</button></div>
+        </form>
+    </section>
+
+    <section class="adm-card adm-form-card">
+        <div class="adm-card-heading">
+            <div><h2>Crear categoría</h2><p>Las categorías creadas estarán disponibles al subir o editar imágenes.</p></div>
+            <span class="adm-stat-icon teal"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>
+        </div>
+        <form method="post" class="adm-form">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="crear_categoria">
+            <div class="adm-form-grid">
+                <div class="adm-field">
+                    <label for="categoriaNombre">Nombre de la categoría</label>
+                    <input id="categoriaNombre" name="nombre" maxlength="100" required>
+                </div>
+                <div class="adm-field">
+                    <label for="categoriaIcono">Icono</label>
+                    <select id="categoriaIcono" name="icono" required>
+                        <option value="imagen">Imagen</option>
+                        <option value="estrella">Estrella</option>
+                        <option value="cama">Habitación</option>
+                        <option value="personas">Personas</option>
+                        <option value="restaurante">Restaurante</option>
+                        <option value="piscina">Piscina</option>
+                        <option value="exterior">Exterior</option>
+                        <option value="edificio">Edificio</option>
+                        <option value="sol">Sol</option>
+                    </select>
+                </div>
+            </div>
+            <div class="adm-form-actions"><button class="adm-button" type="submit">Crear categoría</button></div>
         </form>
     </section>
 
@@ -115,6 +156,15 @@
                         <select id="imagenSeccion{{ imagen.id }}" name="seccion" required>
                             {% for valor, etiqueta in secciones_galeria %}
                             <option value="{{ valor }}" {% if imagen.seccion == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="adm-field">
+                        <label for="imagenCategoria{{ imagen.id }}">Categoría</label>
+                        <select id="imagenCategoria{{ imagen.id }}" name="categoria_id">
+                            <option value="">Asignar automáticamente por sección</option>
+                            {% for categoria in categorias_galeria %}
+                            <option value="{{ categoria.id }}" {% if imagen.categoria_id == categoria.id %}selected{% endif %}>{{ categoria.nombre }}{% if not categoria.estado %} (inactiva){% endif %}</option>
                             {% endfor %}
                         </select>
                     </div>

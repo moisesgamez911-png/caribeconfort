@@ -1,5 +1,5 @@
 {% load static %}
-{% load static l10n i18n %}
+{% load static l10n i18n precio_format %}
 {% get_current_language as CURRENT_LANGUAGE %}
 <!DOCTYPE html>
 <html lang="es">
@@ -127,7 +127,7 @@
                 <span class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.2A2.6 2.2 0 0 0 12 8c-1.4 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2a2.6 2.2 0 0 1-2.5-1.2M12 6v2M12 16v2"/></svg></span>
                 <span class="kpi-label">Ingresos del día</span>
             </div>
-            <div class="kpi-valor">${{ pagosdiarios|floatformat:"0g" }}</div>
+            <div class="kpi-valor">${{ pagosdiarios|precio:0 }}</div>
             {% if hoy_vs_ayer3 < 0 %}
                 <div class="kpi-foot rojo">↘ {{ hoy_vs_ayer3|floatformat:"0g"|cut:"-" }}% vs. ayer</div>
             {% else %}
@@ -140,7 +140,7 @@
                 <span class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M7 14h2m3 0h2m3 0h1"/></svg></span>
                 <span class="kpi-label">Ingresos de la semana</span>
             </div>
-            <div class="kpi-valor">${{ ingresos_semanales|floatformat:"0g" }}</div>
+            <div class="kpi-valor">${{ ingresos_semanales|precio:0 }}</div>
             <div class="kpi-foot">Semana actual, pagos aprobados</div>
         </div>
 
@@ -189,7 +189,7 @@
                                 data-entrada="{{ r.fechaentrada|date:'d/m/Y' }}"
                                 data-salida="{{ r.fechasalida|date:'d/m/Y' }}"
                                 data-habitacion="{% if r.habitaciones %}Hab. {{ r.habitaciones.numero }} - {{ r.habitaciones.tipohabitacion.nombre }}{% else %}Plan: {{ r.planes.nombre }}{% endif %}"
-                                data-total="${{ r.valortotal|floatformat:'0g' }}"
+                                data-total="${{ r.valortotal|precio:0 }}"
                                 data-estado="{{ r.estado }}"
                                 data-clase-estado="{% if r.estado == 'Confirmada' or r.estado == 'En curso' %}badge-success{% elif r.estado == 'Pagada - Por validar' %}badge-warning{% elif r.estado == 'Cancelada' or r.estado == 'Rechazada' %}badge-danger{% else %}badge-pending{% endif %}"
                                 style="background:transparent; border:none; color:var(--color-texto-suave); cursor:pointer;">
@@ -269,7 +269,7 @@
                                     {% if item.metodo_pago_preferido == 'Tarjeta' %}<small class="dash-payment-reference">Tarjeta · {{ item.tarjeta_titular }} · •••• {{ item.tarjeta_ultimos4 }}</small>{% elif item.metodo_pago_preferido == 'Nequi' %}<small class="dash-payment-reference">Nequi · {{ item.nequi_titular }} · {{ item.nequi_celular }}</small>{% endif %}
                                 </td>
                                 <td>{{ item.cantidad }}</td>
-                                <td>${{ item.valor|floatformat:2 }}</td>
+                                <td>${{ item.valor|precio:2 }}</td>
                                 <td>
                                     <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar" class="dash-service-action">
                                         {% csrf_token %}
@@ -442,21 +442,21 @@
                             <span class="caja-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
                             <span class="caja-label">Reservas</span>
                         </div>
-                        <strong class="caja-valor">${{ caja_reservas|floatformat:"0g" }}</strong>
+                        <strong class="caja-valor">${{ caja_reservas|precio:0 }}</strong>
                     </div>
                     <div class="caja-item">
                         <div class="caja-info">
                             <span class="caja-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>
                             <span class="caja-label">Servicios extras</span>
                         </div>
-                        <strong class="caja-valor">${{ caja_servicios|floatformat:"0g" }}</strong>
+                        <strong class="caja-valor">${{ caja_servicios|precio:0 }}</strong>
                     </div>
                     <div class="caja-item total">
                         <div class="caja-info">
                             <span class="caja-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
                             <span class="caja-label">Total recaudado</span>
                         </div>
-                        <strong class="caja-valor grande">${{ caja_total|floatformat:"0g" }}</strong>
+                        <strong class="caja-valor grande">${{ caja_total|precio:0 }}</strong>
                     </div>
                 </div>
             </div>

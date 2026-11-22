@@ -15,7 +15,6 @@ try:
 except ImportError:
     dj_database_url = None
 from pathlib import Path
-from django.db.backends.mysql.base import DatabaseWrapper
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.utils import get_random_secret_key
 
@@ -102,30 +101,31 @@ WSGI_APPLICATION = 'caribeconfort.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
-DatabaseWrapper.get_database_version = lambda self: (8, 4, 0)
 
-# Database
-# https://docs.djangoproject.com/en/6.1/ref/settings/#databases
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
-if DEBUG:
+if DATABASE_URL and dj_database_url:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True,
+        )
+    }
+else:
+    from django.db.backends.mysql.base import DatabaseWrapper
+    DatabaseWrapper.get_database_version = lambda self: (8, 4, 0)
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
             'NAME': 'bdcaribeconfort',
             'USER': 'root',
-            'PASSWORD': 'Sena101', 
+            'PASSWORD': 'Sena101',
             'HOST': 'localhost',
             'PORT': '3306',
-            'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            }
         }
     }
-else:
-    DATABASES = {
-    'default': dj_database_url.config(default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",conn_max_age=600, ssl_require=not DEBUG)
-}
-
 CSRF_TRUSTED_ORIGINS = [
     'https://disloyal-festivity-doorframe.ngrok-free.dev',
 ]

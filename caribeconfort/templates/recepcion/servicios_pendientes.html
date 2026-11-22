@@ -1,4 +1,4 @@
-{% load static %}
+{% load static precio_format %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -42,7 +42,7 @@
                         <td>CC-{{ item.reservas_id|stringformat:"04d" }} · Hab. {{ item.reservas.habitaciones.numero|default:"—" }}</td>
                         <td>{{ item.servicios.nombre }}</td>
                         <td>{{ item.cantidad }}</td>
-                        <td>${{ item.valor|floatformat:2 }}</td>
+                        <td>${{ item.valor|precio:2 }}</td>
                         <td>
                             <form method="post" action="/recepcion/servicio/{{ item.id }}/aprobar">
                                 {% csrf_token %}

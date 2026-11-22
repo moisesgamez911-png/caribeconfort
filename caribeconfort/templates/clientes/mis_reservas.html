@@ -1,4 +1,4 @@
-{% load static %}
+{% load static l10n precio_format %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -103,14 +103,14 @@
 
                     <aside class="reservation-payment">
                         <span class="payment-label">Total pagado</span>
-                        <strong class="payment-total">$ {{ r.abono_pagado|floatformat:"0g" }} <small>COP</small></strong>
+                        <strong class="payment-total">$ {{ r.abono_pagado|precio:0 }} <small>COP</small></strong>
                         <progress class="payment-progress" value="{{ r.porcentaje_pagado }}" max="100" aria-label="Porcentaje pagado"></progress>
                         {% if r.estado == 'Pagada - Por validar' %}
                             <span class="payment-note payment-validating">Pago registrado · En validación</span>
                         {% elif r.esta_pagada %}
                             <span class="payment-note payment-complete"><i class="bi bi-check-circle" aria-hidden="true"></i> Pago registrado</span>
                         {% elif r.abono_pagado > 0 %}
-                            <span class="payment-note">Saldo pendiente: $ {{ r.saldo_pendiente|floatformat:"0g" }} COP</span>
+                            <span class="payment-note">Saldo pendiente: $ {{ r.saldo_pendiente|precio:0 }} COP</span>
                         {% else %}
                             <span class="payment-note">Sin pagos registrados</span>
                         {% endif %}
@@ -135,11 +135,11 @@
                                 data-entrada="{{ r.fechaentrada|date:'d/m/Y' }}"
                                 data-salida="{{ r.fechasalida|date:'d/m/Y' }}"
                                 data-acompanantes="{{ r.cantidadacompañantes }}"
-                                data-total="$ {{ r.valortotal|floatformat:'0g' }}"
-                                data-pagado="$ {{ r.abono_pagado|floatformat:'0g' }} COP"
-                                data-pagado-numerico="{{ r.abono_pagado }}"
-                                data-saldo="$ {{ r.saldo_pendiente|floatformat:'0g' }} COP"
-                                data-saldo-numerico="{{ r.saldo_pendiente }}"
+                                data-total="$ {{ r.valortotal|precio:0 }}"
+                                data-pagado="$ {{ r.abono_pagado|precio:0 }} COP"
+                                data-pagado-numerico="{{ r.abono_pagado|unlocalize }}"
+                                data-saldo="$ {{ r.saldo_pendiente|precio:0 }} COP"
+                                data-saldo-numerico="{{ r.saldo_pendiente|unlocalize }}"
                                 data-pago-url="/pagar-reserva/{{ r.id }}/"
                                 data-hab-numero="{% if r.habitaciones %}{{ r.habitaciones.numero }}{% endif %}"
                                 data-hab-tipo="{% if r.habitaciones %}{{ r.habitaciones.tipohabitacion.nombre }}{% else %}{{ r.planes.nombre|default:'Plan reservado' }}{% endif %}"
@@ -212,7 +212,7 @@
                             {% if r.habitaciones %}Hab. {{ r.habitaciones.numero }} · {{ r.habitaciones.tipohabitacion.nombre }}{% else %}{{ r.planes.nombre|default:"Plan reservado" }}{% endif %}
                         </p>
                         <p class="history-dates">{{ r.fechaentrada|date:"d M Y" }} – {{ r.fechasalida|date:"d M Y" }}</p>
-                        <strong class="history-total">$ {{ r.valortotal|floatformat:"0g" }} COP</strong>
+                        <strong class="history-total">$ {{ r.valortotal|precio:0 }} COP</strong>
                     </div>
                 </article>
                 {% endfor %}
@@ -252,7 +252,7 @@
                         <small>{{ s.fecha|date:"d M Y" }}</small>
                     </div>
                     <span class="service-status {% if s.estado == 'Aprobado' %}service-approved{% elif s.estado == 'Rechazado' %}service-rejected{% else %}service-pending{% endif %}">{{ s.estado }}</span>
-                    <strong class="service-total">$ {{ s.valor|floatformat:"0g" }} COP</strong>
+                    <strong class="service-total">$ {{ s.valor|precio:0 }} COP</strong>
                 </article>
                 {% endfor %}
             </div>
