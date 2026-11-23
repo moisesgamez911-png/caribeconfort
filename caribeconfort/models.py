@@ -153,6 +153,7 @@ class Servicios(models.Model):
     categoria   = models.CharField(max_length=50, choices=CATEGORIAS, default='Otros')
     estado      = models.BooleanField(default=1)
     imagen      = models.CharField(max_length=255, null=True, blank=True)
+    destacado   = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'servicios'

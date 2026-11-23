@@ -1,4 +1,4 @@
-{% load static i18n l10n precio_format %}
+{% load static i18n l10n precio_format reparar_texto %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -31,11 +31,14 @@
                 <tbody>
                     {% for tipo in tipos_habitacion %}
                     <tr>
-                        <td>{% if tipo.url_imagen %}<img src="{{ tipo.url_imagen }}" alt="{{ tipo.nombre }}" width="72" height="48" style="object-fit:cover;border-radius:8px">{% else %}—{% endif %}</td>
-                        <td><strong>{{ tipo.nombre }}</strong></td>
+                        <td>{% if tipo.url_imagen %}<img src="{{ tipo.url_imagen }}" alt="{{ tipo.nombre|reparar_texto }}" width="72" height="48" style="object-fit:cover;border-radius:8px">{% else %}—{% endif %}</td>
+                        <td><strong>{{ tipo.nombre|reparar_texto }}</strong></td>
                         <td>{{ tipo.capacidad }} {% trans "huéspedes" %}</td>
                         <td>${{ tipo.tarifa|precio:2 }}</td>
-                        <td><button class="adm-button secondary" type="button" data-open-tipo="editarTipo{{ tipo.id }}">{% trans "Editar" %}</button></td>
+                        <td><div class="adm-row-actions"><button class="adm-button secondary" type="button" data-open-tipo="editarTipo{{ tipo.id }}">{% trans "Editar" %}</button><form method="post" class="type-delete-form" data-type-name="{{ tipo.nombre|reparar_texto }}">
+                            {% csrf_token %}<input type="hidden" name="accion" value="eliminar_tipo"><input type="hidden" name="tipo_id" value="{{ tipo.id }}"><input type="hidden" name="tab" value="habitaciones">
+                            <button class="adm-button danger" type="submit">{% trans "Eliminar" %}</button>
+                        </form></div></td>
                     </tr>
                         {% empty %}<tr><td class="adm-empty" colspan="5">{% trans "Aún no hay tipos de habitación registrados." %}</td></tr>{% endfor %}
                 </tbody>
@@ -45,17 +48,17 @@
     </section>
     {% for tipo in tipos_habitacion %}
     <dialog class="adm-dialog" id="editarTipo{{ tipo.id }}" aria-labelledby="tituloEditarTipo{{ tipo.id }}">
-        <header class="adm-dialog-heading"><div><p class="adm-eyebrow">{% trans "INVENTARIO DEL HOTEL" %}</p><h2 id="tituloEditarTipo{{ tipo.id }}">{% trans "Editar" %} {{ tipo.nombre }}</h2></div><button class="room-modal-close" type="button" data-close-tipo aria-label="{% trans 'Cerrar' %}">&times;</button></header>
+        <header class="adm-dialog-heading"><div><p class="adm-eyebrow">{% trans "INVENTARIO DEL HOTEL" %}</p><h2 id="tituloEditarTipo{{ tipo.id }}">{% trans "Editar" %} {{ tipo.nombre|reparar_texto }}</h2></div><button class="room-modal-close" type="button" data-close-tipo aria-label="{% trans 'Cerrar' %}">&times;</button></header>
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <input type="hidden" name="accion" value="editar">
             <input type="hidden" name="tipo_id" value="{{ tipo.id }}">
             <input type="hidden" name="tab" value="habitaciones">
             <div class="adm-form-grid">
-                <div class="adm-field adm-span-2"><label for="editarTipoNombre{{ tipo.id }}">{% trans "Nombre" %}</label><input id="editarTipoNombre{{ tipo.id }}" name="nombre" maxlength="100" value="{{ tipo.nombre }}" required></div>
+                <div class="adm-field adm-span-2"><label for="editarTipoNombre{{ tipo.id }}">{% trans "Nombre" %}</label><input id="editarTipoNombre{{ tipo.id }}" name="nombre" maxlength="100" value="{{ tipo.nombre|reparar_texto }}" required></div>
                 <div class="adm-field"><label for="editarTipoCapacidad{{ tipo.id }}">{% trans "Capacidad" %}</label><input id="editarTipoCapacidad{{ tipo.id }}" name="capacidad" type="number" min="1" max="100" value="{{ tipo.capacidad }}" required></div>
                 <div class="adm-field"><label for="editarTipoTarifa{{ tipo.id }}">{% trans "Tarifa" %}</label><input id="editarTipoTarifa{{ tipo.id }}" name="tarifa" type="number" min="0.01" step="0.01" value="{{ tipo.tarifa|unlocalize }}" required></div>
-                <div class="adm-field adm-span-2"><label for="editarTipoImagen{{ tipo.id }}">{% trans "Imagen del tipo" %}</label><input id="editarTipoImagen{{ tipo.id }}" name="imagen" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif">{% if tipo.url_imagen %}<img src="{{ tipo.url_imagen }}" alt="{{ tipo.nombre }}" width="180" style="display:block;margin-top:10px;border-radius:10px">{% endif %}</div>
+                <div class="adm-field adm-span-2"><label for="editarTipoImagen{{ tipo.id }}">{% trans "Imagen del tipo" %}</label><input id="editarTipoImagen{{ tipo.id }}" name="imagen" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif">{% if tipo.url_imagen %}<img src="{{ tipo.url_imagen }}" alt="{{ tipo.nombre|reparar_texto }}" width="180" style="display:block;margin-top:10px;border-radius:10px">{% endif %}</div>
             </div>
             <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-tipo>{% trans "Cancelar" %}</button><button class="adm-button" type="submit">{% trans "Guardar cambios" %}</button></footer>
         </form>
@@ -70,7 +73,7 @@
                     <tbody>
                         {% for plan in planes_admin %}
                         <tr>
-                            <td><strong>{{ plan.nombre }}</strong><small class="adm-table-subtext">{{ plan.descripcion|default:"—" }}</small></td>
+                            <td><strong>{{ plan.nombre|reparar_texto }}</strong><small class="adm-table-subtext">{{ plan.descripcion|default:"—"|reparar_texto }}</small></td>
                             <td>${{ plan.precio|precio:2 }}</td>
                             <td>{{ plan.duracion_dias }} {% trans "días" %}</td>
                             <td>{{ plan.disponibles }}</td>
@@ -147,6 +150,11 @@
     document.querySelectorAll('.plan-delete-form').forEach((form) => {
         form.addEventListener('submit', (event) => {
             if (!window.confirm(`¿Eliminar el tipo de plan "${form.dataset.planName}"?`)) event.preventDefault();
+        });
+    });
+    document.querySelectorAll('.type-delete-form').forEach((form) => {
+        form.addEventListener('submit', (event) => {
+            if (!window.confirm(`¿Eliminar el tipo de habitación "${form.dataset.typeName}"? Si está asociado a habitaciones o planes, el sistema lo conservará.`)) event.preventDefault();
         });
     });
     const typeTabs = document.querySelectorAll('[data-type-tab]');

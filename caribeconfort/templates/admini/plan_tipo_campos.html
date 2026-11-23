@@ -1,12 +1,12 @@
-{% load i18n l10n %}
+{% load i18n l10n reparar_texto %}
 <div class="adm-form-grid plan-type-fields">
     <div class="adm-field adm-span-2">
         <label for="planNombre{{ form_id }}">{% trans "Nombre" %}</label>
-        <input id="planNombre{{ form_id }}" name="nombre" maxlength="100" value="{{ plan.nombre|default:'' }}" required>
+        <input id="planNombre{{ form_id }}" name="nombre" maxlength="100" value="{{ plan.nombre|default:''|reparar_texto }}" required>
     </div>
     <div class="adm-field adm-span-2">
         <label for="planDescripcion{{ form_id }}">{% trans "Descripción" %}</label>
-        <textarea id="planDescripcion{{ form_id }}" name="descripcion" maxlength="255" rows="3">{{ plan.descripcion|default:'' }}</textarea>
+        <textarea id="planDescripcion{{ form_id }}" name="descripcion" maxlength="255" rows="3">{{ plan.descripcion|default:''|reparar_texto }}</textarea>
     </div>
     <div class="adm-field adm-span-2">
         <label for="planCaracteristicas{{ form_id }}">{% trans "Características incluidas (una por línea)" %}</label>
@@ -46,7 +46,7 @@
         <select id="planHabitacion{{ form_id }}" name="tipo_habitacion">
             <option value="">{% trans "Sin tipo de habitación" %}</option>
             {% for tipo in tipos_habitacion %}
-            <option value="{{ tipo.id }}" {% if plan.tipo_habitacion_id == tipo.id %}selected{% endif %}>{{ tipo.nombre }}</option>
+            <option value="{{ tipo.id }}" {% if plan.tipo_habitacion_id == tipo.id %}selected{% endif %}>{{ tipo.nombre|reparar_texto }}</option>
             {% endfor %}
         </select>
     </div>

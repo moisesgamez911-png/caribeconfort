@@ -1,4 +1,4 @@
-{% load static i18n l10n precio_format %}
+{% load static i18n l10n precio_format reparar_texto %}
 {% get_current_language as CURRENT_LANGUAGE %}
 <!DOCTYPE html>
 <html lang="{{ CURRENT_LANGUAGE }}">
@@ -58,7 +58,7 @@
             <label for="codigoConvenio">{% trans "Convenio" %}</label>
             <div class="codigo-input-group">
                  <input type="text" id="codigoConvenio" name="codigo" value="{{ codigo }}"
-                        data-descuento="{{ descuento_convenio|default:'0' }}" maxlength="20"
+                        data-descuento="{{ descuento_convenio|default:'0'|unlocalize }}" maxlength="20"
                         placeholder="{% trans 'Código' %}">
                  <button type="button" id="btnAplicarCodigo">{% trans "Aplicar" %}</button>
             </div>
@@ -68,7 +68,7 @@
             <select id="tipoHabitacion" name="tipo">
                 <option value="" {% if not tipo %}selected{% endif %}>{% trans "Todas" %}</option>
                 {% for t in tipos %}
-                    <option value="{{ t.nombre }}" {% if tipo == t.nombre %}selected{% endif %}>{{ t.nombre }}</option>
+                    <option value="{{ t.nombre }}" {% if tipo == t.nombre %}selected{% endif %}>{{ t.nombre|reparar_texto }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -108,7 +108,7 @@
                         <div class="room-card-head">
                             <div class="room-heading">
                                 <p class="room-kicker">{% trans "Caribe Confort · Riohacha" %}</p>
-                                <h2>{% trans "Habitación" %} {{ t.nombre }}</h2>
+                                <h2>{% trans "Habitación" %} {{ t.nombre|reparar_texto }}</h2>
                                 <div class="room-availability">
                                     {% if t.cant_disponibles <= 0 %}
                                         <span class="tag tag-agotado">{% trans "Agotado" %}</span>
@@ -124,7 +124,7 @@
                                     <em>{% trans "por noche" %}</em>
                                 </div>
                                 {% if t.cant_disponibles > 0 %}
-                                    <button class="reserve btn-anadir" type="button" data-nombre="{{ t.nombre }}" data-precio="{{ t.tarifa|unlocalize }}" data-ids="{{ t.ids_disponibles|join:',' }}">{% trans "Añadir" %}</button>
+                                    <button class="reserve btn-anadir" type="button" data-nombre="{{ t.nombre|reparar_texto }}" data-precio="{{ t.tarifa|unlocalize }}" data-ids="{{ t.ids_disponibles|join:',' }}">{% trans "Añadir" %}</button>
                                 {% else %}
                                     <button class="reserve" type="button" disabled>{% trans "Agotado" %}</button>
                                 {% endif %}
@@ -133,31 +133,31 @@
 
                         <div class="room-gallery">
                             <figure class="room-gallery-main">
-                                <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
+                                <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre|reparar_texto }}">
                                     {% if t.url_imagen %}
-                                        <img src="{{ t.url_imagen }}" alt="{% trans 'Habitación' %} {{ t.nombre }}" loading="lazy" decoding="async">
+                                        <img src="{{ t.url_imagen }}" alt="{% trans 'Habitación' %} {{ t.nombre|reparar_texto }}" loading="lazy" decoding="async">
                                     {% else %}
-                                        <img src="{% static 'img/imagenes/' %}{{ habitacion_imagen }}" alt="{% trans 'Habitación' %} {{ t.nombre }}" loading="lazy" decoding="async">
+                                        <img src="{% static 'img/imagenes/' %}{{ habitacion_imagen }}" alt="{% trans 'Habitación' %} {{ t.nombre|reparar_texto }}" loading="lazy" decoding="async">
                                     {% endif %}
                                 </button>
                             </figure>
                             <figure class="room-gallery-photo">
-                                <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
+                                <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre|reparar_texto }}">
                                     <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_uno }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy" decoding="async">
                                 </button>
                             </figure>
                             <figure class="room-gallery-photo">
-                                <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
+                                <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre|reparar_texto }}">
                                     <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_dos }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy" decoding="async">
                                 </button>
                             </figure>
                             <figure class="room-gallery-photo">
-                                <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
+                                <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre|reparar_texto }}">
                                     <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_tres }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy" decoding="async">
                                 </button>
                             </figure>
                             <figure class="room-gallery-photo room-gallery-last">
-                                <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre }}">
+                                <button class="room-gallery-image-open" type="button" data-gallery-image aria-label="{% trans 'Ver foto de la habitación' %} {{ t.nombre|reparar_texto }}">
                                     <img src="{% static 'img/imagenes/' %}{{ habitacion_foto_cuatro }}" alt="{% trans 'Detalle de la habitación' %}" loading="lazy" decoding="async">
                                 </button>
                                 <button class="room-gallery-more" type="button" data-gallery-open aria-haspopup="dialog">{% trans "Ver todas las fotos" %}</button>
@@ -172,10 +172,10 @@
                         <section class="room-tab-panel" id="panel-description-{{ t.pk }}" role="tabpanel" aria-labelledby="tab-description-{{ t.pk }}" data-room-panel="description">
                             <div class="room-details">
                                 <div class="room-description">
-                                    <p class="desc">{{ t.descripcion }}</p>
+                                    <p class="desc">{{ t.descripcion|reparar_texto }}</p>
                                     <div class="amenities">
                                         {% if t.tipo_cama %}
-                                            <span class="amenity">{{ t.tipo_cama }}</span>
+                                            <span class="amenity">{{ t.tipo_cama|reparar_texto }}</span>
                                         {% endif %}
                                         <span class="amenity">{{ t.capacidad }} {% trans "huéspedes" %}</span>
                                         {% if t.wifi %}
@@ -251,7 +251,7 @@
 
 <script src="{% static 'js/bootstrap.bundle.js' %}"></script>
 <script src="{% static 'js/feedback.js' %}?v=1"></script>
-<script src="{% static 'js/reservas.js' %}?v=33"></script>
+<script src="{% static 'js/reservas.js' %}?v=34"></script>
 
 <div class="modal-reserva" id="miModalReserva">
     <div class="modal-caja">

@@ -23,32 +23,58 @@ document.addEventListener("DOMContentLoaded", function() {
     const btnCerrarError = document.getElementById("btnCerrarError");
     const modalErrorServidor = document.getElementById("modalErrorServidor");
     const btnCerrarErrorServidor = document.getElementById("btnCerrarErrorServidor");
+    const avisoDisponibilidad = sessionStorage.getItem('aviso_disponibilidad_reserva');
+    if (avisoDisponibilidad) {
+        const mensajeReserva = document.getElementById('mensajeReserva');
+        if (mensajeReserva) {
+            mensajeReserva.textContent = avisoDisponibilidad;
+            mensajeReserva.style.display = 'block';
+        }
+        sessionStorage.removeItem('aviso_disponibilidad_reserva');
+    }
 
     const roomsContainer = document.getElementById("rooms");
     const btnPrev = document.getElementById("prev");
     const btnNext = document.getElementById("next");
+    const idsDisponiblesActuales = new Set(
+        Array.from(botonesAnadir).flatMap(button => button.getAttribute('data-ids')?.split(',') || [])
+    );
     const guardadas = sessionStorage.getItem('reservas_seleccionadas');
     if (guardadas) {
-        const seleccionPrevia = JSON.parse(guardadas);
+        let seleccionPrevia = [];
+        try {
+            seleccionPrevia = JSON.parse(guardadas);
+            if (!Array.isArray(seleccionPrevia)) seleccionPrevia = [];
+        } catch (error) {
+            sessionStorage.removeItem('reservas_seleccionadas');
+        }
+        const idsRestaurados = new Set();
 
         seleccionPrevia.forEach(function(saved) {
+            if (!saved || !idsDisponiblesActuales.has(String(saved.id)) || idsRestaurados.has(String(saved.id))) return;
             const btn = Array.from(botonesAnadir).find(b => {
                 const ids = b.getAttribute('data-ids')?.split(',') || [];
                 return ids.includes(saved.id);
             });
 
             if (btn) {
+                const precioDisponible = Number(btn.getAttribute('data-precio'));
+                if (!Number.isFinite(precioDisponible) || precioDisponible < 0) return;
+                idsRestaurados.add(String(saved.id));
                 btn.classList.add("seleccionada");
                 btn.textContent = "Añadida";
                 
                 habitacionesSeleccionadas.push({
                     id: saved.id,
-                    numero: saved.numero,
-                    precio: saved.precio,
+                    numero: btn.getAttribute('data-nombre') || saved.numero,
+                    precio: precioDisponible,
                     card: btn.closest(".room-card")
                 });
             }
         });
+        sessionStorage.setItem('reservas_seleccionadas', JSON.stringify(habitacionesSeleccionadas.map(h => ({
+            id: h.id, numero: h.numero, precio: h.precio
+        }))));
     }
 
     function guardarSeleccionEnMemoria() {
@@ -90,20 +116,23 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-    function aplicarFiltros() {
+    function aplicarFiltros(limpiarSeleccion = false) {
         if (!formBuscador) return;
+        if (limpiarSeleccion) sessionStorage.removeItem('reservas_seleccionadas');
         const params = new URLSearchParams(new FormData(formBuscador)).toString();
         window.location.href = `/reservas?${params}`;
     }
 
-    if (selectTipo) selectTipo.addEventListener("change", aplicarFiltros);
-    if (inEntrada) inEntrada.addEventListener("change", aplicarFiltros);
-    if (inSalida) inSalida.addEventListener("change", aplicarFiltros);
-    if (btnAplicarCodigo) btnAplicarCodigo.addEventListener("click", aplicarFiltros);
+    if (selectTipo) selectTipo.addEventListener("change", () => aplicarFiltros(true));
+    if (inEntrada) inEntrada.addEventListener("change", () => aplicarFiltros(true));
+    if (inSalida) inSalida.addEventListener("change", () => aplicarFiltros(true));
+    if (selectAdultos) selectAdultos.addEventListener("change", () => aplicarFiltros(true));
+    if (selectNinos) selectNinos.addEventListener("change", () => aplicarFiltros(true));
+    if (btnAplicarCodigo) btnAplicarCodigo.addEventListener("click", () => aplicarFiltros(false));
     if (codigoConvenio) codigoConvenio.addEventListener("keydown", function(event) {
         if (event.key === "Enter") {
             event.preventDefault();
-            aplicarFiltros();
+            aplicarFiltros(false);
         }
     });
 
@@ -115,6 +144,13 @@ document.addEventListener("DOMContentLoaded", function() {
             const idsArray = idsString.split(',');
             const nombreTipo = this.getAttribute("data-nombre");
             const precio = parseFloat(this.getAttribute("data-precio"));
+            if (!Number.isFinite(precio) || precio < 0) {
+                if (modalErrorServidor) {
+                    document.getElementById("textoErrorServidor").textContent = "No se pudo leer la tarifa de esta habitación. Actualiza la página e inténtalo otra vez.";
+                    modalErrorServidor.classList.add("activo");
+                }
+                return;
+            }
 
             const seleccionadasDeEsteTipo = habitacionesSeleccionadas.filter(h => idsArray.includes(h.id));
 
@@ -191,7 +227,14 @@ document.addEventListener("DOMContentLoaded", function() {
 
             const d1 = new Date(inEntrada.value);
             const d2 = new Date(inSalida.value);
-            let noches = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
+            let noches = Math.round((Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate()) - Date.UTC(d1.getFullYear(), d1.getMonth(), d1.getDate())) / 86400000);
+            if (!Number.isFinite(noches) || noches < 1) {
+                if (modalErrorServidor) {
+                    document.getElementById("textoErrorServidor").textContent = "Verifica las fechas: la salida debe ser posterior a la entrada.";
+                    modalErrorServidor.classList.add("activo");
+                }
+                return;
+            }
             if (txtNoches) txtNoches.textContent = noches + " noches";
             
             let conteoNombres = {};
@@ -208,7 +251,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 const checkDesayuno = hab.card.querySelector(".breakfast-check");
                 if (checkDesayuno && checkDesayuno.checked) {
                     const precioDes = parseFloat(checkDesayuno.getAttribute("data-precio"));
-                    totalDesayunos += (precioDes * noches);
+                    if (Number.isFinite(precioDes) && precioDes > 0) totalDesayunos += precioDes * noches;
                 }
             });
 
@@ -226,16 +269,17 @@ document.addEventListener("DOMContentLoaded", function() {
             }
 
             const subtotal = totalNoches + totalDesayunos;
-            const porcentajeDescuento = codigoConvenio ? Number(codigoConvenio.dataset.descuento || 0) : 0;
+            const porcentajeIngresado = codigoConvenio ? Number(String(codigoConvenio.dataset.descuento || '0').replace(',', '.')) : 0;
+            const porcentajeDescuento = Number.isFinite(porcentajeIngresado) ? Math.min(100, Math.max(0, porcentajeIngresado)) : 0;
             const valorDescuento = subtotal * porcentajeDescuento / 100;
-            let granTotal = subtotal - valorDescuento;
+            let granTotal = Math.max(0, subtotal - valorDescuento);
             if (filaDescuento && txtDescuento && porcentajeDescuento > 0) {
                 filaDescuento.hidden = false;
                 txtDescuento.textContent = `-${porcentajeDescuento}% ($ ${valorDescuento.toLocaleString('es-CO')})`;
             } else if (filaDescuento) {
                 filaDescuento.hidden = true;
             }
-            if (txtTotal) txtTotal.textContent = "$ " + granTotal.toLocaleString('es-CO');
+            if (txtTotal) txtTotal.textContent = "$ " + (Number.isFinite(granTotal) ? granTotal : 0).toLocaleString('es-CO');
             
             if (modalConfirm) {
                 modalConfirm.classList.add("activo");
@@ -297,6 +341,15 @@ document.addEventListener("DOMContentLoaded", function() {
                 } else {
                     if (data.redirect) {
                         window.location.href = data.redirect;
+                        return;
+                    }
+                    if (response.status === 409 && (data.error || '').includes('Una habitación seleccionada')) {
+                        sessionStorage.removeItem('reservas_seleccionadas');
+                        sessionStorage.setItem(
+                            'aviso_disponibilidad_reserva',
+                            'La disponibilidad cambió mientras completabas la reserva. Actualizamos las habitaciones para mostrar solo las que siguen libres.'
+                        );
+                        window.location.reload();
                         return;
                     }
                     const textoErrorServidor = document.getElementById("textoErrorServidor");

@@ -285,9 +285,9 @@ def servir_logo_hotel(request, nombre_archivo):
     )
 
 
-def _enviar_invitacion_resena(reserva, request):
+def _enviar_invitacion_resena(reserva, request=None):
     resena = Resena.objects.get_or_create(reserva=reserva)[0]
-    if resena.correo_enviado:
+    if resena.correo_enviado or resena.calificacion is not None:
         return True
 
     destinatario = _correo_huesped(reserva.huespedes)
@@ -298,9 +298,18 @@ def _enviar_invitacion_resena(reserva, request):
         )
         return False
 
-    enlace = request.build_absolute_uri(
-        reverse('dejar_resena', kwargs={'token': resena.token})
-    )
+    ruta_resena = reverse('dejar_resena', kwargs={'token': resena.token})
+    if request is not None:
+        enlace = request.build_absolute_uri(ruta_resena)
+    else:
+        base_url = getattr(settings, 'PUBLIC_BASE_URL', '').rstrip('/')
+        if not base_url:
+            logger.warning(
+                'No se envió invitación de reseña CC-%s: configura PUBLIC_BASE_URL o RENDER_EXTERNAL_HOSTNAME.',
+                reserva.pk,
+            )
+            return False
+        enlace = f'{base_url}{ruta_resena}'
     mensaje = (
         f"Hola {reserva.huespedes.nombres},\n\n"
         f"Gracias por hospedarte en Caribe Confort. Cuéntanos cómo fue tu estancia "
@@ -545,15 +554,15 @@ def servicios(request):
         c['total'] = Servicios.objects.filter(estado=True, categoria=c['nombre']).count()
     categorias = [categoria for categoria in categorias_base if categoria['total']]
 
-    servicios_qs = Servicios.objects.filter(estado=True).order_by('nombre')
+    servicios_qs = Servicios.objects.filter(estado=True).order_by('-destacado', 'nombre')
     if categoria_activa:
         servicios_qs = servicios_qs.filter(categoria=categoria_activa)
 
     servicios_disponibles = list(servicios_qs)
     for servicio in servicios_disponibles:
         servicio.url_imagen = _url_imagen_local(servicio.imagen)
-    servicio_destacado = servicios_disponibles[0] if servicios_disponibles else None
-    servicios_catalogo = servicios_disponibles[1:] if servicio_destacado else []
+    servicio_destacado = next((servicio for servicio in servicios_disponibles if servicio.destacado), None)
+    servicios_catalogo = [servicio for servicio in servicios_disponibles if servicio != servicio_destacado]
 
     total_general = Servicios.objects.filter(estado=True).count()
 
@@ -886,18 +895,40 @@ def _url_imagen_local(ruta):
         return ''
 
     ruta = ruta.strip().replace('\\', '/')
-    if ruta.startswith(('http://', 'https://', '//', '/')) or '..' in ruta.split('/'):
+    if ruta.startswith(('http://', 'https://')):
+        return ruta
+    if ruta.startswith('//') or '..' in ruta.split('/'):
         return ''
 
     prefijo_static = settings.STATIC_URL.lstrip('/')
+    if ruta.startswith(f'/{settings.MEDIA_URL.lstrip("/")}'):
+        ruta = ruta[1:]
+    elif ruta.startswith(f'/{prefijo_static}'):
+        ruta = ruta[1:]
+    elif ruta.startswith('/'):
+        return ''
+    # Algunos registros históricos guardaron la URL completa, no el nombre del
+    # archivo. Normalizarla permite seguir mostrando esos medios en las vistas.
+    if ruta.startswith(settings.MEDIA_URL.lstrip('/')):
+        ruta = ruta[len(settings.MEDIA_URL.lstrip('/')):]
     if ruta.startswith(prefijo_static):
         return f'/{ruta}'
     if ruta.startswith('img/imagenes/'):
         return f'/{prefijo_static}{ruta}'
-    if ruta.startswith('uploads/'):
-        return f'/{settings.MEDIA_URL.strip("/")}/{ruta}'
     if '/' not in ruta:
         return f'/{prefijo_static}img/imagenes/{ruta}'
+    if ruta.startswith('uploads/'):
+        # En desarrollo los archivos suelen estar en MEDIA_ROOT; algunas cargas
+        # anteriores quedaron en el directorio estático del proyecto. Resolver
+        # primero el archivo que sí existe evita URLs rotas tras despliegues.
+        almacenamiento = FileSystemStorage(location=settings.MEDIA_ROOT)
+        if almacenamiento.exists(ruta):
+            return f'/{settings.MEDIA_URL.strip("/")}/{ruta}'
+        for directorio in getattr(settings, 'STATICFILES_DIRS', []):
+            legado = Path(directorio) / 'img' / 'imagenes' / ruta
+            if legado.is_file():
+                return f'/{prefijo_static}img/imagenes/{ruta}'
+        return f'/{settings.MEDIA_URL.strip("/")}/{ruta}'
     return ''
 
 
@@ -1005,6 +1036,10 @@ def pagar_reserva(request, reserva_id):
 
     pagos_realizados = Pagos.objects.filter(reservas=reserva).exclude(metodopago='Pendiente').aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
     saldo_pendiente = max(Decimal('0.00'), reserva.valortotal - pagos_realizados)
+
+    if saldo_pendiente == 0:
+        messages.info(request, 'La reserva no tiene saldo pendiente.')
+        return redirect('/mis-reservas')
 
     return render(request, 'clientes/pagar.html', {
         'reserva': reserva,
@@ -1192,19 +1227,20 @@ def crear_reserva(request):
                     fechaentrada=entrada_fecha,
                     fechasalida=salida_fecha,
                     cantidadacompañantes=total_personas,
-                    estado='Pendiente',
+                    estado='Confirmada' if valor_total == Decimal('0.00') else 'Pendiente',
                     valortotal=valor_total,
                 )
                 reservas_creadas.append(reserva)
                 total_general += valor_total
 
             valor_abono = (total_general * Decimal('0.50')).quantize(Decimal('0.01'))
-            Pagos.objects.create(
-                reservas=reservas_creadas[0],
-                valor=valor_abono,
-                metodopago='Pendiente',
-                concepto='Reserva',
-            )
+            if valor_abono > 0:
+                Pagos.objects.create(
+                    reservas=reservas_creadas[0],
+                    valor=valor_abono,
+                    metodopago='Pendiente',
+                    concepto='Reserva',
+                )
             if convenio:
                 convenio.estado = 'Usado'
                 convenio.save(update_fields=['estado'])
@@ -1375,22 +1411,49 @@ def cambiar_password_reset(request):
     return render(request, 'clientes/cambiar_contraseña.html', {'mostrar_passwords': verificado})
 
 
-def finalizar_reservas_vencidas(request, enviar_invitaciones=True):
-    """Una reserva confirmada cuya fecha de salida ya pasó queda como Finalizada."""
+def finalizar_reservas_vencidas(request=None, enviar_invitaciones=True):
+    """Finaliza reservas confirmadas/en curso un día después de su salida y procesa reseñas."""
     hoy = timezone.localdate()
-    Reservas.objects.filter(estado='Confirmada', fechasalida__lt=hoy).update(estado='Finalizada')
+    vencidas = list(Reservas.objects.filter(
+        estado__in=['Confirmada', 'En curso'],
+        fechasalida__lt=hoy,
+    ).values_list('id', flat=True))
+    finalizadas = 0
+    for reserva_id in vencidas:
+        with transaction.atomic():
+            reserva = Reservas.objects.select_for_update().filter(
+                id=reserva_id,
+                estado__in=['Confirmada', 'En curso'],
+                fechasalida__lt=hoy,
+            ).first()
+            if not reserva:
+                continue
+            reserva.estado = 'Finalizada'
+            reserva.save(update_fields=['estado'])
+            finalizadas += 1
+            if reserva.habitaciones_id and not Reservas.objects.filter(
+                habitaciones_id=reserva.habitaciones_id,
+                estado__in=['Pendiente', 'Pagada - Por validar', 'Confirmada', 'En curso'],
+                fechaentrada__lt=reserva.fechasalida,
+                fechasalida__gt=reserva.fechaentrada,
+            ).exclude(id=reserva.id).exists():
+                Habitaciones.objects.filter(id=reserva.habitaciones_id).update(estado='Disponible')
     if not enviar_invitaciones:
-        return
+        return finalizadas
 
     reservas_pendientes = Reservas.objects.filter(
         estado='Finalizada',
         fechasalida__lt=hoy,
     ).filter(
-        Q(resena__isnull=True) | Q(resena__correo_enviado=False)
-    ).select_related('huespedes')
+        Q(resena__isnull=True) | (
+            Q(resena__correo_enviado=False)
+            & Q(resena__calificacion__isnull=True)
+        )
+    ).select_related('huespedes__usuarios', 'habitaciones')
 
     for reserva in reservas_pendientes:
         _enviar_invitacion_resena(reserva, request)
+    return finalizadas
 
 
 def dejar_resena(request, token):
@@ -1496,6 +1559,15 @@ def mis_reservas(request):
         else:
             r.porcentaje_pagado = 0
         r.formatted_id = f"CC-{r.id:04d}"
+
+        ruta_imagen = ''
+        if r.habitaciones:
+            ruta_imagen = r.habitaciones.imagen or ''
+            if not ruta_imagen and r.habitaciones.tipohabitacion:
+                ruta_imagen = r.habitaciones.tipohabitacion.imagen or ''
+        elif r.planes:
+            ruta_imagen = r.planes.imagen or ''
+        r.historial_imagen_url = _url_imagen_local(ruta_imagen)
 
         if r.estado in ['Pendiente', 'Pagada - Por validar', 'Confirmada', 'En curso'] and r.fechasalida >= hoy:
             activas.append(r)
@@ -1628,16 +1700,17 @@ def crear_reserva_plan(request):
                 fechaentrada=entrada_fecha,
                 fechasalida=salida_fecha,
                 cantidadacompañantes=adultos + ninos,
-                estado='Pendiente',
+                estado='Confirmada' if valor_total == Decimal('0.00') else 'Pendiente',
                 valortotal=valor_total,
             )
             valor_abono = (valor_total * Decimal('0.50')).quantize(Decimal('0.01'))
-            Pagos.objects.create(
-                reservas=reserva,
-                valor=valor_abono,
-                metodopago='Pendiente',
-                concepto='Reserva',
-            )
+            if valor_abono > 0:
+                Pagos.objects.create(
+                    reservas=reserva,
+                    valor=valor_abono,
+                    metodopago='Pendiente',
+                    concepto='Reserva',
+                )
             plan.disponibles -= 1
             plan.save(update_fields=['disponibles'])
             if convenio:
@@ -2948,6 +3021,7 @@ def serviciosadmin(request):
         nombre = request.POST.get('nombre', '').strip()
         descripcion = request.POST.get('descripcion', '').strip()
         estado = request.POST.get('estado') == 'on'
+        destacado = request.POST.get('destacado') == 'on'
         try:
             precio = Decimal(request.POST.get('precio', '').strip())
             if not precio.is_finite():
@@ -2987,10 +3061,14 @@ def serviciosadmin(request):
         servicio.descripcion = descripcion
         servicio.precio = precio
         servicio.estado = estado
+        servicio.destacado = destacado and estado
         if ruta_nueva:
             servicio.imagen = ruta_nueva
         try:
-            servicio.save()
+            with transaction.atomic():
+                if servicio.destacado:
+                    Servicios.objects.exclude(pk=servicio.pk).update(destacado=False)
+                servicio.save()
         except Exception:
             if ruta_nueva:
                 _eliminar_imagen_servicio(ruta_nueva)
@@ -3071,6 +3149,23 @@ def tiposhabitacionadmin(request):
         accion = request.POST.get('accion', 'crear')
         tab = 'planes' if request.POST.get('tab') == 'planes' else 'habitaciones'
         destino = f'/admintiposhabitacion?tab={tab}'
+
+        if accion == 'eliminar_tipo':
+            tipo_id = request.POST.get('tipo_id', '')
+            tipo = TipoHabitacion.objects.filter(id=tipo_id).first() if tipo_id.isdigit() else None
+            if not tipo:
+                messages.error(request, 'Selecciona un tipo de habitación válido.')
+            else:
+                try:
+                    nombre_tipo = tipo.nombre
+                    tipo.delete()
+                    messages.success(request, f'Tipo de habitación «{nombre_tipo}» eliminado correctamente.')
+                except ProtectedError:
+                    messages.error(
+                        request,
+                        'No se puede eliminar este tipo porque está asociado a habitaciones o planes existentes.',
+                    )
+            return redirect('/admintiposhabitacion?tab=habitaciones')
 
         if accion in {'crear', 'editar'}:
             nombre = request.POST.get('nombre', '').strip()
@@ -4579,6 +4674,7 @@ def registrarservicio(request):
     return render(request, 'admini/registrarservicio.html')
 
 def buscar_disponibilidad(request):
+    finalizar_reservas_vencidas(request)
     hoy = timezone.localdate()
     fecha_entrada = request.GET.get('entrada') or hoy.isoformat()
     fecha_salida  = request.GET.get('salida') or (hoy + timedelta(days=1)).isoformat()
@@ -4861,7 +4957,7 @@ def administrador(request):
     if request.session.get('rol') != 'Administrador':
         return redirect('/login')
 
-    finalizar_reservas_vencidas(request, enviar_invitaciones=False)
+    finalizar_reservas_vencidas(request, enviar_invitaciones=True)
 
     hoy = timezone.localdate()
     inicio_mes = hoy.replace(day=1)
@@ -5430,6 +5526,7 @@ def recepcionista(request):
     if request.session.get('rol') not in {'Recepcionista', 'Administrador'}:
         return redirect('/login')
 
+    finalizar_reservas_vencidas(request, enviar_invitaciones=True)
     hoy = timezone.localdate()
     llegadas_hoy = list(Reservas.objects.filter(
         fechaentrada=hoy,
@@ -5604,13 +5701,15 @@ def aprobar_servicio_recepcion(request, servicio_reserva_id):
             return redirect(destino)
 
     with transaction.atomic():
+        # Lock only the service row. Locking a select_related graph can make
+        # PostgreSQL issue FOR UPDATE against nullable outer-joined tables.
         servicio_reserva = get_object_or_404(
-            ServicioReserva.objects.select_for_update().select_related(
-                'reservas__huespedes',
-                'servicios',
-            ),
+            ServicioReserva.objects.select_for_update(),
             id=servicio_reserva_id,
         )
+        servicio_reserva = ServicioReserva.objects.select_related(
+            'reservas__huespedes__usuarios', 'servicios'
+        ).get(id=servicio_reserva.id)
         if servicio_reserva.estado != 'Pendiente':
             messages.error(request, 'Esta solicitud de servicio ya fue procesada.')
             return redirect(destino)

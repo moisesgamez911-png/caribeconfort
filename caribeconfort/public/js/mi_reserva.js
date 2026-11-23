@@ -1,4 +1,21 @@
 document.addEventListener("DOMContentLoaded", function () {
+
+    // Evita que una imagen eliminada o una ruta antigua deje el texto alternativo
+    // ocupando la tarjeta. La reserva y sus datos siguen visibles con un fallback.
+    document.addEventListener("error", function (event) {
+        const image = event.target;
+        if (!(image instanceof HTMLImageElement)) return;
+        if (!image.matches(".service-image, .history-photo img")) return;
+
+        const fallback = document.createElement("span");
+        fallback.className = image.classList.contains("service-image")
+            ? "service-image service-image-placeholder"
+            : "history-photo-placeholder";
+        fallback.setAttribute("role", "img");
+        fallback.setAttribute("aria-label", "Imagen no disponible");
+        fallback.innerHTML = '<i class="bi bi-image" aria-hidden="true"></i>';
+        image.replaceWith(fallback);
+    }, true);
     
     const btnUser = document.getElementById("btnUser");
     const userMenu = document.getElementById("userMenu");
@@ -79,7 +96,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const modal = document.getElementById("modalReserva");
     const modalConfirm = document.getElementById("modalConfirmarCancelacion");
 
-    if (modales.length > 0 && modal) {
+    if (modal) {
         
         let idReservaActual = null;
 
@@ -99,6 +116,10 @@ document.addEventListener("DOMContentLoaded", function () {
                         break;
                     }
                 }
+            }
+            if (!cookieValue && name === 'csrftoken') {
+                const meta = document.querySelector('meta[name="csrf-token"]');
+                cookieValue = meta ? meta.content : null;
             }
             return cookieValue;
         };
@@ -288,6 +309,10 @@ document.addEventListener("DOMContentLoaded", function () {
         if (document.getElementById("btnConfirmarCancelacion")) {
             document.getElementById("btnConfirmarCancelacion").addEventListener("click", function() {
                 const btn = this;
+                if (!idReservaActual) {
+                    window.ccAlert('Abre primero los detalles de la reserva que deseas cancelar.');
+                    return;
+                }
                 btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Cancelando...';
                 btn.disabled = true;
 

@@ -114,7 +114,7 @@
         <div class="adm-card-heading"><div><h2>Servicios registrados</h2><p>{{ servicios|length }} servicios en el catálogo.</p></div></div>
         <div class="adm-table-wrap">
             <table class="adm-table">
-                <thead><tr><th>Imagen</th><th>Nombre</th><th>Descripción</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>Imagen</th><th>Nombre</th><th>Descripción</th><th>Precio</th><th>Estado</th><th>Destacado para clientes</th><th>Acciones</th></tr></thead>
                 <tbody>
                     {% for servicio in servicios %}
                     <tr>
@@ -123,6 +123,7 @@
                         <td>{{ servicio.descripcion|default:"—" }}</td>
                         <td>${{ servicio.precio|precio:2 }}</td>
                         <td><span class="adm-pill {% if servicio.estado %}green{% else %}gray{% endif %}">{% if servicio.estado %}Activo{% else %}Inactivo{% endif %}</span></td>
+                        <td>{% if servicio.destacado %}<span class="adm-pill green">Recomendado</span>{% else %}—{% endif %}</td>
                         <td><button class="adm-button secondary" type="button" data-open-dialog="editarServicio{{ servicio.id }}">Editar</button></td>
                     </tr>
                     <dialog class="adm-dialog" id="editarServicio{{ servicio.id }}" aria-labelledby="tituloEditarServicio{{ servicio.id }}">
@@ -135,11 +136,12 @@
                                 <div class="adm-field"><label for="servicioPrecio{{ servicio.id }}">Precio</label><input id="servicioPrecio{{ servicio.id }}" name="precio" type="number" min="0" step="0.01" value="{{ servicio.precio|unlocalize }}" required></div>
                                 <div class="adm-field adm-span-2"><label for="servicioImagen{{ servicio.id }}">Imagen del servicio</label><input id="servicioImagen{{ servicio.id }}" name="imagen" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" data-service-image-input><img class="adm-service-preview" src="{{ servicio.url_imagen }}" alt="Vista previa de {{ servicio.nombre }}" data-service-image-preview {% if not servicio.url_imagen %}hidden{% endif %}></div>
                                 <label class="user-active"><input type="checkbox" name="estado" {% if servicio.estado %}checked{% endif %}> Activo</label>
+                                <label class="user-active"><input type="checkbox" name="destacado" {% if servicio.destacado %}checked{% endif %}> Mostrar como recomendado a clientes</label>
                             </div>
                             <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-dialog>Cancelar</button><button class="adm-button" type="submit">Guardar cambios</button></footer>
                         </form>
                     </dialog>
-                    {% empty %}<tr><td class="adm-empty" colspan="6">Aún no hay servicios registrados.</td></tr>{% endfor %}
+                    {% empty %}<tr><td class="adm-empty" colspan="7">Aún no hay servicios registrados.</td></tr>{% endfor %}
                 </tbody>
             </table>
         </div>
@@ -155,6 +157,7 @@
             <div class="adm-field"><label for="nuevoServicioPrecio">Precio</label><input id="nuevoServicioPrecio" name="precio" type="number" min="0" step="0.01" required></div>
             <div class="adm-field adm-span-2"><label for="nuevoServicioImagen">Imagen del servicio</label><input id="nuevoServicioImagen" name="imagen" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" data-service-image-input><img class="adm-service-preview" alt="Vista previa de la imagen del servicio" data-service-image-preview hidden></div>
             <label class="user-active"><input type="checkbox" name="estado" checked> Activo</label>
+            <label class="user-active"><input type="checkbox" name="destacado"> Mostrar como recomendado a clientes</label>
         </div>
         <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-dialog>Cancelar</button><button class="adm-button" type="submit">Crear servicio</button></footer>
     </form>
@@ -173,6 +176,18 @@
 </dialog>
 {% include 'inc/modal_reembolso.html' %}
 <script>
+    document.addEventListener('error', (event) => {
+        const image = event.target;
+        if (!(image instanceof HTMLImageElement)) return;
+        if (image.matches('.adm-service-image')) {
+            const fallback = document.createElement('span');
+            fallback.className = 'adm-service-image-empty';
+            fallback.textContent = 'Sin imagen';
+            image.replaceWith(fallback);
+        } else if (image.matches('.adm-service-preview')) {
+            image.hidden = true;
+        }
+    }, true);
     document.querySelectorAll('[data-service-image-input]').forEach((input) => {
         input.addEventListener('change', () => {
             const preview = input.closest('.adm-field').querySelector('[data-service-image-preview]');

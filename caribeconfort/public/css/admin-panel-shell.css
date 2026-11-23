@@ -26,7 +26,7 @@ body:not(.admin-dashboard-page) .cv-main {
     width: 100%;
     max-width: 1920px;
     margin: 0 auto;
-    padding: 88px 10px 48px 60px;
+    padding: 88px 10px 48px 60px !important;
 }
 
 body.menu-abierto:not(.admin-dashboard-page) .ad-main,
@@ -1155,7 +1155,6 @@ html[data-theme="dark"] body:not(.admin-dashboard-page) .reception-card tbody tr
     max-width: 760px;
 }
 
-/* Keep every admin and reception table on the dashboard table standard. */
 body:not(.admin-dashboard-page) .rv-layout .dash-card > .dash-card-head {
     padding-bottom: 12px;
     border-bottom: 1px solid #E1E5EA;

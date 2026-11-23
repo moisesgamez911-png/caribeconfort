@@ -6,7 +6,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from caribeconfort.models import Reservas
-from caribeconfort.views import _enviar_correo_hotel
+from caribeconfort.views import _enviar_correo_hotel, finalizar_reservas_vencidas
 
 
 logger = logging.getLogger(__name__)
@@ -19,6 +19,7 @@ class Command(BaseCommand):
         hoy = timezone.localdate()
         enviados = 0
         errores = 0
+        finalizadas = finalizar_reservas_vencidas(enviar_invitaciones=True)
         recordatorios = (
             (2, 'recordatorio_dos_dias_enviado'),
             (1, 'recordatorio_un_dia_enviado'),
@@ -105,7 +106,7 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f'Recordatorios enviados: {enviados}; errores: {errores}.'
+                f'Estancias finalizadas: {finalizadas}; recordatorios enviados: {enviados}; errores: {errores}.'
             )
         )
         if errores:
