@@ -11,6 +11,17 @@ document.addEventListener('DOMContentLoaded', function () {
     var csrfMeta = document.querySelector('meta[name="csrf-token"]');
     var csrfToken = tokenInput ? tokenInput.value : (csrfMeta ? csrfMeta.content : '');
 
+    // Close controls are wired first so unrelated initialization errors cannot
+    // leave reservation dialogs stuck open.
+    document.addEventListener('click', function (event) {
+        var trigger = event.target.closest('[data-close-reservation-modal]');
+        if (!trigger) return;
+        var modal = document.getElementById(trigger.dataset.closeReservationModal);
+        if (!modal) return;
+        event.preventDefault();
+        modal.classList.remove('activo');
+    }, true);
+
     function leerRespuestaJson(response) {
         return response.text().then(function (texto) {
             try {
@@ -238,12 +249,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 window.ccAlert('No se pudo validar la sesión. Recarga la página e inténtalo nuevamente.');
                 return;
             }
-            window.ccConfirm('¿Deseas cancelar la reserva ' + numeroReserva + '? Esta acción actualizará su estado.').then(function (confirmado) {
+            var mensaje = '¿Deseas cancelar la reserva ' + numeroReserva + '? Esta acción actualizará su estado.';
+            var confirmacion = typeof window.ccConfirm === 'function'
+                ? window.ccConfirm(mensaje)
+                : Promise.resolve(window.confirm(mensaje));
+            Promise.resolve(confirmacion).then(function (confirmado) {
                 if (!confirmado) return;
                 boton.disabled = true;
                 fetch('/api/cancelar-reserva/' + reservaId + '/', {
                     method: 'POST',
-                    headers: { 'X-CSRFToken': csrfToken, 'X-Session-Scope': 'admin' },
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Session-Scope': 'admin',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
                 }).then(function (response) {
                     return leerRespuestaJson(response).then(function (data) {
                         if (!response.ok || !data.success) {
@@ -257,8 +277,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 }).catch(function (error) {
                     boton.disabled = false;
-                    window.ccAlert(error.message || 'No se pudo conectar con el servidor.');
+                    if (typeof window.ccAlert === 'function') {
+                        window.ccAlert(error.message || 'No se pudo conectar con el servidor.');
+                    } else {
+                        window.alert(error.message || 'No se pudo conectar con el servidor.');
+                    }
                 });
+            }).catch(function (error) {
+                if (typeof window.ccAlert === 'function') window.ccAlert(error.message || 'No se pudo confirmar la cancelación.');
+                else window.alert(error.message || 'No se pudo confirmar la cancelación.');
             });
         });
     });
@@ -280,13 +307,6 @@ document.addEventListener('DOMContentLoaded', function () {
         // Delegado para que los controles sigan funcionando aunque el contenido
         // del modal se actualice dinámicamente o se vuelva a renderizar.
         modalCheckin.addEventListener('click', function (event) {
-            var botonCierre = event.target.closest('#btnNoCheckin, #btnCerrarCheckin');
-            if (botonCierre) {
-                event.preventDefault();
-                event.stopPropagation();
-                modalCheckin.classList.remove('activo');
-                return;
-            }
             if (event.target === modalCheckin) modalCheckin.classList.remove('activo');
         });
         modalCheckin.addEventListener('keydown', function (event) {

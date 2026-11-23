@@ -11,7 +11,7 @@
     
     <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=107">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=999">
-    <link rel="stylesheet" href="{% static 'css/administrador/reservas.css' %}?v=7">
+    <link rel="stylesheet" href="{% static 'css/administrador/reservas.css' %}?v=8">
     <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
     <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
     <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=10">
@@ -425,7 +425,7 @@
                 <h2 id="tituloNuevaReserva">Registrar huésped y check-in</h2>
                 <p>Registra los datos de llegada, habitación, pago y acompañantes.</p>
             </div>
-            <button type="button" class="rv-modal-close" id="cerrarModalNueva" aria-label="Cerrar">&times;</button>
+            <button type="button" class="rv-modal-close" id="cerrarModalNueva" data-close-reservation-modal="modalNuevaReserva" aria-label="Cerrar">&times;</button>
         </header>
         <form method="post" action="/adminreserva/crear">
             {% csrf_token %}
@@ -524,7 +524,7 @@
                 <p class="rv-form-error rv-modal-span-2" id="errorNuevaReserva" role="alert" aria-live="polite"></p>
             </div>
             <footer class="rv-modal-footer">
-                <button type="button" class="rv-btn-outline" id="cancelarModalNueva">Cancelar</button>
+                <button type="button" class="rv-btn-outline" id="cancelarModalNueva" data-close-reservation-modal="modalNuevaReserva">Cancelar</button>
                 <button type="submit" class="rv-btn-primary">Guardar y hacer check-in</button>
             </footer>
         </form>
@@ -553,7 +553,7 @@
                 <h2>Validar Reserva</h2>
                 <p>Verifica los datos antes de confirmar.</p>
             </div>
-            <button class="rv-modal-close" id="btnCerrarModal">&times;</button>
+            <button type="button" class="rv-modal-close" id="btnCerrarModal" data-close-reservation-modal="modalValidar" aria-label="Cerrar">&times;</button>
         </header>
 
         <div class="rv-modal-body">
@@ -591,7 +591,7 @@
         </div>
 
         <footer class="rv-modal-footer">
-            <button type="button" class="rv-btn-outline" id="btnCancelarValidacion">Cancelar</button>
+            <button type="button" class="rv-btn-outline" id="btnCancelarValidacion" data-close-reservation-modal="modalValidar">Cancelar</button>
             <button type="button" class="rv-btn-primary" id="btnConfirmarValidacion">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg> Aceptar y Confirmar
             </button>
@@ -610,7 +610,7 @@
                 <h2>¿Realizar check-in?</h2>
                 <p>Revisa los datos antes de continuar.</p>
             </div>
-            <button type="button" class="rv-modal-close" id="btnCerrarCheckin" aria-label="Cerrar">&times;</button>
+            <button type="button" class="rv-modal-close" id="btnCerrarCheckin" data-close-reservation-modal="modalCheckinConfirm" aria-label="Cerrar">&times;</button>
         </header>
 
         <div class="rv-modal-body">
@@ -626,7 +626,7 @@
         </div>
 
         <footer class="rv-modal-footer">
-            <button type="button" class="rv-btn-outline" id="btnNoCheckin">No, cancelar</button>
+            <button type="button" class="rv-btn-outline" id="btnNoCheckin" data-close-reservation-modal="modalCheckinConfirm">No, cancelar</button>
             <a href="#" id="btnSiCheckin" class="rv-btn-primary">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                 Sí, hacer check-in
@@ -645,7 +645,7 @@
                 <h2 id="tituloCheckOut">Confirmar check-out</h2>
                 <p id="checkoutHuesped"></p>
             </div>
-            <button type="button" class="rv-modal-close" id="btnCerrarCheckOut" aria-label="Cerrar">&times;</button>
+            <button type="button" class="rv-modal-close" id="btnCerrarCheckOut" data-close-reservation-modal="modalCheckOut" aria-label="Cerrar">&times;</button>
         </header>
         <form id="formCheckOut" method="post">
             {% csrf_token %}
@@ -665,7 +665,7 @@
                 </div>
             </div>
             <footer class="rv-modal-footer">
-                <button type="button" class="rv-btn-outline" id="btnCancelarCheckOut">Cancelar</button>
+                <button type="button" class="rv-btn-outline" id="btnCancelarCheckOut" data-close-reservation-modal="modalCheckOut">Cancelar</button>
                 <button type="submit" class="rv-btn-primary">Registrar check-out</button>
             </footer>
         </form>
@@ -682,7 +682,7 @@
                 <h2 id="tituloPagoReserva">Registrar pago</h2>
                 <p id="pagoReservaHuesped"></p>
             </div>
-            <button type="button" class="rv-modal-close" id="btnCerrarPagoReserva" aria-label="Cerrar">&times;</button>
+            <button type="button" class="rv-modal-close" id="btnCerrarPagoReserva" data-close-reservation-modal="modalPagoReserva" aria-label="Cerrar">&times;</button>
         </header>
         <form id="formPagoReserva" method="post">
             {% csrf_token %}
@@ -701,7 +701,7 @@
                 </div>
             </div>
             <footer class="rv-modal-footer">
-                <button type="button" class="rv-btn-outline" id="btnCancelarPagoReserva">Cancelar</button>
+                <button type="button" class="rv-btn-outline" id="btnCancelarPagoReserva" data-close-reservation-modal="modalPagoReserva">Cancelar</button>
                 <button type="submit" class="rv-btn-primary">Guardar pago</button>
             </footer>
         </form>
@@ -715,7 +715,7 @@
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
             </div>
             <div><h2 id="tituloModificarReserva">Modificar fechas</h2><p id="modificarReservaMensaje">Actualiza la entrada y salida de la reserva.</p></div>
-            <button type="button" class="rv-modal-close" id="cerrarModalModificar" aria-label="Cerrar">&times;</button>
+            <button type="button" class="rv-modal-close" id="cerrarModalModificar" data-close-reservation-modal="modalModificarReserva" aria-label="Cerrar">&times;</button>
         </header>
         <form id="formModificarReserva">
             {% csrf_token %}
@@ -734,7 +734,7 @@
                 </div>
             </div>
             <footer class="rv-modal-footer">
-                <button type="button" class="rv-btn-outline" id="cancelarModalModificar">Cancelar</button>
+                <button type="button" class="rv-btn-outline" id="cancelarModalModificar" data-close-reservation-modal="modalModificarReserva">Cancelar</button>
                 <button type="submit" class="rv-btn-primary" id="btnGuardarModificacion">Guardar cambios</button>
             </footer>
         </form>
@@ -742,7 +742,7 @@
 </div>
 
 {% include 'inc/modal_reembolso.html' %}
-<script src="{% static 'js/administrador/reservas_admin.js' %}?v=10011"></script>
+<script src="{% static 'js/administrador/reservas_admin.js' %}?v=10012"></script>
 <script src="{% static 'js/reembolso_reserva.js' %}?v=1"></script>
 <script src="{% static 'js/admin-pagination-scroll.js' %}?v=2"></script>
 <script src="{% static 'js/barra-encabezado.js' %}?v=15"></script>
