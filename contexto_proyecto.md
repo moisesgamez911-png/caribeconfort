@@ -66,7 +66,9 @@ Las facturas por reserva y los certificados de pagos se descargan en PDF con Rep
 
 Los reembolsos pueden iniciarse desde el historial de pagos y se vinculan al pago original. El monto disponible se recalcula al registrar cada devolución y se notifica al huésped por correo.
 
-El comando `python manage.py enviar_recordatorios_reservas` envía avisos dos días y un día antes de una reserva confirmada. Programa su ejecución diaria en el Programador de tareas de Windows o en cron; el comando marca cada aviso enviado para evitar duplicados. El segundo correo informa la política de no reembolso del abono del 50% si el huésped no se presenta.
+El comando `python manage.py enviar_recordatorios_reservas` envía avisos dos días y un día antes de una reserva confirmada. El comando marca cada aviso enviado para evitar duplicados y registra en la salida cada correo enviado o fallido. Si cambia la fecha de entrada, las marcas de envío se reinician para que los avisos correspondan a la nueva fecha. El segundo correo informa la política de no reembolso del abono del 50% si el huésped no se presenta.
+
+En Render, crea un servicio **Cron Job** diario para ejecutar el comando automáticamente. Usa el mismo repositorio y rama que el servicio web, con `Build Command: pip install -r requirements.txt`, `Command: python manage.py enviar_recordatorios_reservas` y `Schedule: 0 12 * * *` (12:00 UTC = 7:00 a. m. en Colombia). Comparte un Environment Group con el servicio web o copia al Cron Job, como mínimo, los mismos valores de `DATABASE_URL`, `SECRET_KEY` y `EMAIL_CREDENTIAL_ENCRYPTION_KEY`. Si el correo se configura por variables de entorno en vez de los datos SMTP del hotel, comparte también `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL` y la configuración TLS/SSL. El Cron Job debe apuntar a la misma base de datos donde se guardan las reservas y la configuración SMTP cifrada. Revisa sus ejecuciones y logs en Render; el comando termina con error si falla algún correo para que la ejecución quede marcada como fallida.
 
 La migración inicial es `caribeconfort/migrations/0025_resena.py`. Para crear o aplicar migraciones:
 

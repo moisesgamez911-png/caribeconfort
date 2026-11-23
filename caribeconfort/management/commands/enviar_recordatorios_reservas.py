@@ -90,6 +90,10 @@ class Command(BaseCommand):
                         setattr(reserva, campo_enviado, True)
                         reserva.save(update_fields=[campo_enviado])
                         enviados += 1
+                        self.stdout.write(
+                            f'Reserva CC-{reserva.id:04d}: recordatorio de '
+                            f'{dias} día(s) enviado correctamente.'
+                        )
                 except Exception:
                     errores += 1
                     logger.exception(

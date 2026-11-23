@@ -13,6 +13,7 @@ from cryptography.fernet import Fernet
 from PIL import Image
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
@@ -52,6 +53,7 @@ from caribeconfort.views import (
     galeriaadmin,
     home,
     procesar_reembolso,
+    modificar_reserva,
     recepcionista,
     reservasadmin,
     servir_logo_hotel,
@@ -1096,6 +1098,59 @@ class ReservationReminderCommandTests(TestCase):
         reserva_un_dia.refresh_from_db()
         self.assertTrue(reserva_dos_dias.recordatorio_dos_dias_enviado)
         self.assertTrue(reserva_un_dia.recordatorio_un_dia_enviado)
+
+    def test_failed_email_does_not_mark_reminder_as_sent(self):
+        hoy = timezone.localdate()
+        reserva = crear_reserva_prueba(
+            crear_huesped_prueba(cuenta=False),
+            hoy + timedelta(days=2),
+        )
+        with patch(
+            'django.utils.timezone.localdate',
+            return_value=hoy,
+        ), patch(
+            'caribeconfort.management.commands.enviar_recordatorios_reservas._enviar_correo_hotel',
+            side_effect=RuntimeError('SMTP no disponible'),
+        ), self.assertRaises(CommandError):
+            call_command('enviar_recordatorios_reservas', stdout=StringIO(), stderr=StringIO())
+
+        reserva.refresh_from_db()
+        self.assertFalse(reserva.recordatorio_dos_dias_enviado)
+
+
+class ReservationReminderRescheduleTests(TestCase):
+    def test_changing_checkin_date_resets_sent_reminder_flags(self):
+        huesped = crear_huesped_prueba(cuenta=False)
+        fecha_original = timezone.localdate() + timedelta(days=4)
+        reserva = crear_reserva_prueba(huesped, fecha_original)
+        habitacion = Habitaciones.objects.create(
+            numero=uuid4().hex[:10],
+            capacidad=2,
+            precio=Decimal('100.00'),
+            estado='Disponible',
+        )
+        reserva.habitaciones = habitacion
+        reserva.recordatorio_dos_dias_enviado = True
+        reserva.recordatorio_un_dia_enviado = True
+        reserva.save(update_fields=[
+            'habitaciones',
+            'recordatorio_dos_dias_enviado',
+            'recordatorio_un_dia_enviado',
+        ])
+
+        nueva_entrada = timezone.localdate() + timedelta(days=8)
+        request = RequestFactory().post('/adminreserva/1/modificar', {
+            'nueva_fecha_entrada': nueva_entrada.isoformat(),
+            'nueva_fecha_salida': (nueva_entrada + timedelta(days=2)).isoformat(),
+        })
+        request.session = {'rol': 'Administrador'}
+        with patch('caribeconfort.views._enviar_correo_hotel', return_value=1):
+            respuesta = modificar_reserva(request, reserva.id)
+
+        self.assertEqual(respuesta.status_code, 200)
+        reserva.refresh_from_db()
+        self.assertFalse(reserva.recordatorio_dos_dias_enviado)
+        self.assertFalse(reserva.recordatorio_un_dia_enviado)
 
 
 class ResenaSubmissionTests(SimpleTestCase):

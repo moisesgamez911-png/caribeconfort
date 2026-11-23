@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Recepción | Caribe Confort</title>
     <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=107">
-    <link rel="stylesheet" href="{% static 'css/recepcionista/dashboard.css' %}?v=4">
+    <link rel="stylesheet" href="{% static 'css/recepcionista/dashboard.css' %}?v=5">
     <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=10">
 </head>
 <body>
@@ -38,6 +38,15 @@
     </section>
     {% endif %}
 
+    <section class="reception-overview" aria-label="Resumen de hoy">
+        <article class="overview-card"><span class="overview-icon">↓</span><div><small>Entradas de hoy</small><strong>{{ llegadas_hoy|length }}</strong><a href="#llegadas">Revisar llegadas</a></div></article>
+        <article class="overview-card"><span class="overview-icon">↑</span><div><small>Salidas de hoy</small><strong>{{ salidas_hoy|length }}</strong><a href="#salidas">Revisar salidas</a></div></article>
+        <article class="overview-card"><span class="overview-icon">⌂</span><div><small>Huéspedes alojados</small><strong>{{ reservas_activas|length }}</strong><span>Estadías en curso</span></div></article>
+        <article class="overview-card {% if notificaciones_servicios %}overview-attention{% endif %}"><span class="overview-icon">!</span><div><small>Servicios por revisar</small><strong>{{ notificaciones_servicios }}</strong><a href="/recepcion/servicios-pendientes">Abrir solicitudes</a></div></article>
+    </section>
+
+    <div class="section-intro"><h2>Acciones rápidas</h2><p>Elige qué necesitas hacer. Los formularios te pedirán los datos de la estadía correspondiente.</p></div>
+
     <section class="quick-actions" aria-label="Acciones rápidas">
         <button type="button" class="quick-action" data-open-dialog="modalHuesped">
             <span class="quick-icon">+</span><span><strong>Registrar huésped</strong><small>Agregar un nuevo perfil</small></span>
@@ -46,12 +55,16 @@
             <span class="quick-icon">+</span><span><strong>Crear reserva</strong><small>Asignar huésped y habitación</small></span>
         </button>
         <button type="button" class="quick-action" data-open-dialog="modalPagoServicio">
-            <span class="quick-icon">$</span><span><strong>Registrar pago / servicio</strong><small>Actualizar una estadía</small></span>
+            <span class="quick-icon">$</span><span><strong>Registrar pago o consumo</strong><small>Pago o servicio de una estadía en curso</small></span>
         </button>
+        <a class="quick-action" href="/recepcion/servicios-pendientes">
+            <span class="quick-icon">✓</span><span><strong>Registrar solicitud de servicio</strong><small>Crear solicitud y revisar las recientes</small></span>
+        </a>
     </section>
 
+    <div class="section-intro operational-intro"><h2>Operación de hoy</h2><p>Primero atiende las llegadas y salidas programadas para esta fecha.</p></div>
     <section class="reception-tables">
-        <article class="reception-card" id="llegadas">
+        <article class="reception-card tarjeta-grande"  id="llegadas">
             <header class="reception-card-heading"><div><p class="reception-eyebrow">ENTRADAS PROGRAMADAS</p><h2>Llegadas de hoy</h2></div><span class="reception-count">{{ llegadas_hoy|length }}</span></header>
             <div class="reception-table-wrap">
                 <table>
@@ -71,7 +84,7 @@
             </div>
         </article>
 
-        <article class="reception-card" id="salidas">
+        <article class="reception-card tarjeta-grande2" id="salidas">
             <header class="reception-card-heading"><div><p class="reception-eyebrow">SALIDAS PROGRAMADAS</p><h2>Salidas de hoy</h2></div><span class="reception-count">{{ salidas_hoy|length }}</span></header>
             <div class="reception-table-wrap">
                 <table>
@@ -91,42 +104,13 @@
             </div>
         </article>
 
-        <article class="reception-card" id="reservas-hotel">
-            <header class="reception-card-heading">
-                <div><p class="reception-eyebrow">GESTIÓN DE ESTADÍAS</p><h2>Todas las Reservas</h2></div>
-                <span class="reception-count" aria-label="Total de reservas">{{ total_reservas }}</span>
-                <a class="table-action" href="/adminreserva">Administrar reservas</a>
-            </header>
-            <div class="reception-table-wrap">
-                <table>
-                    <thead><tr><th>Reserva</th><th>Huésped</th><th>Habitación / Plan</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Acción</th></tr></thead>
-                    <tbody>
-                        {% for reserva in reservas_hotel %}
-                        <tr>
-                            <td>CC-{{ reserva.id|stringformat:"04d" }}</td>
-                            <td><strong>{{ reserva.huespedes.nombres }} {{ reserva.huespedes.apellidos }}</strong><small>{{ reserva.huespedes.identificacion }}</small></td>
-                            <td>{% if reserva.habitaciones %}{{ reserva.habitaciones.numero }}{% else %}{{ reserva.planes.nombre|default:"—" }}{% endif %}</td>
-                            <td>{{ reserva.fechaentrada|date:"d/m/Y" }}</td>
-                            <td>{{ reserva.fechasalida|date:"d/m/Y" }}</td>
-                            <td><span class="status-pill {% if reserva.estado == 'En curso' %}in-progress{% else %}confirmed{% endif %}">{{ reserva.estado }}</span></td>
-                            <td>
-                                <a class="table-action" href="/adminreserva">Gestionar</a>
-                                <a class="table-action" href="/reservas/{{ reserva.id }}/factura/">Factura</a>
-                                {% if reserva.saldo_favor > 0 %}
-                                <button type="button" class="table-action btn-procesar-reembolso"
-                                        data-id="{{ reserva.id }}"
-                                        data-nombre="{{ reserva.huespedes.nombres }} {{ reserva.huespedes.apellidos }}"
-                                        data-monto="{{ reserva.saldo_favor|unlocalize }}">Procesar reembolso</button>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}<tr><td class="table-empty" colspan="7">No hay reservas registradas.</td></tr>{% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        <article class="reception-card tarjeta-grande2 reservations-shortcut" id="reservas-hotel">
+            <div class="shortcut-icon">▤</div><div><p class="reception-eyebrow">GESTIÓN GENERAL</p><h2>Buscar o administrar una reserva</h2><p>Consulta el listado completo, revisa pagos y gestiona reservas fuera de las llegadas y salidas de hoy.</p></div>
+            <a class="table-action" href="/adminreserva">Abrir reservas <span aria-hidden="true">→</span></a>
         </article>
 
-        <article class="reception-card" id="servicios-pendientes">
+        <div class="section-intro services-intro"><h2>Solicitudes de servicio</h2><p>Revisa aquí los servicios que esperan aprobación.</p></div>
+        <article class="reception-card tarjeta-grande2" id="servicios-pendientes">
             <header class="reception-card-heading">
                 <div><p class="reception-eyebrow">CUENTA DE HUÉSPEDES</p><h2>Servicios Pendientes</h2></div>
                 <div class="reception-card-actions"><span class="reception-count">{{ notificaciones_servicios }}</span><a class="table-action" href="/recepcion/servicios-pendientes">Registrar solicitud · Ver últimos 3 días</a></div>

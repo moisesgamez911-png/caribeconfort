@@ -3913,7 +3913,15 @@ def modificar_reserva(request, reserva_id):
         reserva.fechaentrada = nueva_entrada
         reserva.fechasalida = nueva_salida
         reserva.valortotal = nuevo_total
-        reserva.save(update_fields=['fechaentrada', 'fechasalida', 'valortotal'])
+        campos_actualizados = ['fechaentrada', 'fechasalida', 'valortotal']
+        if nueva_entrada != entrada_anterior:
+            reserva.recordatorio_dos_dias_enviado = False
+            reserva.recordatorio_un_dia_enviado = False
+            campos_actualizados.extend([
+                'recordatorio_dos_dias_enviado',
+                'recordatorio_un_dia_enviado',
+            ])
+        reserva.save(update_fields=campos_actualizados)
 
     try:
         if not correo_destino:

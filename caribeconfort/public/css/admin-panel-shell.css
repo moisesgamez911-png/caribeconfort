@@ -166,6 +166,7 @@ body:not(.admin-dashboard-page) .quick-action {
     box-shadow: 0 1px 3px rgba(17, 24, 39, .05);
 }
 
+
 body:not(.admin-dashboard-page) .adm-card {
     margin-bottom: 18px;
     padding: 22px;
@@ -369,6 +370,8 @@ body:not(.admin-dashboard-page) .reception-card td small {
 }
 
 body:not(.admin-dashboard-page) .reception-tables {
+    display: flex;
+    flex-wrap: wrap;
     gap: 14px;
 }
 
@@ -894,7 +897,6 @@ html[data-theme="dark"] .cc-feedback-actions .cc-feedback-accept { border-color:
     body:not(.admin-dashboard-page) .reception-card { padding: 16px; }
 }
 
-/* Shared visual scale for the administration and reception content areas. */
 body:not(.admin-dashboard-page) .adm-heading h1,
 body:not(.admin-dashboard-page) .rv-title,
 body:not(.admin-dashboard-page) .rp-heading h1,
@@ -947,6 +949,14 @@ body:not(.admin-dashboard-page) .reception-card {
     border-radius: 8px;
     background: #fff;
     box-shadow: 0 1px 3px rgba(17, 24, 39, .05);
+}
+
+.tarjeta-grande{
+    flex: 1 1 100%;
+}
+
+.tarjeta-grande2{
+    flex: 1 1 100%;
 }
 
 body:not(.admin-dashboard-page) .adm-card {
