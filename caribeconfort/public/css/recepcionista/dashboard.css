@@ -362,6 +362,112 @@ html[data-theme="dark"] .reception-card-heading h2 {
     }
 }
 
+/* Historial de servicios: tabla alineada con Reservas recientes del panel. */
+#historialServicios .reception-table-wrap {
+    overflow-x: auto;
+    border: 1px solid #E1E5EA;
+    border-radius: 7px;
+}
+
+#historialServicios .reception-history-table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+    border-collapse: collapse;
+    color: #374151;
+    font-size: 12.5px;
+}
+
+#historialServicios .reception-history-table th {
+    padding: 9px 8px;
+    border-bottom: 1px solid #E1E5EA;
+    background: #F9FAFB;
+    color: #4B5563;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: normal;
+    line-height: 1.35;
+}
+
+#historialServicios .reception-history-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #EBEEF2;
+    color: #374151;
+    font-size: 12px;
+    vertical-align: middle;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+}
+
+#historialServicios .reception-history-table tbody tr:nth-child(even) td {
+    background: #F9FAFB;
+}
+
+#historialServicios .reception-history-table tbody tr:hover td {
+    background: #F1F4F6;
+}
+
+#historialServicios .reception-history-table :is(th, td):nth-child(1) { width: 17%; }
+#historialServicios .reception-history-table :is(th, td):nth-child(2) { width: 10%; }
+#historialServicios .reception-history-table :is(th, td):nth-child(3) { width: 10%; }
+#historialServicios .reception-history-table :is(th, td):nth-child(4) { width: 15%; }
+#historialServicios .reception-history-table :is(th, td):nth-child(5) { width: 10%; }
+#historialServicios .reception-history-table :is(th, td):nth-child(6) { width: 5%; }
+#historialServicios .reception-history-table :is(th, td):nth-child(7) { width: 8%; }
+#historialServicios .reception-history-table :is(th, td):nth-child(8) { width: 15%; }
+#historialServicios .reception-history-table :is(th, td):nth-child(9) { width: 10%; }
+
+#historialServicios .reception-history-table td:nth-child(5),
+#historialServicios .reception-history-table td:nth-child(6),
+#historialServicios .reception-history-table td:nth-child(7) {
+    font-variant-numeric: tabular-nums;
+}
+
+#historialServicios .reception-history-table td strong,
+#historialServicios .reception-history-table td small {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+#historialServicios .reception-history-table .table-action {
+    width: 100%;
+    min-width: 0;
+    padding: 8px 7px;
+    white-space: normal;
+    line-height: 1.3;
+}
+
+html[data-theme="dark"] #historialServicios .reception-history-table th {
+    border-color: #394443;
+    background: #283130;
+    color: #D1D5DB;
+}
+
+html[data-theme="dark"] #historialServicios .reception-history-table td {
+    border-color: #394443;
+    color: #C4CECD;
+}
+
+html[data-theme="dark"] #historialServicios .reception-history-table tbody tr:nth-child(even) td {
+    background: #27302F;
+}
+
+html[data-theme="dark"] #historialServicios .reception-history-table tbody tr:hover td {
+    background: #34413F;
+    color: #F3F6F5;
+}
+
+@media (max-width: 1100px) {
+    #historialServicios .reception-history-table {
+        min-width: 1050px;
+        table-layout: auto;
+    }
+}
+
 .reception-card form.service-reject-form {
     display: grid;
     gap: 7px;

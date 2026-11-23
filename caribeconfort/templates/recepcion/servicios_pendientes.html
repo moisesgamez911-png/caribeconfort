@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Servicios pendientes | Caribe Confort</title>
     <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=107">
-    <link rel="stylesheet" href="{% static 'css/recepcionista/dashboard.css' %}?v=5">
+    <link rel="stylesheet" href="{% static 'css/recepcionista/dashboard.css' %}?v=6">
     <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=10">
 </head>
 <body>
@@ -72,7 +72,7 @@
     <article class="reception-card" id="historialServicios">
         <header class="reception-card-heading"><div><h2>Solicitudes de los últimos 3 días</h2><p>Historial con huésped, beneficiarios, reserva, pago y opción de reembolso cuando hay saldo.</p></div><span class="reception-count">{{ servicios_recientes|length }}</span></header>
         <div class="reception-table-wrap">
-            <table>
+            <table class="dash-tabla reception-history-table">
                 <thead><tr><th>Huésped y contacto</th><th>Beneficiario(s)</th><th>Reserva / habitación</th><th>Servicio</th><th>Fecha</th><th>Cant.</th><th>Valor</th><th>Estado / pago</th><th>Reembolso</th></tr></thead>
                 <tbody>
                     {% for item in servicios_recientes %}
