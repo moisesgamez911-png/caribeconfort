@@ -2704,24 +2704,25 @@ button {
     .payment-button { min-height: 46px; font-size: 12px; }
 
     .history-track,
-    .services-track { grid-auto-columns: minmax(0, 100%); gap: 12px; padding: 2px 1px 12px; }
-    .history-card { align-items: flex-start; gap: 12px; padding: 13px; border-radius: 16px; }
+    .services-track { width: 100%; grid-auto-columns: minmax(0, 100%); gap: 12px; padding: 2px 1px 12px; }
+    .history-card { box-sizing: border-box; width: 100%; align-items: flex-start; gap: 12px; padding: 13px; border-radius: 16px; }
     .history-photo { width: 64px; height: 72px; }
     .history-info { padding-top: 2px; }
-    .history-card-heading { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px; }
-    .history-card-heading h3 { min-width: 0; overflow: visible; flex: 1 1 70px; font-size: 12px; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
-    .history-card-heading .status-pill { max-width: 100%; white-space: normal; text-align: center; }
+    .history-card-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 6px; }
+    .history-card-heading h3 { min-width: 0; overflow: visible; font-size: 12px; text-overflow: clip; white-space: normal; }
+    .history-card-heading .status-pill { max-width: 100%; white-space: normal; text-align: center; overflow-wrap: anywhere; }
     .history-description,
     .history-dates { overflow: visible; font-size: 11px; line-height: 1.45; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
     .history-total { font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
     .history-card-body { padding: 15px; }
-    .service-row { grid-template-columns: 50px minmax(0, 1fr); gap: 10px; padding: 13px; border-radius: 16px; }
+    .service-row { box-sizing: border-box; grid-template-columns: 50px minmax(0, 1fr); gap: 10px; padding: 13px; border-radius: 16px; }
     .service-image { width: 50px; height: 50px; flex-basis: 50px; }
-    .service-row h3 { font-size: 13px; }
+    .service-info { min-width: 0; }
+    .service-info h3 { overflow: visible; font-size: 13px; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
     .service-row p,
-    .service-row small { font-size: 11px; line-height: 1.4; }
-    .service-status { min-height: 24px; padding: 4px 9px; font-size: 10px; }
-    .service-total { font-size: 12px; }
+    .service-row small { font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+    .service-status { min-height: 24px; padding: 4px 9px; font-size: 10px; white-space: normal; overflow-wrap: anywhere; }
+    .service-total { font-size: 12px; white-space: normal; overflow-wrap: anywhere; }
 
     .cancel-overlay,
     .confirm-overlay { padding: 14px; align-items: flex-end; }

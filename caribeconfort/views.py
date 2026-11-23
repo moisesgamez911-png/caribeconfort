@@ -928,7 +928,7 @@ def _url_imagen_local(ruta):
             legado = Path(directorio) / 'img' / 'imagenes' / ruta
             if legado.is_file():
                 return f'/{prefijo_static}img/imagenes/{ruta}'
-        return f'/{settings.MEDIA_URL.strip("/")}/{ruta}'
+        return ''
     return ''
 
 
@@ -1227,7 +1227,7 @@ def crear_reserva(request):
                     fechaentrada=entrada_fecha,
                     fechasalida=salida_fecha,
                     cantidadacompañantes=total_personas,
-                    estado='Confirmada' if valor_total == Decimal('0.00') else 'Pendiente',
+                    estado='Pendiente',
                     valortotal=valor_total,
                 )
                 reservas_creadas.append(reserva)
@@ -1700,7 +1700,7 @@ def crear_reserva_plan(request):
                 fechaentrada=entrada_fecha,
                 fechasalida=salida_fecha,
                 cantidadacompañantes=adultos + ninos,
-                estado='Confirmada' if valor_total == Decimal('0.00') else 'Pendiente',
+                estado='Pendiente',
                 valortotal=valor_total,
             )
             valor_abono = (valor_total * Decimal('0.50')).quantize(Decimal('0.01'))
@@ -1804,7 +1804,7 @@ def reservasadmin(request):
     porcentaje_en_curso = round(total_en_curso * 100 / total_reservas) if total_reservas else 0
 
     reservas_por_validar = Reservas.objects.filter(
-        estado='Pagada - Por validar'
+        Q(estado='Pagada - Por validar') | Q(estado='Pendiente', valortotal=0)
     ).select_related('huespedes', 'habitaciones', 'planes').order_by('-fechasolicitud')
 
     notificaciones_pendientes = reservas_por_validar.count()
@@ -2430,6 +2430,19 @@ def conveniosadmin(request):
                 codigo.estado = 'Vencido' if codigo.estado == 'Activo' else 'Activo'
                 codigo.save(update_fields=['estado'])
                 messages.success(request, 'Estado del código actualizado.')
+            return redirect('/adminconvenios')
+
+        if accion == 'eliminar_codigo_usado':
+            codigo_id = request.POST.get('codigo_id', '')
+            if not codigo_id.isdigit():
+                messages.error(request, 'El código seleccionado no es válido.')
+                return redirect('/adminconvenios')
+            codigo = get_object_or_404(CodigosConvenio, id=codigo_id)
+            if codigo.estado != 'Usado':
+                messages.error(request, 'Desde esta acción solo se pueden eliminar códigos que ya fueron usados.')
+            else:
+                codigo.delete()
+                messages.success(request, 'El código usado se eliminó. La reserva conserva sus datos y continúa registrada.')
             return redirect('/adminconvenios')
 
         messages.error(request, 'La acción solicitada no es válida.')

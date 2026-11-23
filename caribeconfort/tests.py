@@ -57,6 +57,7 @@ from caribeconfort.views import (
     recepcionista,
     reservasadmin,
     servir_logo_hotel,
+    _url_imagen_local,
     solicitar_servicio,
 )
 
@@ -96,6 +97,39 @@ def crear_reserva_prueba(huesped, fechaentrada=None):
         estado='Confirmada',
         valortotal=Decimal('100.00'),
     )
+
+
+class LocalImageURLTests(SimpleTestCase):
+    def test_missing_uploaded_image_uses_existing_legacy_static_file(self):
+        with TemporaryDirectory() as media_root, TemporaryDirectory() as static_root:
+            ruta = 'uploads/servicios/imagen.jpg'
+            archivo_legado = Path(static_root) / 'img' / 'imagenes' / ruta
+            archivo_legado.parent.mkdir(parents=True)
+            archivo_legado.touch()
+
+            with override_settings(
+                MEDIA_ROOT=media_root,
+                STATICFILES_DIRS=[static_root],
+                STATIC_URL='/static/',
+                MEDIA_URL='/media/',
+            ):
+                self.assertEqual(
+                    _url_imagen_local(ruta),
+                    '/static/img/imagenes/uploads/servicios/imagen.jpg',
+                )
+
+    def test_missing_uploaded_image_returns_no_url(self):
+        with TemporaryDirectory() as media_root, TemporaryDirectory() as static_root:
+            with override_settings(
+                MEDIA_ROOT=media_root,
+                STATICFILES_DIRS=[static_root],
+                STATIC_URL='/static/',
+                MEDIA_URL='/media/',
+            ):
+                self.assertEqual(
+                    _url_imagen_local('uploads/servicios/eliminada.jpg'),
+                    '',
+                )
 
 
 class AdminNotificationContextTests(TestCase):
