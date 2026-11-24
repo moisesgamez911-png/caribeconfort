@@ -2710,15 +2710,15 @@ button {
 
     .history-track,
     .services-track { width: 100%; grid-auto-columns: minmax(0, 100%); gap: 12px; padding: 2px 1px 12px; }
-    .history-card { box-sizing: border-box; width: 100%; align-items: flex-start; gap: 12px; padding: 13px; border-radius: 16px; }
-    .history-photo { width: 64px; height: 72px; }
+    .history-card { box-sizing: border-box; width: 100%; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 16px; }
+    .history-photo { width: 58px; height: 64px; }
     .history-info { padding-top: 2px; }
-    .history-card-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 6px; }
-    .history-card-heading h3 { min-width: 0; overflow: visible; font-size: 12px; text-overflow: clip; white-space: normal; }
-    .history-card-heading .status-pill { max-width: 100%; white-space: normal; text-align: center; overflow-wrap: anywhere; }
+    .history-card-heading { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 5px 8px; }
+    .history-card-heading h3 { min-width: 0; overflow: visible; font-size: 13px; line-height: 1.4; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
+    .history-card-heading .status-pill { min-width: 0; max-width: 100%; white-space: normal; text-align: center; overflow-wrap: anywhere; }
     .history-description,
-    .history-dates { overflow: visible; font-size: 11px; line-height: 1.45; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
-    .history-total { font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+    .history-dates { overflow: visible; font-size: 12px; line-height: 1.5; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
+    .history-total { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
     .history-card-body { padding: 15px; }
     .service-row { box-sizing: border-box; grid-template-columns: 50px minmax(0, 1fr); gap: 10px; padding: 13px; border-radius: 16px; }
     .service-image { width: 50px; height: 50px; flex-basis: 50px; }

@@ -1,5 +1,4 @@
 import base64
-import csv
 import hashlib
 from html import escape as escape_html
 from io import BytesIO
@@ -34,6 +33,9 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.utils.crypto import get_random_string
 from django.views.decorators.csrf import ensure_csrf_cookie
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
 from caribeconfort.formato import formato_numero_colombiano
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -2520,20 +2522,26 @@ def exportar_reporte(request):
         messages.error(request, 'La fecha final debe ser igual o posterior a la inicial.')
         return redirect('/adminreportes')
 
-    respuesta = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+    libro = Workbook()
+    hoja = libro.active
+    hoja.title = {
+        'reservas': 'Reservas',
+        'ocupacion': 'Ocupacion',
+        'ingresos': 'Ingresos y saldos',
+        'huespedes': 'Huespedes',
+    }[tipo]
+    hoja.sheet_view.showGridLines = False
     nombre_archivo = (
-        'reporte_reservas_completo.csv' if reporte_completo_reservas
-        else f'reporte_{tipo}_{desde}_{hasta}.csv'
+        'reporte_reservas_completo.xlsx' if reporte_completo_reservas
+        else f'reporte_{tipo}_{desde}_{hasta}.xlsx'
     )
-    respuesta['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
-    escritor = csv.writer(respuesta, delimiter=';')
 
     def escribir_fila(*valores):
         seguros = [
             f"'{valor}" if isinstance(valor, str) and valor.startswith(('=', '+', '-', '@', '\t', '\r')) else valor
             for valor in valores
         ]
-        escritor.writerow(seguros)
+        hoja.append(seguros)
 
     if tipo == 'reservas':
         reservas = Reservas.objects.select_related(
@@ -2653,6 +2661,33 @@ def exportar_reporte(request):
                 huesped.reservas_periodo,
             )
 
+    hoja.freeze_panes = 'A2'
+    for fila in hoja.iter_rows():
+        for celda in fila:
+            celda.alignment = Alignment(vertical='top', wrap_text=True)
+    for celda in hoja[1]:
+        celda.font = Font(bold=True, color='FFFFFF')
+        celda.fill = PatternFill(fill_type='solid', fgColor='183D3D')
+        celda.alignment = Alignment(vertical='center', wrap_text=True)
+    hoja.row_dimensions[1].height = 30
+
+    for indice, columna in enumerate(hoja.iter_cols(), start=1):
+        longitud_maxima = max(
+            (len(str(celda.value)) for celda in columna if celda.value is not None),
+            default=0,
+        )
+        hoja.column_dimensions[get_column_letter(indice)].width = min(
+            max(longitud_maxima + 2, 12),
+            42,
+        )
+
+    salida = BytesIO()
+    libro.save(salida)
+    respuesta = HttpResponse(
+        salida.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    respuesta['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
     return respuesta
 
 

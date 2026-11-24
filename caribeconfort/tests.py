@@ -19,6 +19,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
+from openpyxl import load_workbook
 
 from caribeconfort.context_processors import identidad_hotel, notificaciones_administracion
 from caribeconfort.models import (
@@ -1645,3 +1646,52 @@ class AssignLocalImagesCommandTests(TestCase):
             ).count(),
             4,
         )
+
+
+class ExcelReportExportTests(TestCase):
+    def test_every_report_type_returns_a_valid_xlsx_workbook(self):
+        cliente = Client()
+        session = cliente.session
+        session['rol'] = 'Administrador'
+        session.save()
+        hoy = timezone.localdate().isoformat()
+
+        for tipo in ('reservas', 'ocupacion', 'ingresos', 'huespedes'):
+            with self.subTest(tipo=tipo):
+                response = cliente.get(
+                    '/adminreportes/exportar',
+                    {'tipo': tipo, 'desde': hoy, 'hasta': hoy},
+                )
+
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(
+                    response['Content-Type'],
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                )
+                libro = load_workbook(BytesIO(response.content), read_only=True)
+                self.assertGreaterEqual(libro.active.max_column, 1)
+
+    def test_guest_report_is_an_xlsx_with_column_widths_based_on_content(self):
+        huesped = crear_huesped_prueba(cuenta=False)
+        cliente = Client()
+        session = cliente.session
+        session['rol'] = 'Administrador'
+        session.save()
+        hoy = timezone.localdate().isoformat()
+
+        response = cliente.get(
+            '/adminreportes/exportar',
+            {'tipo': 'huespedes', 'desde': hoy, 'hasta': hoy},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        self.assertIn('.xlsx', response['Content-Disposition'])
+        libro = load_workbook(BytesIO(response.content))
+        hoja = libro.active
+        self.assertEqual(hoja['C2'].value, huesped.correo)
+        self.assertEqual(hoja.column_dimensions['C'].width, 42)
+        self.assertEqual(hoja.freeze_panes, 'A2')
