@@ -11,7 +11,7 @@
     
     <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=107">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=999">
-    <link rel="stylesheet" href="{% static 'css/administrador/reservas.css' %}?v=8">
+    <link rel="stylesheet" href="{% static 'css/administrador/reservas.css' %}?v=9">
     <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
     <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
     <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=10">
@@ -626,7 +626,7 @@
         </div>
 
         <footer class="rv-modal-footer">
-            <button type="button" class="rv-btn-outline" id="btnNoCheckin" data-close-reservation-modal="modalCheckinConfirm">No, cancelar</button>
+            <button type="button" class="rv-btn-outline" id="btnNoCheckin">No, cancelar</button>
             <a href="#" id="btnSiCheckin" class="rv-btn-primary">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                 Sí, hacer check-in
@@ -742,7 +742,7 @@
 </div>
 
 {% include 'inc/modal_reembolso.html' %}
-<script src="{% static 'js/administrador/reservas_admin.js' %}?v=10012"></script>
+<script src="{% static 'js/administrador/reservas_admin.js' %}?v=10013"></script>
 <script src="{% static 'js/reembolso_reserva.js' %}?v=1"></script>
 <script src="{% static 'js/admin-pagination-scroll.js' %}?v=2"></script>
 <script src="{% static 'js/barra-encabezado.js' %}?v=15"></script>

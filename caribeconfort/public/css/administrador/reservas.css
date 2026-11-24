@@ -64,6 +64,7 @@
     --rv-modal-border: #eaecee;
     --rv-modal-icon-bg: #e8eeee;
     --rv-modal-icon-color: #16484b;
+    --rv-modal-backdrop: rgba(22, 72, 75, 0.75);
 }
 
 html[data-theme="dark"] {
@@ -87,6 +88,7 @@ html[data-theme="dark"] {
     --rv-modal-border: #42514e;
     --rv-modal-icon-bg: #31413e;
     --rv-modal-icon-color: #d8ebe5;
+    --rv-modal-backdrop: rgba(4, 12, 11, 0.84);
 }
 
 
@@ -850,7 +852,7 @@ html[data-theme="dark"] {
     height: 100% !important;
     padding: 16px;
     box-sizing: border-box;
-    background: rgba(22, 72, 75, 0.75) !important;
+    background: var(--rv-modal-backdrop) !important;
     backdrop-filter: blur(5px) !important;
     -webkit-backdrop-filter: blur(5px) !important;
     display: none;
@@ -865,6 +867,7 @@ html[data-theme="dark"] {
 
 .rv-modal-box {
     background: var(--rv-modal-bg);
+    color: var(--rv-modal-text);
     width: 90%;
     max-width: 500px;
     border-radius: 12px;

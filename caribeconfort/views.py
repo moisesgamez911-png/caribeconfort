@@ -33,6 +33,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.utils.crypto import get_random_string
+from django.views.decorators.csrf import ensure_csrf_cookie
 from caribeconfort.formato import formato_numero_colombiano
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -1520,6 +1521,7 @@ def dejar_resena(request, token):
     )
 
 
+@ensure_csrf_cookie
 @requiere_login_cliente
 def mis_reservas(request):
     finalizar_reservas_vencidas(request)

@@ -132,6 +132,52 @@ class LocalImageURLTests(SimpleTestCase):
                 )
 
 
+class ReservationCancellationTests(TestCase):
+                def test_customer_cancellation_uses_csrf_cookie_from_reservations_page(self):
+                    huesped = crear_huesped_prueba()
+                    reserva = crear_reserva_prueba(huesped)
+                    client = Client(enforce_csrf_checks=True)
+                    session = client.session
+                    session['usuario_id'] = huesped.usuarios_id
+                    session['rol'] = 'Cliente'
+                    session.save()
+
+                    page = client.get('/mis-reservas')
+
+                    self.assertEqual(page.status_code, 200)
+                    self.assertIn('csrftoken', page.cookies)
+                    token = page.cookies['csrftoken'].value
+                    with patch('caribeconfort.views._enviar_correo_hotel', return_value=True):
+                        response = client.post(
+                            f'/api/cancelar-reserva/{reserva.id}/',
+                            data='{}',
+                            content_type='application/json',
+                            HTTP_X_CSRFTOKEN=token,
+                            HTTP_X_SESSION_SCOPE='cliente',
+                        )
+
+                    self.assertEqual(response.status_code, 200)
+                    self.assertTrue(response.json()['success'])
+                    reserva.refresh_from_db()
+                    self.assertEqual(reserva.estado, 'Cancelada')
+
+
+class GalleryAdminPageTests(TestCase):
+    def test_existing_gallery_list_is_separated_and_collapsed_by_default(self):
+                    client = Client()
+                    session = client.session
+                    session['rol'] = 'Administrador'
+                    session['usuario_nom'] = 'Admin'
+                    session.save()
+
+                    response = client.get('/admingaleria')
+
+                    self.assertEqual(response.status_code, 200)
+                    self.assertContains(response, 'Ver galerías existentes')
+                    self.assertContains(response, 'class="adm-gallery-details"')
+                    self.assertNotContains(response, 'class="adm-gallery-details" open')
+
+
 class AdminNotificationContextTests(TestCase):
     def test_admin_gets_pending_reservation_and_service_notifications(self):
         huesped = crear_huesped_prueba()

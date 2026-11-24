@@ -312,6 +312,7 @@ document.addEventListener('DOMContentLoaded', function () {
         modalCheckin.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') modalCheckin.classList.remove('activo');
         });
+        configurarCierre(modalCheckin, ['btnNoCheckin']);
     }
 
     if (modalValidar) {

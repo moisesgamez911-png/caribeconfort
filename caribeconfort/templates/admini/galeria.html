@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=103">
     <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}?v=3">
     <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
-    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=10">
+    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=11">
 </head>
 <body>
 {% include 'inc/admin_header.html' %}
@@ -158,90 +158,105 @@
     </section>
 
     <section class="adm-gallery-section">
-        <div class="adm-section-heading">
-            <div><h2>Imágenes registradas</h2><p>{{ imagenes|length }} imágenes organizadas por sección</p></div>
-        </div>
-        <div class="adm-gallery-tools">
-            <nav class="adm-gallery-filters" aria-label="Filtrar imágenes por sección">
-                <button type="button" class="adm-gallery-filter is-active" data-gallery-section="all" aria-pressed="true">Todas <span>{{ imagenes|length }}</span></button>
-                {% for valor, etiqueta in secciones_galeria %}
-                <button type="button" class="adm-gallery-filter" data-gallery-section="{{ valor }}" aria-pressed="false">{{ etiqueta }}</button>
-                {% endfor %}
-            </nav>
-            <label class="adm-gallery-search">
-                <span class="sr-only">Buscar imágenes</span>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
-                <input type="search" id="buscarImagenGaleria" placeholder="Buscar por título o sección">
-            </label>
-            <label class="adm-gallery-status-filter" for="filtrarEstadoGaleria">Estado
-                <select id="filtrarEstadoGaleria">
-                    <option value="all">Todos</option>
-                    <option value="active">Activas</option>
-                    <option value="inactive">Inactivas</option>
-                </select>
-            </label>
-        </div>
-        <p class="adm-gallery-results" id="resultadoFiltroGaleria" aria-live="polite"></p>
-        <div class="adm-gallery-grid">
-            {% for imagen in imagenes %}
-            <article class="adm-image-card" data-section="{{ imagen.seccion }}" data-state="{% if imagen.estado %}active{% else %}inactive{% endif %}" data-search="{{ imagen.titulo|default:'' }} {{ imagen.categoria.nombre }} {{ imagen.seccion }} {{ imagen.id }}">
-                <div class="adm-image-preview">
-                    <img data-preview-image src="{{ imagen.url_gestor }}" alt="{{ imagen.titulo|default:imagen.categoria.nombre }}" loading="lazy">
-                    <div class="adm-image-preview-top">
-                        <span class="adm-image-section-pill">{{ imagen.get_seccion_display }}</span>
-                        <span class="adm-pill {% if imagen.estado %}green{% else %}gray{% endif %}" data-preview-status>{% if imagen.estado %}Activa{% else %}Inactiva{% endif %}</span>
-                    </div>
-                    <div class="adm-image-preview-caption">
-                        <span>IMAGEN {{ imagen.id }}</span>
-                        <strong data-preview-title>{{ imagen.titulo|default:imagen.categoria.nombre }}</strong>
-                    </div>
+        <details class="adm-gallery-details">
+            <summary class="adm-gallery-summary">
+                <span class="adm-gallery-summary-copy">
+                    <strong>Galerías existentes</strong>
+                    <small>{{ imagenes|length }} imágenes registradas, organizadas por sección</small>
+                </span>
+                <span class="adm-gallery-summary-action">
+                    <span class="adm-gallery-open-label">Ver galerías existentes</span>
+                    <span class="adm-gallery-close-label">Ocultar galerías</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </span>
+            </summary>
+            <div class="adm-gallery-panel">
+                <div class="adm-section-heading">
+                    <div><h2>Imágenes registradas</h2><p>Filtra y administra las imágenes por sección.</p></div>
                 </div>
-                <form method="post" enctype="multipart/form-data" class="adm-image-edit">
-                    {% csrf_token %}
-                    <input type="hidden" name="accion" value="editar">
-                    <input type="hidden" name="imagen_id" value="{{ imagen.id }}">
-                    <div class="adm-field">
-                        <label for="imagenTitulo{{ imagen.id }}">Título</label>
-                        <input id="imagenTitulo{{ imagen.id }}" name="titulo" maxlength="100" value="{{ imagen.titulo|default:'' }}">
-                    </div>
-                    <div class="adm-field">
-                        <label for="imagenSeccion{{ imagen.id }}">Sección</label>
-                        <select id="imagenSeccion{{ imagen.id }}" name="seccion" required>
-                            {% for valor, etiqueta in secciones_galeria %}
-                            <option value="{{ valor }}" {% if imagen.seccion == valor %}selected{% endif %}>{{ etiqueta }}</option>
-                            {% endfor %}
+                <div class="adm-gallery-tools">
+                    <nav class="adm-gallery-filters" aria-label="Filtrar imágenes por sección">
+                        <button type="button" class="adm-gallery-filter is-active" data-gallery-section="all" aria-pressed="true">Todas <span>{{ imagenes|length }}</span></button>
+                        {% for valor, etiqueta in secciones_galeria %}
+                        <button type="button" class="adm-gallery-filter" data-gallery-section="{{ valor }}" aria-pressed="false">{{ etiqueta }}</button>
+                        {% endfor %}
+                    </nav>
+                    <label class="adm-gallery-search">
+                        <span class="sr-only">Buscar imágenes</span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+                        <input type="search" id="buscarImagenGaleria" placeholder="Buscar por título o sección">
+                    </label>
+                    <label class="adm-gallery-status-filter" for="filtrarEstadoGaleria">Estado
+                        <select id="filtrarEstadoGaleria">
+                            <option value="all">Todos</option>
+                            <option value="active">Activas</option>
+                            <option value="inactive">Inactivas</option>
                         </select>
-                    </div>
-                    <div class="adm-field">
-                        <label for="imagenCategoria{{ imagen.id }}">Categoría</label>
-                        <select id="imagenCategoria{{ imagen.id }}" name="categoria_id">
-                            <option value="">Asignar automáticamente por sección</option>
-                            {% for categoria in categorias_galeria %}
-                            <option value="{{ categoria.id }}" {% if imagen.categoria_id == categoria.id %}selected{% endif %}>{{ categoria.nombre }}{% if not categoria.estado %} (inactiva){% endif %}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="adm-field">
-                        <label for="imagenArchivo{{ imagen.id }}">Reemplazar imagen</label>
-                        <input id="imagenArchivo{{ imagen.id }}" name="archivo" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" data-preview-input>
-                    </div>
-                    <label class="user-active adm-image-active-toggle"><input type="checkbox" name="estado" {% if imagen.estado %}checked{% endif %} data-preview-active> Mostrar imagen en el sitio</label>
-                    <div class="adm-image-actions">
-                        <button class="adm-button" type="submit">Guardar</button>
-                    </div>
-                </form>
-                <form method="post" class="adm-delete-form" data-confirm-message="¿Eliminar esta imagen del gestor?">
-                    {% csrf_token %}
-                    <input type="hidden" name="accion" value="eliminar">
-                    <input type="hidden" name="imagen_id" value="{{ imagen.id }}">
-                    <button class="adm-button danger" type="submit">Eliminar</button>
-                </form>
-            </article>
-            {% empty %}
-            <div class="adm-card adm-empty">Todavía no hay imágenes registradas.</div>
-            {% endfor %}
-        </div>
-        <div class="adm-card adm-empty" id="galeriaSinCoincidencias" hidden>No hay imágenes que coincidan con los filtros.</div>
+                    </label>
+                </div>
+                <p class="adm-gallery-results" id="resultadoFiltroGaleria" aria-live="polite"></p>
+                <div class="adm-gallery-grid">
+                    {% for imagen in imagenes %}
+                    <article class="adm-image-card" data-section="{{ imagen.seccion }}" data-state="{% if imagen.estado %}active{% else %}inactive{% endif %}" data-search="{{ imagen.titulo|default:'' }} {{ imagen.categoria.nombre }} {{ imagen.seccion }} {{ imagen.id }}">
+                        <div class="adm-image-preview">
+                            <img data-preview-image src="{{ imagen.url_gestor }}" alt="{{ imagen.titulo|default:imagen.categoria.nombre }}" loading="lazy">
+                            <div class="adm-image-preview-top">
+                                <span class="adm-image-section-pill">{{ imagen.get_seccion_display }}</span>
+                                <span class="adm-pill {% if imagen.estado %}green{% else %}gray{% endif %}" data-preview-status>{% if imagen.estado %}Activa{% else %}Inactiva{% endif %}</span>
+                            </div>
+                            <div class="adm-image-preview-caption">
+                                <span>IMAGEN {{ imagen.id }}</span>
+                                <strong data-preview-title>{{ imagen.titulo|default:imagen.categoria.nombre }}</strong>
+                            </div>
+                        </div>
+                        <form method="post" enctype="multipart/form-data" class="adm-image-edit">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="editar">
+                            <input type="hidden" name="imagen_id" value="{{ imagen.id }}">
+                            <div class="adm-field">
+                                <label for="imagenTitulo{{ imagen.id }}">Título</label>
+                                <input id="imagenTitulo{{ imagen.id }}" name="titulo" maxlength="100" value="{{ imagen.titulo|default:'' }}">
+                            </div>
+                            <div class="adm-field">
+                                <label for="imagenSeccion{{ imagen.id }}">Sección</label>
+                                <select id="imagenSeccion{{ imagen.id }}" name="seccion" required>
+                                    {% for valor, etiqueta in secciones_galeria %}
+                                    <option value="{{ valor }}" {% if imagen.seccion == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="adm-field">
+                                <label for="imagenCategoria{{ imagen.id }}">Categoría</label>
+                                <select id="imagenCategoria{{ imagen.id }}" name="categoria_id">
+                                    <option value="">Asignar automáticamente por sección</option>
+                                    {% for categoria in categorias_galeria %}
+                                    <option value="{{ categoria.id }}" {% if imagen.categoria_id == categoria.id %}selected{% endif %}>{{ categoria.nombre }}{% if not categoria.estado %} (inactiva){% endif %}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="adm-field">
+                                <label for="imagenArchivo{{ imagen.id }}">Reemplazar imagen</label>
+                                <input id="imagenArchivo{{ imagen.id }}" name="archivo" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" data-preview-input>
+                            </div>
+                            <label class="user-active adm-image-active-toggle"><input type="checkbox" name="estado" {% if imagen.estado %}checked{% endif %} data-preview-active> Mostrar imagen en el sitio</label>
+                            <div class="adm-image-actions">
+                                <button class="adm-button" type="submit">Guardar</button>
+                            </div>
+                        </form>
+                        <form method="post" class="adm-delete-form" data-confirm-message="¿Eliminar esta imagen del gestor?">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="eliminar">
+                            <input type="hidden" name="imagen_id" value="{{ imagen.id }}">
+                            <button class="adm-button danger" type="submit">Eliminar</button>
+                        </form>
+                    </article>
+                    {% empty %}
+                    <div class="adm-card adm-empty">Todavía no hay imágenes registradas.</div>
+                    {% endfor %}
+                </div>
+                <div class="adm-card adm-empty" id="galeriaSinCoincidencias" hidden>No hay imágenes que coincidan con los filtros.</div>
+            </div>
+        </details>
     </section>
 </main>
 <script>
