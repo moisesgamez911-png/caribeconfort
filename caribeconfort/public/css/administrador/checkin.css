@@ -4,7 +4,7 @@
             font-family: 'Segoe UI', Arial, sans-serif !important;
             background: 
                 linear-gradient(135deg, rgba(10, 25, 25, 0.75), rgba(0, 0, 0, 0.85)),
-                url('../../img/imagenes/plan2.jpg') center / cover no-repeat;
+                url('../img/imagenes/plan2.jpg') center / cover no-repeat;
             min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
             padding: 24px; color: #1F2C33;
@@ -18,6 +18,7 @@
             padding: 40px 48px 32px;
             background: linear-gradient(135deg, #16484B 0%, #0F3B3D 100%);
             color: #fff; position: relative;
+    
         }
         .ck-header::after {
             content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
