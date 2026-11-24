@@ -291,6 +291,8 @@
 
 .user-role-form { display: flex; align-items: center; gap: 12px; min-width: 220px; }
 .user-role-form select { min-width: 130px; }
+.user-account-actions { display: flex; align-items: center; gap: 8px; }
+.user-account-actions .user-delete-form { margin: 0; }
 .user-active { display: inline-flex; align-items: center; gap: 7px; color: #526e73; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .user-active input { width: 16px; height: 16px; accent-color: #16835d; }
 

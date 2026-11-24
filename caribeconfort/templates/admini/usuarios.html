@@ -7,9 +7,9 @@
     <title>Usuarios | Caribe Confort</title>
     <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=107">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
-    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
+    <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}?v=5">
     <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
-    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=10">
+    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=12">
 </head>
 <body>
 {% include 'inc/admin_header.html' %}
@@ -111,14 +111,17 @@
                         </td>
                         <td><button class="adm-button" type="submit" form="formUsuario{{ usuario.id }}">Guardar</button></td>
                         <td>
-                            <form method="post" class="user-delete-form" data-confirm-message="¿Eliminar permanentemente la cuenta de {{ usuario.nombre }} {{ usuario.apellido }}?">
-                                {% csrf_token %}
-                                <input type="hidden" name="accion" value="eliminar">
-                                <input type="hidden" name="usuario_id" value="{{ usuario.id }}">
-                                <button class="adm-button danger icon-button" type="submit" aria-label="Eliminar a {{ usuario.nombre }} {{ usuario.apellido }}" title="Eliminar usuario">
-                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6"/></svg>
-                                </button>
-                            </form>
+                            <div class="user-account-actions">
+                                <button class="adm-button secondary" type="button" data-edit-personal="{{ usuario.id }}" data-nombre="{{ usuario.nombre }}" data-apellido="{{ usuario.apellido }}" data-correo="{{ usuario.correo }}">Editar</button>
+                                <form method="post" class="user-delete-form" data-confirm-message="¿Eliminar permanentemente la cuenta de {{ usuario.nombre }} {{ usuario.apellido }}?">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="eliminar">
+                                    <input type="hidden" name="usuario_id" value="{{ usuario.id }}">
+                                    <button class="adm-button danger icon-button" type="submit" aria-label="Eliminar a {{ usuario.nombre }} {{ usuario.apellido }}" title="Eliminar usuario">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6"/></svg>
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}<tr><td class="adm-empty" colspan="5">No hay personal que coincida con la búsqueda.</td></tr>{% endfor %}
@@ -171,6 +174,28 @@
         <footer class="adm-form-actions">
             <button class="adm-button secondary" type="button" id="cancelarNuevoUsuario">Cancelar</button>
             <button class="adm-button" type="submit">Crear usuario</button>
+        </footer>
+    </form>
+</dialog>
+<dialog class="adm-dialog" id="editarPersonalDialog" aria-labelledby="editarPersonalTitulo">
+    <header class="adm-dialog-heading">
+        <div><p class="adm-eyebrow">CUENTA DEL HOTEL</p><h2 id="editarPersonalTitulo">Editar personal</h2></div>
+        <button class="room-modal-close" type="button" id="cerrarEditarPersonal" aria-label="Cerrar">&times;</button>
+    </header>
+    <form method="post" id="formEditarPersonal">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="editar_personal">
+        <input type="hidden" name="usuario_id" id="editarPersonalId">
+        <div class="adm-form-grid">
+            <div class="adm-field"><label for="editarPersonalNombre">Nombre</label><input id="editarPersonalNombre" name="nombre" maxlength="100" required></div>
+            <div class="adm-field"><label for="editarPersonalApellido">Apellido</label><input id="editarPersonalApellido" name="apellido" maxlength="100" required></div>
+            <div class="adm-field adm-span-2"><label for="editarPersonalCorreo">Correo</label><input id="editarPersonalCorreo" name="correo" type="email" maxlength="100" required></div>
+            <div class="adm-field adm-span-2"><label for="editarPersonalContrasena">Nueva contraseña <span>(opcional)</span></label><input id="editarPersonalContrasena" name="nueva_contrasena" type="password" minlength="8" autocomplete="new-password"><small>Déjala en blanco para conservar la contraseña actual.</small></div>
+            <div class="adm-field adm-span-2"><label for="confirmarPersonalContrasena">Confirmar nueva contraseña</label><input id="confirmarPersonalContrasena" name="confirmar_contrasena" type="password" minlength="8" autocomplete="new-password"></div>
+        </div>
+        <footer class="adm-form-actions">
+            <button class="adm-button secondary" type="button" id="cancelarEditarPersonal">Cancelar</button>
+            <button class="adm-button" type="submit">Guardar cambios</button>
         </footer>
     </form>
 </dialog>
@@ -231,6 +256,20 @@
     }
     nuevoRol.addEventListener('change', actualizarCamposPerfilHuesped);
     actualizarCamposPerfilHuesped();
+    const editarPersonalDialog = document.getElementById('editarPersonalDialog');
+    const formEditarPersonal = document.getElementById('formEditarPersonal');
+    document.querySelectorAll('[data-edit-personal]').forEach((button) => {
+        button.addEventListener('click', () => {
+            formEditarPersonal.reset();
+            document.getElementById('editarPersonalId').value = button.dataset.editPersonal;
+            document.getElementById('editarPersonalNombre').value = button.dataset.nombre;
+            document.getElementById('editarPersonalApellido').value = button.dataset.apellido;
+            document.getElementById('editarPersonalCorreo').value = button.dataset.correo;
+            editarPersonalDialog.showModal();
+        });
+    });
+    document.getElementById('cerrarEditarPersonal').addEventListener('click', () => editarPersonalDialog.close());
+    document.getElementById('cancelarEditarPersonal').addEventListener('click', () => editarPersonalDialog.close());
     const completarPerfilDialog = document.getElementById('completarPerfilDialog');
     const formCompletarPerfil = document.getElementById('formCompletarPerfil');
     const completarPerfilMensaje = document.getElementById('completarPerfilMensaje');

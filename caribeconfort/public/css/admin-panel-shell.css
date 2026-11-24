@@ -2062,6 +2062,51 @@ html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-service-image-empty
     color: #AEBBB9;
 }
 
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-messages p,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .reception-messages p,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rp-messages p,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .cv-messages p {
+    border-color: #465351;
+    background: #283130;
+    color: #D1D5DB;
+}
+
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-messages p.success,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .reception-messages p.success,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rp-messages p.success,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .cv-messages p.success {
+    border-color: #3D6B53;
+    background: #24372F;
+    color: #B8E7C8;
+}
+
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-messages p.error,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .reception-messages p.error,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rp-messages p.error,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .cv-messages p.error {
+    border-color: #6A383B;
+    background: #3B2A2B;
+    color: #FFB5B8;
+}
+
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-messages p.warning,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .reception-messages p.warning,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rp-messages p.warning,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .cv-messages p.warning {
+    border-color: #725722;
+    background: #3B3323;
+    color: #F3D28B;
+}
+
+html[data-theme="dark"] body:not(.admin-dashboard-page) .adm-messages p.info,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .reception-messages p.info,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .rp-messages p.info,
+html[data-theme="dark"] body:not(.admin-dashboard-page) .cv-messages p.info {
+    border-color: #355A6B;
+    background: #263842;
+    color: #A8D9EC;
+}
+
 .adm-category-list {
     display: grid;
     gap: 12px;

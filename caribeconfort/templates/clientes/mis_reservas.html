@@ -49,19 +49,12 @@
                 {% for r in activas %}
                 <article class="reservation-card">
                     <div class="reservation-photo">
-                        {% if r.habitaciones and r.habitaciones.imagen %}
-                            <img src="/media/{{ r.habitaciones.imagen }}" alt="Habitación {{ r.habitaciones.numero }}" loading="lazy" decoding="async">
-                            <span class="reservation-photo-tag">Hab. {{ r.habitaciones.numero }}</span>
-                        {% elif r.habitaciones and r.habitaciones.tipohabitacion.imagen %}
-                            <img src="/media/{{ r.habitaciones.tipohabitacion.imagen }}" alt="{{ r.habitaciones.tipohabitacion.nombre }}" loading="lazy" decoding="async">
-                            <span class="reservation-photo-tag">Hab. {{ r.habitaciones.numero }}</span>
-                        {% elif r.planes and r.planes.imagen %}
-                            <img src="/media/{{ r.planes.imagen }}" alt="{{ r.planes.nombre }}" loading="lazy" decoding="async">
-                            <span class="reservation-photo-tag">Plan</span>
+                        {% if r.reserva_imagen_url %}
+                            <img src="{{ r.reserva_imagen_url }}" alt="{% if r.habitaciones %}Habitación {{ r.habitaciones.numero }}{% elif r.planes %}{{ r.planes.nombre }}{% else %}{{ nombre_hotel }}{% endif %}" loading="lazy" decoding="async">
                         {% else %}
                             <img src="{% static 'img/imagenes/foto2.png' %}" alt="{{ nombre_hotel }}" loading="lazy" decoding="async">
-                            <span class="reservation-photo-tag">{% if r.habitaciones %}Hab. {{ r.habitaciones.numero }}{% else %}Plan{% endif %}</span>
                         {% endif %}
+                        <span class="reservation-photo-tag">{% if r.habitaciones %}Hab. {{ r.habitaciones.numero }}{% else %}Plan{% endif %}</span>
                     </div>
 
                     <div class="reservation-main">
@@ -161,7 +154,7 @@
                                 data-pago-url="/pagar-reserva/{{ r.id }}/"
                                 data-hab-numero="{% if r.habitaciones %}{{ r.habitaciones.numero }}{% endif %}"
                                 data-hab-tipo="{% if r.habitaciones %}{{ r.habitaciones.tipohabitacion.nombre }}{% else %}{{ r.planes.nombre|default:'Plan reservado' }}{% endif %}"
-                                data-hab-imagen="{% if r.habitaciones and r.habitaciones.imagen %}/media/{{ r.habitaciones.imagen }}{% elif r.habitaciones and r.habitaciones.tipohabitacion.imagen %}/media/{{ r.habitaciones.tipohabitacion.imagen }}{% elif r.planes and r.planes.imagen %}/media/{{ r.planes.imagen }}{% else %}{% static 'img/imagenes/foto2.png' %}{% endif %}"
+                                data-hab-imagen="{% if r.reserva_imagen_url %}{{ r.reserva_imagen_url }}{% else %}{% static 'img/imagenes/foto2.png' %}{% endif %}"
                                 data-hab-cama="{% if r.habitaciones %}{{ r.habitaciones.tipohabitacion.tipo_cama }}{% endif %}"
                                 data-fecha-registro="{{ r.fechasolicitud|date:'d/m/Y - h:i a' }}">
                                 <i class="bi bi-receipt" aria-hidden="true"></i>
@@ -211,8 +204,8 @@
                 {% for r in historial %}
                 <article class="history-card" data-hist="{% if r.estado == 'Finalizada' %}finalizada{% elif r.estado == 'En curso' %}curso{% else %}otra{% endif %}">
                     <div class="history-photo">
-                        {% if r.historial_imagen_url %}
-                            <img src="{{ r.historial_imagen_url }}" alt="{% if r.habitaciones %}Habitación {{ r.habitaciones.numero }}{% else %}{{ r.planes.nombre }}{% endif %}" loading="lazy" decoding="async">
+                        {% if r.reserva_imagen_url %}
+                            <img src="{{ r.reserva_imagen_url }}" alt="{% if r.habitaciones %}Habitación {{ r.habitaciones.numero }}{% else %}{{ r.planes.nombre }}{% endif %}" loading="lazy" decoding="async">
                         {% else %}
                             <span class="history-photo-placeholder" role="img" aria-label="Imagen de alojamiento no disponible"><i class="bi bi-building" aria-hidden="true"></i></span>
                         {% endif %}

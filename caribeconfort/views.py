@@ -1562,14 +1562,20 @@ def mis_reservas(request):
             r.porcentaje_pagado = 0
         r.formatted_id = f"CC-{r.id:04d}"
 
-        ruta_imagen = ''
+        rutas_imagen = []
         if r.habitaciones:
-            ruta_imagen = r.habitaciones.imagen or ''
-            if not ruta_imagen and r.habitaciones.tipohabitacion:
-                ruta_imagen = r.habitaciones.tipohabitacion.imagen or ''
+            if r.habitaciones.imagen:
+                rutas_imagen.append(r.habitaciones.imagen)
+            if r.habitaciones.tipohabitacion and r.habitaciones.tipohabitacion.imagen:
+                rutas_imagen.append(r.habitaciones.tipohabitacion.imagen)
         elif r.planes:
-            ruta_imagen = r.planes.imagen or ''
-        r.historial_imagen_url = _url_imagen_local(ruta_imagen)
+            if r.planes.imagen:
+                rutas_imagen.append(r.planes.imagen)
+        r.reserva_imagen_url = ''
+        for ruta_imagen in rutas_imagen:
+            r.reserva_imagen_url = _url_imagen_local(ruta_imagen)
+            if r.reserva_imagen_url:
+                break
 
         if r.estado in ['Pendiente', 'Pagada - Por validar', 'Confirmada', 'En curso'] and r.fechasalida >= hoy:
             activas.append(r)
@@ -2786,6 +2792,69 @@ def usuariosadmin(request):
         return redirect('/login')
 
     if request.method == 'POST':
+        if request.POST.get('accion') == 'editar_personal':
+            usuario_id = request.POST.get('usuario_id', '').strip()
+            if not usuario_id.isdigit():
+                messages.error(request, 'Selecciona una cuenta de personal válida.')
+                return redirect('/adminusuarios?tab=personal')
+
+            nombre = request.POST.get('nombre', '').strip()
+            apellido = request.POST.get('apellido', '').strip()
+            correo = request.POST.get('correo', '').strip().lower()
+            nueva_contrasena = request.POST.get('nueva_contrasena', '')
+            confirmar_contrasena = request.POST.get('confirmar_contrasena', '')
+
+            errores = []
+            if not nombre or len(nombre) > 100:
+                errores.append('Ingresa un nombre de hasta 100 caracteres.')
+            if not apellido or len(apellido) > 100:
+                errores.append('Ingresa un apellido de hasta 100 caracteres.')
+            try:
+                validate_email(correo)
+            except ValidationError:
+                errores.append('Ingresa un correo electrónico válido.')
+            if len(correo) > 100:
+                errores.append('El correo no puede superar los 100 caracteres.')
+            if nueva_contrasena or confirmar_contrasena:
+                if len(nueva_contrasena) < 8:
+                    errores.append('La nueva contraseña debe tener al menos 8 caracteres.')
+                if nueva_contrasena != confirmar_contrasena:
+                    errores.append('Las contraseñas no coinciden.')
+
+            if errores:
+                messages.error(request, ' '.join(errores))
+                return redirect('/adminusuarios?tab=personal')
+
+            try:
+                with transaction.atomic():
+                    usuario = get_object_or_404(
+                        Usuarios.objects.select_for_update().select_related('roles'),
+                        id=int(usuario_id),
+                    )
+                    if usuario.roles.nombre not in {'Administrador', 'Recepcionista'}:
+                        messages.error(request, 'Solo puedes editar cuentas de administrador o recepcionista.')
+                        return redirect('/adminusuarios?tab=personal')
+                    if Usuarios.objects.filter(correo__iexact=correo).exclude(id=usuario.id).exists():
+                        messages.error(request, 'Ya existe otra cuenta con ese correo.')
+                        return redirect('/adminusuarios?tab=personal')
+
+                    usuario.nombre = nombre
+                    usuario.apellido = apellido
+                    usuario.correo = correo
+                    campos_actualizados = ['nombre', 'apellido', 'correo']
+                    if nueva_contrasena:
+                        usuario.contrasena = make_password(nueva_contrasena)
+                        campos_actualizados.append('contrasena')
+                    usuario.save(update_fields=campos_actualizados)
+            except IntegrityError:
+                messages.error(request, 'No se pudo guardar la cuenta. Verifica que el correo no esté en uso.')
+                return redirect('/adminusuarios?tab=personal')
+
+            if str(usuario.id) == str(request.session.get('usuario_id')):
+                request.session['usuario_nom'] = usuario.nombre
+            messages.success(request, f'Información actualizada para {usuario.nombre} {usuario.apellido}.')
+            return redirect('/adminusuarios?tab=personal')
+
         if request.POST.get('accion') == 'eliminar':
             usuario_id = request.POST.get('usuario_id', '')
             if not usuario_id.isdigit():

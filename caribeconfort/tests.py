@@ -11,6 +11,7 @@ from uuid import uuid4
 
 from cryptography.fernet import Fernet
 from PIL import Image
+from django.contrib.auth.hashers import check_password
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -176,6 +177,157 @@ class GalleryAdminPageTests(TestCase):
                     self.assertContains(response, 'Ver galerías existentes')
                     self.assertContains(response, 'class="adm-gallery-details"')
                     self.assertNotContains(response, 'class="adm-gallery-details" open')
+
+
+class StaffAccountEditTests(TestCase):
+    def setUp(self):
+        self.admin_role = Roles.objects.create(nombre='Administrador')
+        self.reception_role = Roles.objects.create(nombre='Recepcionista')
+        self.client_role = Roles.objects.create(nombre='Cliente')
+        self.admin = Usuarios.objects.create(
+            roles=self.admin_role,
+            nombre='Admin',
+            apellido='Hotel',
+            correo='admin@example.com',
+            contrasena='admin-password',
+        )
+        self.staff = Usuarios.objects.create(
+            roles=self.reception_role,
+            nombre='Rosa',
+            apellido='Recepción',
+            correo='rosa@example.com',
+            contrasena='password-anterior',
+        )
+        session = self.client.session
+        session['rol'] = 'Administrador'
+        session['usuario_id'] = self.admin.id
+        session['usuario_nom'] = self.admin.nombre
+        session.save()
+
+    def post_edit(self, usuario_id, **datos):
+        return self.client.post('/adminusuarios', {
+            'accion': 'editar_personal',
+            'usuario_id': usuario_id,
+            'nombre': 'Rosa',
+            'apellido': 'Recepción',
+            'correo': 'rosa@example.com',
+            **datos,
+        })
+
+    def test_admin_can_update_staff_details_and_password(self):
+        response = self.post_edit(
+            self.staff.id,
+            nombre='María',
+            apellido='López',
+            correo='maria@example.com',
+            nueva_contrasena='nueva-clave-segura',
+            confirmar_contrasena='nueva-clave-segura',
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.staff.refresh_from_db()
+        self.assertEqual(self.staff.nombre, 'María')
+        self.assertEqual(self.staff.apellido, 'López')
+        self.assertEqual(self.staff.correo, 'maria@example.com')
+        self.assertNotEqual(self.staff.contrasena, 'nueva-clave-segura')
+        self.assertTrue(check_password('nueva-clave-segura', self.staff.contrasena))
+
+    def test_blank_password_keeps_existing_password(self):
+        response = self.post_edit(self.staff.id)
+
+        self.assertEqual(response.status_code, 302)
+        self.staff.refresh_from_db()
+        self.assertEqual(self.staff.contrasena, 'password-anterior')
+
+    def test_password_change_requires_matching_confirmation(self):
+        response = self.post_edit(
+            self.staff.id,
+            nueva_contrasena='nueva-clave-segura',
+            confirmar_contrasena='otra-clave-segura',
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.staff.refresh_from_db()
+        self.assertEqual(self.staff.contrasena, 'password-anterior')
+
+    def test_personnel_edit_rejects_duplicate_email(self):
+        otro = Usuarios.objects.create(
+            roles=self.reception_role,
+            nombre='Otro',
+            apellido='Empleado',
+            correo='otro@example.com',
+            contrasena='password-anterior',
+        )
+
+        response = self.post_edit(self.staff.id, correo=otro.correo)
+
+        self.assertEqual(response.status_code, 302)
+        self.staff.refresh_from_db()
+        self.assertEqual(self.staff.correo, 'rosa@example.com')
+
+    def test_personnel_edit_rejects_customer_accounts(self):
+        cliente = Usuarios.objects.create(
+            roles=self.client_role,
+            nombre='Cliente',
+            apellido='Hotel',
+            correo='cliente@example.com',
+            contrasena='password-anterior',
+        )
+
+        response = self.post_edit(cliente.id, nombre='No autorizado')
+
+        self.assertEqual(response.status_code, 302)
+        cliente.refresh_from_db()
+        self.assertEqual(cliente.nombre, 'Cliente')
+
+    def test_personnel_tab_renders_edit_action(self):
+        response = self.client.get('/adminusuarios?tab=personal')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'data-edit-personal="{self.staff.id}"')
+        self.assertContains(response, 'Editar personal')
+
+
+class ReservationImageTests(TestCase):
+    def test_active_reservation_uses_fallback_when_room_upload_is_missing(self):
+        huesped = crear_huesped_prueba()
+        tipo = TipoHabitacion.objects.create(
+            nombre='Estándar',
+            capacidad=2,
+            tarifa=Decimal('50000.00'),
+            imagen='uploads/habitaciones/tipo-existente.jpg',
+        )
+        habitacion = Habitaciones.objects.create(
+            tipohabitacion=tipo,
+            numero='A01',
+            capacidad=2,
+            precio=Decimal('50000.00'),
+            imagen='uploads/habitaciones/cuarto-inexistente.jpg',
+        )
+        reserva = crear_reserva_prueba(huesped)
+        reserva.habitaciones = habitacion
+        reserva.save(update_fields=['habitaciones'])
+        client = Client()
+        session = client.session
+        session['usuario_id'] = huesped.usuarios_id
+        session['rol'] = 'Cliente'
+        session.save()
+
+        with TemporaryDirectory() as media_root, TemporaryDirectory() as static_root:
+            imagen_tipo = Path(static_root) / 'img' / 'imagenes' / 'uploads' / 'habitaciones' / 'tipo-existente.jpg'
+            imagen_tipo.parent.mkdir(parents=True)
+            imagen_tipo.touch()
+            with override_settings(
+                MEDIA_ROOT=media_root,
+                STATICFILES_DIRS=[static_root],
+                STATIC_URL='/static/',
+                MEDIA_URL='/media/',
+            ):
+                response = client.get('/mis-reservas')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'src="/static/img/imagenes/uploads/habitaciones/tipo-existente.jpg"')
+        self.assertNotContains(response, '/media/uploads/habitaciones/cuarto-inexistente.jpg')
 
 
 class AdminNotificationContextTests(TestCase):
