@@ -111,6 +111,10 @@ def _correo_huesped(huesped):
     return ''
 
 
+def _pagos_confirmados():
+    return Pagos.objects.filter(estado_pago='Confirmado')
+
+
 def _conexion_correo_hotel():
     hotel = Hoteles.objects.filter(smtp_host__gt='').order_by('id').first()
     hotel_smtp_completo = hotel and all((
@@ -226,7 +230,7 @@ def _enviar_factura_reserva(reserva):
             alojamiento += f' · {tipo_habitacion.nombre}'
     else:
         alojamiento = reserva.planes.nombre if reserva.planes_id else 'Estancia'
-    pagos = list(Pagos.objects.filter(reservas=reserva).exclude(
+    pagos = list(_pagos_confirmados().filter(reservas=reserva).exclude(
         metodopago='Pendiente',
     ).order_by('fecha', 'id'))
     servicios = list(ServicioReserva.objects.filter(
@@ -625,6 +629,17 @@ def cancelar_reserva(request, reserva_id):
             if reserva.estado == 'Finalizada':
                 return JsonResponse({'success': False, 'message': 'No se puede cancelar una reserva finalizada.'}, status=409)
 
+            pago_confirmado = Pagos.objects.filter(
+                reservas=reserva,
+                estado_pago='Confirmado',
+                concepto__in=['Reserva', 'Servicio'],
+                valor__gt=0,
+            ).exists()
+            Pagos.objects.filter(
+                reservas=reserva,
+                concepto='Reserva',
+                estado_pago='Pendiente',
+            ).update(estado_pago='Anulado')
             reserva.estado = 'Cancelada'
             reserva.save(update_fields=['estado'])
             if reserva.habitaciones_id and not Reservas.objects.filter(
@@ -654,10 +669,19 @@ def cancelar_reserva(request, reserva_id):
     correo_destino = _correo_huesped(reserva.huespedes)
     if correo_destino:
         try:
+            detalle_pago = (
+                'No se realizó ningún cobro; por lo tanto, no hay un reembolso pendiente.'
+                if not pago_confirmado else
+                'Si necesitas información sobre pagos ya confirmados, comunícate con recepción.'
+            )
             correo_enviado = bool(_enviar_correo_hotel(
                 f'Cancelación de Reserva CC-{reserva.id:04d}',
                 'Tu reserva fue cancelada',
-                f"Hola {reserva.huespedes.nombres},\n\nTe confirmamos que tu reserva CC-{reserva.id:04d} en Caribe Confort ha sido cancelada exitosamente.\n\nEsperamos verte en otra ocasión.",
+                (
+                    f"Hola {reserva.huespedes.nombres},\n\n"
+                    f"Te confirmamos que tu reserva CC-{reserva.id:04d} en Caribe Confort ha sido cancelada exitosamente.\n\n"
+                    f"{detalle_pago}\n\nEsperamos verte en otra ocasión."
+                ),
                 correo_destino,
             ))
         except Exception:
@@ -771,6 +795,7 @@ def solicitar_servicio(request):
                 valor=valor_total,
                 metodopago='Pendiente',
                 concepto='Servicio',
+                estado_pago='Pendiente',
             )
             servicio_reserva.pago = pago
             servicio_reserva.save(update_fields=['pago'])
@@ -1037,7 +1062,9 @@ def pagar_reserva(request, reserva_id):
         messages.error(request, 'Esta reserva ya no admite pagos.')
         return redirect('/mis-reservas')
 
-    pagos_realizados = Pagos.objects.filter(reservas=reserva).exclude(metodopago='Pendiente').aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
+    pagos_realizados = _pagos_confirmados().filter(
+        reservas=reserva,
+    ).exclude(metodopago='Pendiente').aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
     saldo_pendiente = max(Decimal('0.00'), reserva.valortotal - pagos_realizados)
 
     if saldo_pendiente == 0:
@@ -1081,7 +1108,7 @@ def procesar_pago(request, reserva_id):
             messages.error(request, 'Esta reserva ya no admite pagos.')
             return redirect('/mis-reservas')
 
-        pagos_realizados = Pagos.objects.filter(
+        pagos_realizados = _pagos_confirmados().filter(
             reservas=reserva,
         ).exclude(metodopago='Pendiente').aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
         saldo_pendiente = max(Decimal('0.00'), reserva.valortotal - pagos_realizados)
@@ -1094,11 +1121,20 @@ def procesar_pago(request, reserva_id):
         else:
             monto_a_pagar = saldo_pendiente
 
+        requiere_validacion = reserva.estado in {'Pendiente', 'Pagada - Por validar'}
+        if reserva.estado == 'Pendiente':
+            Pagos.objects.filter(
+                reservas=reserva,
+                concepto='Reserva',
+                metodopago='Pendiente',
+                estado_pago='Pendiente',
+            ).update(estado_pago='Anulado')
         Pagos.objects.create(
             reservas=reserva,
             valor=monto_a_pagar,
             metodopago=metodos_pago[metodo_seleccionado],
             concepto='Reserva',
+            estado_pago='Pendiente' if requiere_validacion else 'Confirmado',
         )
         if reserva.estado == 'Pendiente':
             reserva.estado = 'Pagada - Por validar'
@@ -1243,6 +1279,7 @@ def crear_reserva(request):
                     valor=valor_abono,
                     metodopago='Pendiente',
                     concepto='Reserva',
+                    estado_pago='Pendiente',
                 )
             if convenio:
                 convenio.estado = 'Usado'
@@ -1540,7 +1577,7 @@ def mis_reservas(request):
     ).order_by('-fechasolicitud')
     pagos_por_reserva = {
         pago['reservas_id']: pago
-        for pago in Pagos.objects.filter(
+        for pago in _pagos_confirmados().filter(
             reservas_id__in=[reserva.id for reserva in reservas],
         ).exclude(
             metodopago='Pendiente',
@@ -1629,6 +1666,17 @@ def validar_reserva(request, reserva_id):
             if reserva.estado != 'Pagada - Por validar':
                 return JsonResponse({'success': False, 'message': 'Esta reserva no está pendiente de validación.'})
 
+            Pagos.objects.filter(
+                reservas=reserva,
+                concepto='Reserva',
+                metodopago='Pendiente',
+                estado_pago='Pendiente',
+            ).update(estado_pago='Anulado')
+            Pagos.objects.filter(
+                reservas=reserva,
+                concepto='Reserva',
+                estado_pago='Pendiente',
+            ).exclude(metodopago='Pendiente').update(estado_pago='Confirmado')
             reserva.estado = 'Confirmada'
             reserva.save()
 
@@ -1740,6 +1788,7 @@ def crear_reserva_plan(request):
                     valor=valor_abono,
                     metodopago='Pendiente',
                     concepto='Reserva',
+                    estado_pago='Pendiente',
                 )
             plan.disponibles -= 1
             plan.save(update_fields=['disponibles'])
@@ -1856,7 +1905,7 @@ def reservasadmin(request):
 
     for r in page_obj:
         r.formatted_id = f'CC-{r.id:04d}'
-        pagado = Pagos.objects.filter(reservas=r).exclude(
+        pagado = _pagos_confirmados().filter(reservas=r).exclude(
             metodopago='Pendiente'
         ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
         r.saldo_pendiente = max(Decimal('0.00'), r.valortotal - pagado)
@@ -2252,7 +2301,7 @@ def registrar_pago_reserva(request, reserva_id):
         if reserva.estado in ['Cancelada', 'Finalizada']:
             messages.error(request, 'No se pueden registrar pagos para una reserva cancelada o finalizada.')
             return redirect(destino)
-        pagado = Pagos.objects.filter(reservas=reserva).exclude(
+        pagado = _pagos_confirmados().filter(reservas=reserva).exclude(
             metodopago='Pendiente'
         ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
         saldo = max(Decimal('0.00'), reserva.valortotal - pagado)
@@ -2260,7 +2309,21 @@ def registrar_pago_reserva(request, reserva_id):
             messages.error(request, 'El monto no puede superar el saldo pendiente.')
             return redirect(destino)
 
-        Pagos.objects.create(reservas=reserva, valor=monto, metodopago=metodo, concepto='Reserva')
+        requiere_validacion = reserva.estado in {'Pendiente', 'Pagada - Por validar'}
+        if reserva.estado == 'Pendiente':
+            Pagos.objects.filter(
+                reservas=reserva,
+                concepto='Reserva',
+                metodopago='Pendiente',
+                estado_pago='Pendiente',
+            ).update(estado_pago='Anulado')
+        Pagos.objects.create(
+            reservas=reserva,
+            valor=monto,
+            metodopago=metodo,
+            concepto='Reserva',
+            estado_pago='Pendiente' if requiere_validacion else 'Confirmado',
+        )
         if reserva.estado == 'Pendiente':
             reserva.estado = 'Pagada - Por validar'
             reserva.save(update_fields=['estado'])
@@ -2304,7 +2367,7 @@ def checkout_reserva(request, reserva_id):
             messages.error(request, 'Solo se puede hacer check-out de una reserva en curso.')
             return redirect(destino)
 
-        pagado = Pagos.objects.filter(reservas=reserva).exclude(
+        pagado = _pagos_confirmados().filter(reservas=reserva).exclude(
             metodopago='Pendiente'
         ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
         saldo = max(Decimal('0.00'), reserva.valortotal - pagado)
@@ -2563,7 +2626,7 @@ def exportar_reporte(request):
             )
         escribir_fila('Reserva', 'Huésped', 'Alojamiento', 'Entrada', 'Salida', 'Estado', 'Total', 'Pagado', 'Saldo', 'Convenio')
         for reserva in reservas.order_by('fechaentrada', 'id').iterator():
-            pagado = Pagos.objects.filter(reservas=reserva).exclude(
+            pagado = _pagos_confirmados().filter(reservas=reserva).exclude(
                 metodopago='Pendiente'
             ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
             alojamiento = (
@@ -2612,7 +2675,7 @@ def exportar_reporte(request):
         escribir_fila('Ocupación proyectada (%)', round(ocupadas_periodo * 100 / habitaciones_total, 2) if habitaciones_total else 0)
 
     elif tipo == 'ingresos':
-        pagos = Pagos.objects.select_related(
+        pagos = _pagos_confirmados().select_related(
             'reservas__huespedes', 'reservas__habitaciones', 'reservas__planes'
         ).filter(
             fecha__date__gte=desde,
@@ -2621,7 +2684,7 @@ def exportar_reporte(request):
         escribir_fila('Fecha', 'Reserva', 'Huésped', 'Método', 'Pago recibido', 'Total reserva', 'Saldo')
         total_recaudado = Decimal('0.00')
         for pago in pagos.iterator():
-            pagado_reserva = Pagos.objects.filter(
+            pagado_reserva = _pagos_confirmados().filter(
                 reservas=pago.reservas,
                 fecha__date__lte=hasta,
             ).exclude(metodopago='Pendiente').aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
@@ -3243,7 +3306,7 @@ def serviciosadmin(request):
     ids_pagos_servicio = [item.pago_id for item in servicios_recientes if item.pago_id]
     reembolsos_servicio = {
         fila['pago_origen_id']: fila['total'] or Decimal('0.00')
-        for fila in Pagos.objects.filter(
+        for fila in _pagos_confirmados().filter(
             concepto='Reembolso',
             pago_origen_id__in=ids_pagos_servicio,
         ).values('pago_origen_id').annotate(total=Sum('valor'))
@@ -3251,7 +3314,7 @@ def serviciosadmin(request):
     ids_reservas_servicio = {item.reservas_id for item in servicios_recientes}
     pagos_netos_reserva = {
         fila['reservas_id']: fila['total'] or Decimal('0.00')
-        for fila in Pagos.objects.filter(
+        for fila in _pagos_confirmados().filter(
             reservas_id__in=ids_reservas_servicio,
         ).exclude(metodopago='Pendiente').values('reservas_id').annotate(total=Sum('valor'))
     }
@@ -3511,15 +3574,19 @@ def pagosadmin(request):
     ).order_by('-fecha')
     pagos_reservas = pagos.filter(concepto='Reserva')
     pagos_servicios = pagos.filter(concepto='Servicio')
-    reembolsos = pagos.filter(Q(concepto='Reembolso') | Q(valor__lt=0)).distinct()
+    reembolsos = pagos.filter(
+        Q(concepto='Reembolso') | Q(valor__lt=0),
+        estado_pago='Confirmado',
+    ).distinct()
     pagos_reembolsables = pagos.filter(
         valor__gt=0,
         concepto__in=['Reserva', 'Servicio'],
+        estado_pago='Confirmado',
     ).exclude(metodopago='Pendiente')
     pagos_reembolsables = list(pagos_reembolsables)
     reembolsos_por_pago = {
         fila['pago_origen_id']: fila['total'] or Decimal('0.00')
-        for fila in Pagos.objects.filter(
+        for fila in _pagos_confirmados().filter(
             pago_origen__in=pagos_reembolsables,
             concepto='Reembolso',
         ).values('pago_origen_id').annotate(total=Sum('valor'))
@@ -3982,7 +4049,7 @@ def descargar_factura_reserva(request, reserva_id):
     ):
         return HttpResponseForbidden('No tienes permiso para descargar esta factura.')
 
-    pagos = Pagos.objects.filter(reservas=reserva).exclude(
+    pagos = _pagos_confirmados().filter(reservas=reserva).exclude(
         metodopago='Pendiente',
     ).order_by('fecha', 'id')
     alojamiento = (
@@ -4017,7 +4084,7 @@ def descargar_certificado_pagos(request):
     except Huespedes.DoesNotExist:
         return HttpResponseForbidden('No hay un huésped asociado a esta cuenta.')
 
-    pagos = Pagos.objects.filter(
+    pagos = _pagos_confirmados().filter(
         reservas__huespedes=huesped,
     ).exclude(
         metodopago='Pendiente',
@@ -4140,7 +4207,7 @@ def modificar_reserva(request, reserva_id):
         entrada_anterior = reserva.fechaentrada
         salida_anterior = reserva.fechasalida
         nuevo_total = (precio_noche * (nueva_salida - nueva_entrada).days).quantize(Decimal('0.01'))
-        pagado = Pagos.objects.filter(reservas=reserva).exclude(
+        pagado = _pagos_confirmados().filter(reservas=reserva).exclude(
             metodopago='Pendiente',
         ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
         reembolso = max(Decimal('0.00'), pagado - nuevo_total)
@@ -4231,7 +4298,7 @@ def procesar_reembolso(request, reserva_id):
             Reservas.objects.select_for_update().select_related('huespedes'),
             id=reserva_id,
         )
-        pagado = Pagos.objects.filter(reservas=reserva).exclude(
+        pagado = _pagos_confirmados().filter(reservas=reserva).exclude(
             metodopago='Pendiente',
         ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
         pago_origen = None
@@ -4241,10 +4308,11 @@ def procesar_reembolso(request, reserva_id):
                 reservas=reserva,
                 concepto__in=['Reserva', 'Servicio'],
                 valor__gt=0,
+                estado_pago='Confirmado',
             ).exclude(metodopago='Pendiente').first()
             if pago_origen is None:
                 return JsonResponse({'success': False, 'message': 'El pago seleccionado no existe o no admite reembolso.'}, status=400)
-            reembolsado = Pagos.objects.filter(
+            reembolsado = _pagos_confirmados().filter(
                 pago_origen=pago_origen,
                 concepto='Reembolso',
             ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
@@ -5155,12 +5223,12 @@ def administrador(request):
     ).count()
 
     reservas_hoy = del_dia
-    pagosdiarios = Pagos.objects.filter(
+    pagosdiarios = _pagos_confirmados().filter(
         fecha__gte=inicio_dia,
         fecha__lt=fin_dia
     ).exclude(metodopago='Pendiente').aggregate(total=Sum('valor'))['total'] or 0
 
-    pagosdiaanterior = Pagos.objects.filter(
+    pagosdiaanterior = _pagos_confirmados().filter(
         fecha__gte=ayer,
         fecha__lt=ayer_fin
     ).exclude(metodopago='Pendiente').aggregate(total=Sum('valor'))['total'] or 0
@@ -5172,12 +5240,12 @@ def administrador(request):
             ((pagosdiarios - pagosdiaanterior) / pagosdiaanterior) * 100
         )
 
-    ingresos = Pagos.objects.filter(
+    ingresos = _pagos_confirmados().filter(
         fecha__date__gte=inicio_mes,
         fecha__date__lte=hoy
     ).exclude(metodopago='Pendiente').aggregate(total=Sum('valor'))['total'] or 0
 
-    ingresos_ant = Pagos.objects.filter(
+    ingresos_ant = _pagos_confirmados().filter(
         fecha__date__gte=fin_mes_ant.replace(day=1),
         fecha__date__lte=fin_mes_ant
     ).exclude(metodopago='Pendiente').aggregate(total=Sum('valor'))['total'] or 0
@@ -5195,7 +5263,7 @@ def administrador(request):
     inicio_semana = hoy - timedelta(days=hoy.weekday())
     inicio_semana_dt = timezone.make_aware(datetime.combine(inicio_semana, datetime.min.time()))
     fin_semana_dt = inicio_semana_dt + timedelta(days=7)
-    ingresos_semanales = Pagos.objects.filter(
+    ingresos_semanales = _pagos_confirmados().filter(
         fecha__gte=inicio_semana_dt,
         fecha__lt=fin_semana_dt,
     ).exclude(metodopago='Pendiente').aggregate(total=Sum('valor'))['total'] or 0
@@ -5286,7 +5354,7 @@ def administrador(request):
             'hace': hace(r.fechasolicitud)
         })
 
-    for p in Pagos.objects.order_by('-fecha')[:3]:
+    for p in _pagos_confirmados().order_by('-fecha')[:3]:
 
         movs.append({
             'texto': f'Cobro generado · ${formato_numero_colombiano(p.valor, 0)}',
@@ -5371,7 +5439,7 @@ def administrador(request):
         inicio_mes_dt = timezone.make_aware(datetime.combine(primer_dia, datetime.min.time()))
         fin_mes_dt = timezone.make_aware(datetime.combine(fecha_final, datetime.max.time()))
 
-        total_mes = Pagos.objects.filter(
+        total_mes = _pagos_confirmados().filter(
             fecha__gte=inicio_mes_dt,
             fecha__lte=fin_mes_dt
         ).exclude(metodopago='Pendiente').aggregate(
@@ -5454,7 +5522,7 @@ def administrador(request):
         'path_area': path_area
     }
 
-    pagos_hoy = Pagos.objects.filter(
+    pagos_hoy = _pagos_confirmados().filter(
         fecha__gte=inicio_dia, 
         fecha__lt=fin_dia
     ).exclude(metodopago='Pendiente')
@@ -5597,10 +5665,32 @@ def gestionar_reserva(request, reserva_id):
             huesped = reserva.huespedes
             habitacion = reserva.habitaciones if reserva.habitaciones_id else None
             plan = reserva.planes if reserva.planes_id else None
+            pago_confirmado = Pagos.objects.filter(
+                reservas=reserva,
+                concepto__in=['Reserva', 'Servicio'],
+                estado_pago='Confirmado',
+                valor__gt=0,
+            ).exists()
             if accion == 'aprobar':
+                Pagos.objects.filter(
+                    reservas=reserva,
+                    concepto='Reserva',
+                    metodopago='Pendiente',
+                    estado_pago='Pendiente',
+                ).update(estado_pago='Anulado')
+                Pagos.objects.filter(
+                    reservas=reserva,
+                    concepto='Reserva',
+                    estado_pago='Pendiente',
+                ).exclude(metodopago='Pendiente').update(estado_pago='Confirmado')
                 reserva.estado = 'Confirmada'
                 reserva.save(update_fields=['estado'])
             else:
+                Pagos.objects.filter(
+                    reservas=reserva,
+                    concepto='Reserva',
+                    estado_pago='Pendiente',
+                ).update(estado_pago='Anulado')
                 reserva.estado = 'Cancelada'
                 reserva.save(update_fields=['estado'])
                 if habitacion and not Reservas.objects.filter(
@@ -5650,7 +5740,12 @@ def gestionar_reserva(request, reserva_id):
             f'{detalle}\n'
             f'Entrada: {reserva.fechaentrada:%d/%m/%Y}\n'
             f'Salida: {reserva.fechasalida:%d/%m/%Y}\n\n'
-            'Comunícate con recepción si necesitas ayuda.'
+            + (
+                'El pago no llegó a confirmarse; no se realizó ningún cobro y no hay un reembolso pendiente.\n\n'
+                if not pago_confirmado else
+                'La reserva tenía un pago confirmado. Comunícate con recepción para revisar el movimiento.\n\n'
+            )
+            + 'Comunícate con recepción si necesitas ayuda.'
         )
         accion_texto = 'rechazada'
 
@@ -5712,7 +5807,7 @@ def recepcionista(request):
     if ids_reservas:
         pagos_por_reserva = {
             pago['reservas_id']: pago['total']
-            for pago in Pagos.objects.filter(
+            for pago in _pagos_confirmados().filter(
                 reservas_id__in=ids_reservas,
             ).exclude(
                 metodopago='Pendiente',
@@ -5727,7 +5822,7 @@ def recepcionista(request):
     ).order_by('-fechasolicitud'))
     pagos_reservas = {
         pago['reservas_id']: pago['total'] or Decimal('0.00')
-        for pago in Pagos.objects.filter(
+        for pago in _pagos_confirmados().filter(
             reservas_id__in=[reserva.id for reserva in reservas_hotel],
         ).exclude(
             metodopago='Pendiente',
@@ -5785,14 +5880,14 @@ def servicios_pendientes_recepcion(request):
     ids_pagos_servicio = [item.pago_id for item in servicios_recientes if item.pago_id]
     reembolsos_servicio = {
         fila['pago_origen_id']: fila['total'] or Decimal('0.00')
-        for fila in Pagos.objects.filter(
+        for fila in _pagos_confirmados().filter(
             concepto='Reembolso', pago_origen_id__in=ids_pagos_servicio,
         ).values('pago_origen_id').annotate(total=Sum('valor'))
     }
     ids_reservas_servicio = {item.reservas_id for item in servicios_recientes}
     pagos_netos_reserva = {
         fila['reservas_id']: fila['total'] or Decimal('0.00')
-        for fila in Pagos.objects.filter(reservas_id__in=ids_reservas_servicio)
+        for fila in _pagos_confirmados().filter(reservas_id__in=ids_reservas_servicio)
         .exclude(metodopago='Pendiente')
         .values('reservas_id').annotate(total=Sum('valor'))
     }
@@ -5877,6 +5972,7 @@ def aprobar_servicio_recepcion(request, servicio_reserva_id):
             id=servicio_reserva.pago_id,
             reservas=servicio_reserva.reservas,
             metodopago='Pendiente',
+            estado_pago='Pendiente',
         ).first()
         if not pago:
             messages.error(request, 'El pago del servicio ya fue procesado o no existe.')
@@ -5888,16 +5984,17 @@ def aprobar_servicio_recepcion(request, servicio_reserva_id):
             reserva.save(update_fields=['valortotal'])
             pago.metodopago = metodo
             pago.concepto = 'Servicio'
+            pago.estado_pago = 'Confirmado'
             pago.fecha = timezone.now()
-            pago.save(update_fields=['metodopago', 'concepto', 'fecha'])
+            pago.save(update_fields=['metodopago', 'concepto', 'estado_pago', 'fecha'])
             servicio_reserva.estado = 'Aprobado'
             servicio_reserva.save(update_fields=['estado'])
         else:
-            pago.delete()
-            servicio_reserva.pago = None
+            pago.estado_pago = 'Anulado'
+            pago.save(update_fields=['estado_pago'])
             servicio_reserva.estado = 'Rechazado'
             servicio_reserva.motivo_rechazo = motivo
-            servicio_reserva.save(update_fields=['pago', 'estado', 'motivo_rechazo'])
+            servicio_reserva.save(update_fields=['estado', 'motivo_rechazo'])
 
     huesped = servicio_reserva.reservas.huespedes
     correo_destino = huesped.correo or (
@@ -6010,6 +6107,7 @@ def registrar_solicitud_servicio_recepcion(request):
                 valor=valor_total,
                 metodopago='Pendiente',
                 concepto='Servicio',
+                estado_pago='Pendiente',
             )
             solicitud.pago = pago
             solicitud.save(update_fields=['pago'])
@@ -6245,14 +6343,28 @@ def registrar_pago_servicio_recepcion(request):
                 messages.error(request, 'Ingresa un monto válido.')
                 return redirect(destino)
             metodo = request.POST.get('metodopago', '')
-            pagado = Pagos.objects.filter(reservas=reserva).exclude(
+            pagado = _pagos_confirmados().filter(reservas=reserva).exclude(
                 metodopago='Pendiente',
             ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
             saldo = max(Decimal('0.00'), reserva.valortotal - pagado)
             if monto <= 0 or monto > saldo or metodo not in metodos:
                 messages.error(request, 'Verifica el monto pendiente y el método de pago.')
                 return redirect(destino)
-            Pagos.objects.create(reservas=reserva, valor=monto, metodopago=metodo, concepto='Reserva')
+            requiere_validacion = reserva.estado in {'Pendiente', 'Pagada - Por validar'}
+            if reserva.estado == 'Pendiente':
+                Pagos.objects.filter(
+                    reservas=reserva,
+                    concepto='Reserva',
+                    metodopago='Pendiente',
+                    estado_pago='Pendiente',
+                ).update(estado_pago='Anulado')
+            Pagos.objects.create(
+                reservas=reserva,
+                valor=monto,
+                metodopago=metodo,
+                concepto='Reserva',
+                estado_pago='Pendiente' if requiere_validacion else 'Confirmado',
+            )
             if reserva.estado == 'Pendiente':
                 reserva.estado = 'Pagada - Por validar'
                 reserva.save(update_fields=['estado'])
@@ -6330,6 +6442,7 @@ def registrar_pago_servicio_recepcion(request):
                     valor=valor_total,
                     metodopago=metodo_servicio if estado == 'Aprobado' else 'Pendiente',
                     concepto='Servicio',
+                    estado_pago='Confirmado' if estado == 'Aprobado' else 'Pendiente',
                 )
                 servicio_reserva.pago = pago
                 servicio_reserva.save(update_fields=['pago'])

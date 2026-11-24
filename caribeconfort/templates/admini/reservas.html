@@ -249,7 +249,7 @@
                                         Procesar reembolso
                                     </button>
                                     {% endif %}
-                                    <a class="rv-btn-outline" href="/reservas/{{ r.id }}/factura/" aria-label="Descargar factura de la reserva CC-{{ r.id|stringformat:'04d' }}">Factura</a>
+                                    <a class="rv-btn-outline" href="/reservas/{{ r.id }}/factura/?scope=admin" aria-label="Descargar factura de la reserva CC-{{ r.id|stringformat:'04d' }}">Factura</a>
 
                                 </td>
                             </tr>

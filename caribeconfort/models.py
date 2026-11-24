@@ -268,6 +268,11 @@ class Resena(models.Model):
 
 
 class Pagos (models.Model):
+    estados_pago = [
+        ('Pendiente', 'Pendiente'),
+        ('Confirmado', 'Confirmado'),
+        ('Anulado', 'Anulado'),
+    ]
     reservas=models.ForeignKey(Reservas, on_delete=models.CASCADE, db_column='idreservas')
     pago_origen=models.ForeignKey(
         'self',
@@ -278,6 +283,7 @@ class Pagos (models.Model):
     )
     fecha=models.DateTimeField(auto_now_add=True)
     valor=models.DecimalField(max_digits=10, decimal_places=2)
+    estado_pago=models.CharField(max_length=20, choices=estados_pago, default='Confirmado')
     estados=[('Pendiente','Pendiente'),
         ('Efectivo','Efectivo'),
         ('Tarjeta','Tarjeta'),

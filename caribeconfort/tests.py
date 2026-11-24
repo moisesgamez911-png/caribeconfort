@@ -3,6 +3,7 @@ from contextlib import nullcontext
 from datetime import timedelta
 from decimal import Decimal
 from io import BytesIO, StringIO
+from importlib import import_module
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -11,6 +12,7 @@ from uuid import uuid4
 
 from cryptography.fernet import Fernet
 from PIL import Image
+from django.conf import settings
 from django.contrib.auth.hashers import check_password
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
@@ -164,6 +166,45 @@ class ReservationCancellationTests(TestCase):
                     self.assertTrue(response.json()['success'])
                     reserva.refresh_from_db()
                     self.assertEqual(reserva.estado, 'Cancelada')
+
+
+class ReservationRejectionTests(TestCase):
+    def test_rejection_voids_unconfirmed_payment_without_refund_and_emails_guest(self):
+        huesped = crear_huesped_prueba()
+        reserva = crear_reserva_prueba(huesped)
+        reserva.estado = 'Pagada - Por validar'
+        reserva.save(update_fields=['estado'])
+        pago = Pagos.objects.create(
+            reservas=reserva,
+            valor=Decimal('100.00'),
+            metodopago='Transferencia',
+            concepto='Reserva',
+            estado_pago='Pendiente',
+        )
+        session = self.client.session
+        session['rol'] = 'Administrador'
+        session['usuario_nom'] = 'Admin de prueba'
+        session.save()
+
+        with patch('caribeconfort.views._enviar_correo_hotel', return_value=1) as enviar_correo:
+            response = self.client.post(
+                f'/gestionar-reserva/{reserva.id}/',
+                {'accion': 'rechazar'},
+                HTTP_X_SESSION_SCOPE='admin',
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['correo_enviado'])
+        reserva.refresh_from_db()
+        pago.refresh_from_db()
+        self.assertEqual(reserva.estado, 'Cancelada')
+        self.assertEqual(pago.estado_pago, 'Anulado')
+        self.assertFalse(Pagos.objects.filter(
+            reservas=reserva,
+            concepto='Reembolso',
+        ).exists())
+        self.assertIn('no se realizó ningún cobro', enviar_correo.call_args.args[2].lower())
+        self.assertContains(self.client.get('/adminpagos?tab=reservas'), 'Anulado')
 
 
 class GalleryAdminPageTests(TestCase):
@@ -1254,6 +1295,21 @@ class ReservationDocumentsTests(TestCase):
         respuesta = descargar_factura_reserva(request, self.reserva.id)
         self.assertEqual(respuesta.status_code, 403)
 
+    def test_admin_can_download_invoice_using_admin_session(self):
+        admin_session = import_module(settings.SESSION_ENGINE).SessionStore()
+        admin_session['rol'] = 'Administrador'
+        admin_session.save()
+        admin_cookie_name = f'{settings.SESSION_COOKIE_NAME}_admin'
+        self.client.cookies[admin_cookie_name] = admin_session.session_key
+
+        respuesta = self.client.get(
+            f'/reservas/{self.reserva.id}/factura/?scope=admin'
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta['Content-Type'], 'application/pdf')
+        self.assertTrue(respuesta.content.startswith(b'%PDF-'))
+
     def test_guest_can_download_payment_certificate(self):
         request = RequestFactory().get('/mis-reservas/certificado-pagos/')
         request.session = {'usuario_id': self.huesped.usuarios_id, 'rol': 'Cliente'}
@@ -1374,6 +1430,20 @@ class RefundAccountingTests(TestCase):
             response = administrador(request)
         self.assertEqual(response.status_code, 200)
         return render_view.call_args.args[2]
+
+    def test_unconfirmed_payment_is_not_counted_as_collected_cash(self):
+        Pagos.objects.create(
+            reservas=self.reserva,
+            valor=Decimal('100.00'),
+            metodopago='Transferencia',
+            concepto='Reserva',
+            estado_pago='Pendiente',
+        )
+
+        context = self._dashboard_context()
+
+        self.assertEqual(context['caja_reservas'], 0)
+        self.assertEqual(context['caja_total'], 0)
 
     def test_refund_history_renders_refund_amount_without_server_error(self):
         pago = Pagos.objects.create(
