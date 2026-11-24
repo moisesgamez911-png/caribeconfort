@@ -40,6 +40,7 @@ body.checkin-page {
             background-position: center;
             background-size: cover;
             background-repeat: no-repeat;
+            backdrop-filter: blur(10px);
             min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
             padding: 24px; color: var(--ck-text);
@@ -56,6 +57,20 @@ body.checkin-page {
             color: #fff; position: relative;
     
         }
+
+        body.checkin-page .ck-card {
+                background: var(--ck-surface) !important;
+                backdrop-filter: blur(10px);
+                color: var(--ck-text);
+                border-radius: 24px;
+                overflow: hidden;
+                box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+            }
+
+        .ck-body {
+                padding: 40px 48px;
+                background: transparent !important; 
+            }
         .ck-header::after {
             content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
             height: 4px;
