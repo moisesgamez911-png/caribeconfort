@@ -54,6 +54,7 @@ from caribeconfort.views import (
     galeria,
     galeriaadmin,
     home,
+    mis_reservas,
     procesar_reembolso,
     modificar_reserva,
     recepcionista,
@@ -1445,6 +1446,46 @@ class RefundAccountingTests(TestCase):
         self.assertEqual(punto_neto_negativo['valor'], Decimal('-10000000.00'))
         self.assertGreaterEqual(punto_neto_negativo['y'], 35)
         self.assertLessEqual(punto_neto_negativo['y'], 375)
+
+
+class MisReservasPaymentSummaryTests(TestCase):
+    def setUp(self):
+        huesped = crear_huesped_prueba()
+        self.reserva = crear_reserva_prueba(huesped)
+        Pagos.objects.create(
+            reservas=self.reserva,
+            valor=Decimal('60.00'),
+            metodopago='Transferencia',
+            concepto='Reserva',
+        )
+        Pagos.objects.create(
+            reservas=self.reserva,
+            valor=Decimal('-20.00'),
+            metodopago='Transferencia',
+            concepto='Reembolso',
+        )
+        Pagos.objects.create(
+            reservas=self.reserva,
+            valor=Decimal('50.00'),
+            metodopago='Pendiente',
+            concepto='Reserva',
+        )
+        session = self.client.session
+        session['usuario_id'] = huesped.usuarios_id
+        session['rol'] = 'Cliente'
+        session.save()
+
+    def test_reservation_card_separates_paid_amount_from_refunds(self):
+        response = self.client.get('/mis-reservas')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '$ 60 <small>COP</small>')
+        self.assertContains(response, 'Reembolsado: $ 20 COP')
+        self.assertContains(response, 'Saldo pendiente: $ 60 COP')
+        reserva = response.context['activas'][0]
+        self.assertEqual(reserva.total_pagado, Decimal('60.00'))
+        self.assertEqual(reserva.total_reembolsado, Decimal('20.00'))
+        self.assertEqual(reserva.abono_pagado, Decimal('40.00'))
 
 
 class ReservationReminderCommandTests(TestCase):

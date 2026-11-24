@@ -1537,12 +1537,21 @@ def mis_reservas(request):
         'planes__Servicios_tipos'
     ).order_by('-fechasolicitud')
     pagos_por_reserva = {
-        pago['reservas_id']: pago['total'] or Decimal('0.00')
+        pago['reservas_id']: pago
         for pago in Pagos.objects.filter(
-            reservas__huespedes=huesped,
+            reservas_id__in=[reserva.id for reserva in reservas],
         ).exclude(
             metodopago='Pendiente',
-        ).values('reservas_id').annotate(total=Sum('valor'))
+        ).values('reservas_id').annotate(
+            total_pagado=Sum(
+                'valor',
+                filter=Q(valor__gt=0, concepto__in=['Reserva', 'Servicio']),
+            ),
+            total_reembolsado=Sum(
+                'valor',
+                filter=Q(concepto='Reembolso', valor__lt=0),
+            ),
+        )
     }
 
     hoy = timezone.localdate()
@@ -1550,7 +1559,18 @@ def mis_reservas(request):
     historial = []
 
     for r in reservas:
-        r.abono_pagado = pagos_por_reserva.get(r.id, Decimal('0.00'))
+        pagos = pagos_por_reserva.get(r.id, {})
+        r.total_pagado = max(
+            Decimal('0.00'),
+            pagos.get('total_pagado') or Decimal('0.00'),
+        )
+        r.total_reembolsado = abs(
+            pagos.get('total_reembolsado') or Decimal('0.00'),
+        )
+        r.abono_pagado = max(
+            Decimal('0.00'),
+            r.total_pagado - r.total_reembolsado,
+        )
         r.saldo_pendiente = max(Decimal('0.00'), r.valortotal - r.abono_pagado)
         r.esta_pagada = r.saldo_pendiente == Decimal('0.00')
         

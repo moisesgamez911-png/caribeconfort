@@ -114,13 +114,18 @@
 
                     <aside class="reservation-payment">
                         <span class="payment-label">Total pagado</span>
-                        <strong class="payment-total">$ {{ r.abono_pagado|precio:0 }} <small>COP</small></strong>
+                        <strong class="payment-total">$ {{ r.total_pagado|precio:0 }} <small>COP</small></strong>
+                        {% if r.total_reembolsado > 0 %}
+                            <span class="payment-note payment-refunded">Reembolsado: $ {{ r.total_reembolsado|precio:0 }} COP</span>
+                        {% endif %}
                         <progress class="payment-progress" value="{{ r.porcentaje_pagado }}" max="100" aria-label="Porcentaje pagado"></progress>
                         {% if r.estado == 'Pagada - Por validar' %}
                             <span class="payment-note payment-validating">Pago registrado · En validación</span>
                         {% elif r.esta_pagada %}
                             <span class="payment-note payment-complete"><i class="bi bi-check-circle" aria-hidden="true"></i> Pago registrado</span>
                         {% elif r.abono_pagado > 0 %}
+                            <span class="payment-note">Saldo pendiente: $ {{ r.saldo_pendiente|precio:0 }} COP</span>
+                        {% elif r.total_pagado > 0 %}
                             <span class="payment-note">Saldo pendiente: $ {{ r.saldo_pendiente|precio:0 }} COP</span>
                         {% else %}
                             <span class="payment-note">Sin pagos registrados</span>
@@ -147,8 +152,11 @@
                                 data-salida="{{ r.fechasalida|date:'d/m/Y' }}"
                                 data-acompanantes="{{ r.cantidadacompañantes }}"
                                 data-total="$ {{ r.valortotal|precio:0 }}"
-                                data-pagado="$ {{ r.abono_pagado|precio:0 }} COP"
-                                data-pagado-numerico="{{ r.abono_pagado|unlocalize }}"
+                                data-pagado="$ {{ r.total_pagado|precio:0 }} COP"
+                                data-pagado-numerico="{{ r.total_pagado|unlocalize }}"
+                                data-pagado-neto-numerico="{{ r.abono_pagado|unlocalize }}"
+                                data-reembolsado="$ {{ r.total_reembolsado|precio:0 }} COP"
+                                data-reembolsado-numerico="{{ r.total_reembolsado|unlocalize }}"
                                 data-saldo="$ {{ r.saldo_pendiente|precio:0 }} COP"
                                 data-saldo-numerico="{{ r.saldo_pendiente|unlocalize }}"
                                 data-pago-url="/pagar-reserva/{{ r.id }}/"
@@ -434,6 +442,14 @@
                     <div>
                         <span class="etiqueta">Total pagado</span>
                         <p id="mdTotalPagado">$ 0 COP</p>
+                    </div>
+                </div>
+
+                <div class="elemento-resumen" id="mdReembolsoRow" hidden>
+                    <i class="bi bi-arrow-return-left"></i>
+                    <div>
+                        <span class="etiqueta">Total reembolsado</span>
+                        <p id="mdTotalReembolsado">$ 0 COP</p>
                     </div>
                 </div>
 

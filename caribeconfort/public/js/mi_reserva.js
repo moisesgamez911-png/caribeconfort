@@ -210,7 +210,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 setVal("mdTlCreada", this.dataset.fechaRegistro || '');
                 setVal("mdTotalReserva", (this.dataset.total || '$ 0') + ' COP');
                 setVal("mdTotalPagado", this.dataset.pagado || '$ 0 COP');
+                setVal("mdTotalReembolsado", this.dataset.reembolsado || '$ 0 COP');
                 setVal("mdSaldoPendiente", this.dataset.saldo || '$ 0 COP');
+                const totalReembolsado = Number.parseFloat(this.dataset.reembolsadoNumerico || "0");
+                const filaReembolso = document.getElementById("mdReembolsoRow");
+                if (filaReembolso) filaReembolso.hidden = totalReembolsado <= 0;
                 setVal(
                     "mdTlConfirmadaLabel",
                     estado === "Pagada - Por validar" ? "Pago en validación" : "Confirmada"
@@ -234,13 +238,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
 
                 const saldoPendiente = Number.parseFloat(this.dataset.saldoNumerico || "0");
-                const totalPagado = Number.parseFloat(this.dataset.pagadoNumerico || "0");
+                const totalPagadoNeto = Number.parseFloat(this.dataset.pagadoNetoNumerico || "0");
                 let estadoPago = "Pago pendiente";
                 if (estado === "Pagada - Por validar") {
                     estadoPago = "Pago registrado · en validación";
-                } else if (saldoPendiente <= 0 && totalPagado > 0) {
+                } else if (totalReembolsado > 0) {
+                    estadoPago = "Reembolso registrado";
+                } else if (saldoPendiente <= 0 && totalPagadoNeto > 0) {
                     estadoPago = "Pago completo";
-                } else if (totalPagado > 0) {
+                } else if (totalPagadoNeto > 0) {
                     estadoPago = "Abono registrado";
                 }
                 setVal("mdEstadoPago", estadoPago);

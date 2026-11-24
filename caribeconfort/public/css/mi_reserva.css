@@ -2159,6 +2159,11 @@ button {
     font-weight: 700;
 }
 
+.payment-refunded {
+    color: #9a5b00;
+    font-weight: 700;
+}
+
 .payment-button {
     display: inline-flex;
     min-height: 40px;
