@@ -200,6 +200,11 @@ html[data-theme="dark"] .reception-dialog {
     color: #f0f4f3;
 }
 
+html[data-theme="dark"] .body.admin-dashboard-page .dash-fecha strong {
+    color: #ffffff !important;
+    font-size: 11px;
+}
+
 html[data-theme="dark"] .reception-brand span,
 html[data-theme="dark"] .reception-welcome h1,
 html[data-theme="dark"] .reception-card-heading h2,

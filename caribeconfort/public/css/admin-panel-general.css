@@ -10,13 +10,13 @@ body.admin-dashboard-page *:not([class*="bi-"]) {
 
 body.admin-dashboard-page .ad-main {
     width: 100%;
-    max-width: 1920px;
-    margin: 0 auto;
+    max-width: none;
+    margin: 0;
     padding: 88px 10px 48px 60px;
 }
 
 body.admin-dashboard-page.menu-abierto .ad-main {
-    padding-left: 260px;
+    padding-left: 270px;
 }
 
 body.admin-dashboard-page .dash-header {
@@ -70,6 +70,11 @@ body.admin-dashboard-page .dash-fecha {
 
 body.admin-dashboard-page .dash-fecha strong {
     color: #374151;
+    font-size: 11px;
+}
+
+html[data-theme="dark"] body.admin-dashboard-page .dash-fecha strong {
+    color: #ffffff !important;
     font-size: 11px;
 }
 
@@ -475,6 +480,11 @@ body.admin-dashboard-page .lista-mini strong {
     font-size: 10px;
 }
 
+html[data-theme="dark"] body .lista-mini strong {
+    color: #ffffff;
+    font-size: 10px;
+}
+
 body.admin-dashboard-page .card-ocupacion .dash-card-head {
     align-items: flex-start;
 }
@@ -587,6 +597,12 @@ body.admin-dashboard-page .ing-periodo {
     color: #6B7280;
     font-size: 10px;
 }
+
+html[data-theme="dark"] body .ing-periodo {
+    color: #ffffff;
+    font-size: 10px;
+}
+
 
 html[data-theme="dark"] body.admin-dashboard-page {
     background: #1C2423;
@@ -711,9 +727,12 @@ html[data-theme="dark"] body.admin-dashboard-page .ad-main svg {
 }
 
 @media (max-width: 1050px) {
-    body.admin-dashboard-page .ad-main,
-    body.admin-dashboard-page.menu-abierto .ad-main {
+    body.admin-dashboard-page .ad-main {
         padding: 84px 18px 88px 64px;
+    }
+
+    body.admin-dashboard-page.menu-abierto .ad-main {
+        padding-left: 270px;
     }
 
     body.admin-dashboard-page .dash-main-grid {

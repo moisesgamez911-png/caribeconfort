@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=107">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
-    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=12">
+    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=13">
 </head>
 <body>
 {% include 'inc/admin_header.html' %}
@@ -152,36 +152,8 @@
         </div>
     </section>
 </main>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('[data-modal]').forEach(function (button) {
-        button.addEventListener('click', function () {
-            var modal = document.getElementById(button.dataset.modal);
-            if (modal) {
-                modal.classList.add('is-open');
-                modal.setAttribute('aria-hidden', 'false');
-            }
-        });
-    });
-    document.querySelectorAll('[data-close-modal]').forEach(function (button) {
-        button.addEventListener('click', function () {
-            var modal = button.closest('.room-modal');
-            if (modal) {
-                modal.classList.remove('is-open');
-                modal.setAttribute('aria-hidden', 'true');
-            }
-        });
-    });
-    document.querySelectorAll('.room-modal').forEach(function (modal) {
-        modal.addEventListener('click', function (event) {
-            if (event.target === modal) {
-                modal.classList.remove('is-open');
-                modal.setAttribute('aria-hidden', 'true');
-            }
-        });
-    });
-});
-</script>
+
 <script src="{% static 'js/barra-encabezado.js' %}?v=15"></script>
+<script src="{% static 'js/administrador/habitaciones.js' %}"></script> 
 </body>
 </html>

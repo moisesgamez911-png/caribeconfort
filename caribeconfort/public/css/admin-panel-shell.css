@@ -24,9 +24,9 @@ body:not(.admin-dashboard-page) .ad-main,
 body:not(.admin-dashboard-page) .rp-main,
 body:not(.admin-dashboard-page) .cv-main {
     width: 100%;
-    max-width: 1920px;
-    margin: 0 auto;
-    padding: 88px 10px 48px 60px !important;
+    max-width: none;
+    margin: 0;
+    padding: 88px 10px 48px 60px;
 }
 
 body.menu-abierto:not(.admin-dashboard-page) .ad-main,
@@ -37,8 +37,8 @@ body.menu-abierto:not(.admin-dashboard-page) .cv-main {
 
 body:not(.admin-dashboard-page) .reception-main {
     width: 100%;
-    max-width: 1920px;
-    margin: 0 auto 60px;
+    max-width: none;
+    margin: 0 0 60px;
     padding: 84px 10px 48px 60px;
 }
 
@@ -48,8 +48,8 @@ body.menu-abierto:not(.admin-dashboard-page) .reception-main {
 
 body:not(.admin-dashboard-page) .adm-page {
     width: 100%;
-    max-width: 1840px;
-    margin: 0 auto;
+    max-width: none;
+    margin: 0;
 }
 
 body:not(.admin-dashboard-page) .adm-heading {
