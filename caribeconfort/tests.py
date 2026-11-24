@@ -45,6 +45,7 @@ from caribeconfort.views import (
     _enviar_invitacion_resena,
     _enviar_correo_hotel,
     buscar_disponibilidad,
+    administrador,
     configuracionadmin,
     descargar_certificado_pagos,
     descargar_factura_reserva,
@@ -1296,6 +1297,154 @@ class RefundPaymentSelectionTests(TestCase):
         respuesta = self._post_refund('60.01')
         self.assertEqual(respuesta.status_code, 400)
         self.assertEqual(Pagos.objects.filter(concepto='Reembolso').count(), 1)
+
+    def test_invalid_payment_id_returns_validation_error(self):
+        request = RequestFactory().post(
+            f'/adminreserva/{self.reserva.id}/reembolso',
+            {
+                'pago_id': 'no-es-un-id',
+                'monto': '10.00',
+                'metodo': 'Transferencia',
+            },
+        )
+        request.session = {'rol': 'Administrador'}
+
+        respuesta = procesar_reembolso(request, self.reserva.id)
+
+        self.assertEqual(respuesta.status_code, 400)
+        self.assertFalse(json.loads(respuesta.content)['success'])
+
+    def test_refund_endpoint_succeeds_through_django_client(self):
+        session = self.client.session
+        session['rol'] = 'Administrador'
+        session.save()
+
+        with patch('caribeconfort.views._enviar_correo_hotel', return_value=1):
+            respuesta = self.client.post(
+                f'/adminreserva/{self.reserva.id}/reembolso',
+                {
+                    'pago_id': self.pago.id,
+                    'monto': '40.00',
+                    'metodo': 'Transferencia',
+                },
+            )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.json()['success'])
+
+    def test_reservation_overpayment_refund_without_source_payment_is_recorded(self):
+        self.reserva.valortotal = Decimal('60.00')
+        self.reserva.save(update_fields=['valortotal'])
+        request = RequestFactory().post(
+            f'/adminreserva/{self.reserva.id}/reembolso',
+            {
+                'monto': '40.00',
+                'metodo': 'Transferencia',
+            },
+        )
+        request.session = {'rol': 'Administrador'}
+
+        with patch('caribeconfort.views._enviar_correo_hotel', return_value=1):
+            respuesta = procesar_reembolso(request, self.reserva.id)
+
+        self.assertEqual(respuesta.status_code, 200)
+        reembolso = Pagos.objects.get(concepto='Reembolso')
+        self.assertEqual(reembolso.valor, Decimal('-40.00'))
+        self.assertIsNone(reembolso.pago_origen_id)
+
+
+class RefundAccountingTests(TestCase):
+    def setUp(self):
+        self.huesped = crear_huesped_prueba()
+        self.reserva = crear_reserva_prueba(self.huesped)
+        session = self.client.session
+        session['rol'] = 'Administrador'
+        session['usuario_nom'] = 'Admin de prueba'
+        session.save()
+
+    def _dashboard_context(self):
+        request = RequestFactory().get('/administrador')
+        request.session = {'rol': 'Administrador'}
+        with patch('caribeconfort.views.finalizar_reservas_vencidas'), patch(
+            'caribeconfort.views.render',
+            return_value=HttpResponse(),
+        ) as render_view:
+            response = administrador(request)
+        self.assertEqual(response.status_code, 200)
+        return render_view.call_args.args[2]
+
+    def test_refund_history_renders_refund_amount_without_server_error(self):
+        pago = Pagos.objects.create(
+            reservas=self.reserva,
+            valor=Decimal('100.00'),
+            metodopago='Tarjeta',
+            concepto='Reserva',
+        )
+        Pagos.objects.create(
+            reservas=self.reserva,
+            valor=Decimal('-40.00'),
+            metodopago='Transferencia',
+            concepto='Reembolso',
+            pago_origen=pago,
+        )
+
+        response = self.client.get('/adminpagos?tab=reembolsos')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '-$ 40,00')
+
+    def test_dashboard_cash_and_income_graph_include_refund_losses(self):
+        pago_reserva = Pagos.objects.create(
+            reservas=self.reserva,
+            valor=Decimal('300.00'),
+            metodopago='Tarjeta',
+            concepto='Reserva',
+        )
+        pago_servicio = Pagos.objects.create(
+            reservas=self.reserva,
+            valor=Decimal('50.00'),
+            metodopago='Nequi',
+            concepto='Servicio',
+        )
+        Pagos.objects.create(
+            reservas=self.reserva,
+            valor=Decimal('-20.00'),
+            metodopago='Transferencia',
+            concepto='Reembolso',
+            pago_origen=pago_servicio,
+        )
+        Pagos.objects.create(
+            reservas=self.reserva,
+            valor=Decimal('-40.00'),
+            metodopago='Efectivo',
+            concepto='Reembolso',
+            pago_origen=pago_reserva,
+        )
+
+        context = self._dashboard_context()
+
+        self.assertEqual(context['caja_reservas'], Decimal('300.00'))
+        self.assertEqual(context['caja_servicios'], Decimal('50.00'))
+        self.assertEqual(context['caja_reembolsos'], Decimal('-60.00'))
+        self.assertEqual(context['caja_total'], Decimal('290.00'))
+        self.assertEqual(context['pagosdiarios'], Decimal('290.00'))
+        self.assertEqual(context['ingresos_semanales'], Decimal('290.00'))
+        self.assertEqual(context['ingresos_chart']['puntos'][-1]['valor'], Decimal('290.00'))
+
+    def test_monthly_chart_keeps_negative_net_values_in_view(self):
+        Pagos.objects.create(
+            reservas=self.reserva,
+            valor=Decimal('-10000000.00'),
+            metodopago='Transferencia',
+            concepto='Reembolso',
+        )
+
+        context = self._dashboard_context()
+        punto_neto_negativo = context['ingresos_chart']['puntos'][-1]
+
+        self.assertEqual(punto_neto_negativo['valor'], Decimal('-10000000.00'))
+        self.assertGreaterEqual(punto_neto_negativo['y'], 35)
+        self.assertLessEqual(punto_neto_negativo['y'], 375)
 
 
 class ReservationReminderCommandTests(TestCase):

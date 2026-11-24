@@ -2,7 +2,9 @@
  * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Arial, sans-serif !important;
-            background: linear-gradient(135deg, #0F3B3D 0%, #16484B 45%, #0F3B3D 100%);
+            background: 
+                linear-gradient(135deg, rgba(10, 25, 25, 0.75), rgba(0, 0, 0, 0.85)),
+                url('../../img/imagenes/plan2.jpg') center / cover no-repeat;
             min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
             padding: 24px; color: #1F2C33;
@@ -106,7 +108,8 @@
         }
         .ck-messages {
             padding: 12px 48px;
-            background: #E7F4EC; color: #1B6F3B;
+            background: #E7F4EC; 
+            color: #1B6F3B;
             font-size: 13px; font-weight: 500;
         }
         @media (max-width: 720px) {

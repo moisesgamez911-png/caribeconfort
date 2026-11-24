@@ -4146,11 +4146,11 @@ def procesar_reembolso(request, reserva_id):
         return JsonResponse({'success': False, 'message': 'No autorizado.'}, status=403)
 
     try:
-        monto = Decimal(request.POST.get('monto', '').strip())
+        monto = Decimal((request.POST.get('monto') or '').strip())
         monto_centavos = monto.quantize(Decimal('0.01'))
     except (InvalidOperation, AttributeError):
         return JsonResponse({'success': False, 'message': 'Ingresa un monto válido.'}, status=400)
-    metodo = request.POST.get('metodo', '').strip()
+    metodo = (request.POST.get('metodo') or '').strip()
     if (
         not monto.is_finite()
         or monto != monto_centavos
@@ -4159,7 +4159,17 @@ def procesar_reembolso(request, reserva_id):
     ):
         return JsonResponse({'success': False, 'message': 'El monto o el método de reembolso no son válidos.'}, status=400)
     monto = monto_centavos
-    pago_origen_id = request.POST.get('pago_id', '').strip()
+    pago_origen_id = (request.POST.get('pago_id') or '').strip()
+    if pago_origen_id:
+        if (
+            not pago_origen_id.isascii()
+            or not pago_origen_id.isdigit()
+            or len(pago_origen_id) > 19
+        ):
+            return JsonResponse({'success': False, 'message': 'El pago seleccionado no es válido.'}, status=400)
+        pago_origen_id = int(pago_origen_id)
+        if pago_origen_id <= 0 or pago_origen_id > (2 ** 63) - 1:
+            return JsonResponse({'success': False, 'message': 'El pago seleccionado no es válido.'}, status=400)
 
     with transaction.atomic():
         reserva = get_object_or_404(
@@ -5318,21 +5328,25 @@ def administrador(request):
             'total': total_mes
         })
 
-    max_total = max(
-        [m['total'] for m in ingresos_meses]
-    ) if any(m['total'] for m in ingresos_meses) else 0
-
-    max_y = math.ceil(max_total / 5000000) * 5000000 if max_total > 0 else 5000000
+    max_total = max(m['total'] for m in ingresos_meses)
+    min_total = min(m['total'] for m in ingresos_meses)
+    if min_total < 0:
+        limite = max(abs(max_total), abs(min_total))
+        max_y = max(5000000, math.ceil(limite / 5000000) * 5000000)
+        min_y = -max_y
+    else:
+        max_y = math.ceil(max_total / 5000000) * 5000000 if max_total > 0 else 5000000
+        min_y = 0
 
     def format_monto(val):
+        if val < 0:
+            return f"-${formato_numero_colombiano(abs(val), 0)}"
         return f"${formato_numero_colombiano(val, 0)}"
 
+    rango_total = max_y - min_y
     ticks_y = [
-        format_monto(max_y),
-        format_monto(max_y * 0.75),
-        format_monto(max_y * 0.5),
-        format_monto(max_y * 0.25),
-        '$0'
+        format_monto(max_y - rango_total * indice / 4)
+        for indice in range(5)
     ]
 
     x_points = [70, 356.6, 643.3, 930]
@@ -5345,9 +5359,7 @@ def administrador(request):
     for i, m in enumerate(ingresos_meses):
         total = m['total']
 
-        y = y_bottom - (
-            total / max_y * rango_y
-        ) if max_y > 0 else y_bottom
+        y = y_bottom - ((total - min_y) / rango_total * rango_y)
 
         puntos.append({
             'x': x_points[i],
@@ -5373,10 +5385,11 @@ def administrador(request):
             f"{round(c2_x, 2)} {y1}, {x1} {y1}"
         )
 
+    y_cero = y_bottom - ((0 - min_y) / rango_total * rango_y)
     path_area = (
         path_linea
-        + f" L {puntos[-1]['x']} {y_bottom}"
-        + f" L {puntos[0]['x']} {y_bottom} Z"
+        + f" L {puntos[-1]['x']} {y_cero}"
+        + f" L {puntos[0]['x']} {y_cero} Z"
     )
 
     ingresos_chart = {
@@ -5391,17 +5404,21 @@ def administrador(request):
         fecha__lt=fin_dia
     ).exclude(metodopago='Pendiente')
 
-    total_pagos_hoy = pagos_hoy.aggregate(t=Sum('valor'))['t'] or 0
-
-    caja_servicios = Pagos.objects.filter(
-        concepto='Servicio',
-        metodopago__in=['Efectivo', 'Tarjeta', 'Transferencia'],
-        fecha__gte=inicio_dia,
-        fecha__lt=fin_dia
+    caja_reservas = pagos_hoy.filter(
+        concepto='Reserva',
+        valor__gt=0,
     ).aggregate(t=Sum('valor'))['t'] or 0
 
-    caja_reservas = total_pagos_hoy - caja_servicios
-    caja_total = caja_reservas + caja_servicios
+    caja_servicios = pagos_hoy.filter(
+        concepto='Servicio',
+        valor__gt=0,
+    ).aggregate(t=Sum('valor'))['t'] or 0
+
+    caja_reembolsos = pagos_hoy.filter(
+        valor__lt=0,
+    ).aggregate(t=Sum('valor'))['t'] or 0
+
+    caja_total = caja_reservas + caja_servicios + caja_reembolsos
 
     return render(request, 'admini/dashboard.html', {
         'nombre': request.session.get('usuario_nom', 'Administrador'),
@@ -5441,6 +5458,7 @@ def administrador(request):
         'reservas_hoy': reservas_hoy,
         'caja_reservas': caja_reservas,
         'caja_servicios': caja_servicios,
+        'caja_reembolsos': caja_reembolsos,
         'caja_total': caja_total,
         'fuera_servicio': fuera_servicio,
         'hoy': hoy,

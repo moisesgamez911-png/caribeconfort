@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+
 from django import template
 
 from caribeconfort.formato import formato_numero_colombiano

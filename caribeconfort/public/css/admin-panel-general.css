@@ -574,6 +574,10 @@ body.admin-dashboard-page .caja-valor {
     font-size: 12px;
 }
 
+body.admin-dashboard-page .caja-valor.reembolso {
+    color: #B4232D;
+}
+
 body.admin-dashboard-page .caja-valor.grande {
     color: #183D3D;
     font-size: 17px;
@@ -612,6 +616,23 @@ html[data-theme="dark"] body.admin-dashboard-page .kpi-foot,
 html[data-theme="dark"] body.admin-dashboard-page .dash-tabla td,
 html[data-theme="dark"] body.admin-dashboard-page .lista-accesos a {
     color: #C4CECD;
+}
+
+html[data-theme="dark"] body.admin-dashboard-page .caja-item {
+    border-color: #394443;
+}
+
+html[data-theme="dark"] body.admin-dashboard-page .caja-label,
+html[data-theme="dark"] body.admin-dashboard-page .caja-valor {
+    color: #C4CECD;
+}
+
+html[data-theme="dark"] body.admin-dashboard-page .caja-valor.reembolso {
+    color: #FFB5B8;
+}
+
+html[data-theme="dark"] body.admin-dashboard-page .caja-valor.grande {
+    color: #80B5AB;
 }
 
 html[data-theme="dark"] body.admin-dashboard-page .dash-tabla th,
