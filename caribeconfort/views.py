@@ -1810,6 +1810,12 @@ def crear_reserva_plan(request):
                 convenio.save(update_fields=['estado'])
     except IntegrityError:
         return JsonResponse({'ok': False, 'error': 'El plan o el código cambió mientras se procesaba. Inténtalo nuevamente.'}, status=409)
+    except DatabaseError:
+        logger.exception('Error de base de datos al crear una reserva para el plan %s.', plan_id)
+        return JsonResponse({
+            'ok': False,
+            'error': 'No se pudo guardar la reserva. Verifica que las migraciones de la base de datos estén aplicadas.',
+        }, status=500)
 
     return JsonResponse({
         'ok': True,

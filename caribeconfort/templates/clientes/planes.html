@@ -166,7 +166,7 @@
             </div>
             <div class="m-info-fila">
                 <label class="m-info-label" for="planEntrada"><svg class="icon"><use href="#i-calendario"/></svg>{% trans "Fecha de entrada" %}</label>
-                <input type="date" id="planEntrada" class="form-control-modalentrada">
+                <input type="date" id="planEntrada" class="form-control-modalentrada" min="{% now 'Y-m-d' %}">
             </div>
             <div class="m-info-fila">
                 <span class="m-info-label"><svg class="icon"><use href="#i-salida"/></svg>{% trans "Fecha de salida" %}</span>
@@ -221,7 +221,7 @@
 
 <script src="{% static 'js/bootstrap.bundle.js' %}"></script>
 <script src="{% static 'js/feedback.js' %}?v=1"></script>
-<script src="{% static 'js/planes.js' %}?v=10002"></script>
+<script src="{% static 'js/planes.js' %}?v=10003"></script>
 <script src="{% static 'js/cliente-menu-movil.js' %}?v=1"></script>
 {% include 'inc/client_mobile_nav.html' %}
 </body>

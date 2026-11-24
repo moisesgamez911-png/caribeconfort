@@ -154,6 +154,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 abrirAlertaFecha("Debes seleccionar la fecha de entrada para poder reservar este plan.");
                 return;
             }
+            if (txtPlanEntrada.value < txtPlanEntrada.min) {
+                abrirAlertaFecha("La fecha de entrada no puede estar en el pasado.");
+                return;
+            }
 
             if (!inPlanSalida.value) {
                 const fechaEntrada = new Date(txtPlanEntrada.value + 'T00:00:00');

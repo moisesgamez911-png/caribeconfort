@@ -17,6 +17,7 @@ from django.contrib.auth.hashers import check_password
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.core.management.base import CommandError
+from django.db import OperationalError
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
@@ -520,6 +521,51 @@ class AdminPlanTypeManagementTests(TestCase):
         )
         self.assertFalse(Planes.objects.filter(id=plan.id).exists())
 
+    def test_editing_plan_saves_new_image_and_renders_its_media_url(self):
+        plan = Planes.objects.create(
+            nombre='Plan Caribe',
+            precio=Decimal('250000.00'),
+            imagen='uploads/planes/imagen-anterior.png',
+        )
+        contenido = BytesIO()
+        Image.new('RGB', (1, 1), color=(20, 40, 60)).save(contenido, format='PNG')
+        imagen_nueva = SimpleUploadedFile(
+            'plan-nuevo.png',
+            contenido.getvalue(),
+            content_type='image/png',
+        )
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=Path(media_root)):
+            respuesta = self.client.post('/admintiposhabitacion', {
+                'accion': 'editar_plan',
+                'tab': 'planes',
+                'plan_id': str(plan.id),
+                'nombre': 'Plan Caribe',
+                'descripcion': 'Estadía con desayuno',
+                'precio': '250000',
+                'imagen': imagen_nueva,
+                'disponibles': '8',
+                'duracion_dias': '3',
+                'max_adultos': '2',
+                'max_ninos': '1',
+                'orden': '2',
+                'caracteristicas': 'Desayuno incluido',
+                'estado': 'on',
+            })
+
+            self.assertRedirects(
+                respuesta,
+                '/admintiposhabitacion?tab=planes',
+                fetch_redirect_response=False,
+            )
+            plan.refresh_from_db()
+            self.assertTrue(plan.imagen.startswith('uploads/planes/'))
+            self.assertTrue(Path(media_root, plan.imagen).is_file())
+            self.assertContains(
+                self.client.get('/admintiposhabitacion?tab=planes'),
+                f'src="/media/{plan.imagen}"',
+            )
+
     def test_plan_referenced_by_reservation_cannot_be_deleted(self):
         huesped = crear_huesped_prueba()
         plan = Planes.objects.create(
@@ -538,6 +584,92 @@ class AdminPlanTypeManagementTests(TestCase):
 
         self.assertTrue(Planes.objects.filter(id=plan.id).exists())
         self.assertContains(respuesta, 'No se puede eliminar un plan que ya tiene reservas')
+
+
+class PlanReservationCreationTests(TestCase):
+    def setUp(self):
+        self.huesped = crear_huesped_prueba()
+        self.plan = Planes.objects.create(
+            nombre='Plan de prueba',
+            precio=Decimal('250000.00'),
+            duracion_dias=3,
+            max_adultos=2,
+            max_ninos=1,
+            disponibles=4,
+        )
+        session = self.client.session
+        session['usuario_id'] = self.huesped.usuarios_id
+        session.save()
+
+    def test_plan_arrival_date_cannot_be_selected_before_today(self):
+        response = self.client.get('/planes')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            f'id="planEntrada" class="form-control-modalentrada" min="{timezone.localdate():%Y-%m-%d}"',
+        )
+
+    def test_guest_can_create_future_plan_reservation(self):
+        entrada = timezone.localdate() + timedelta(days=5)
+
+        response = self.client.post('/reservar-plan/crear/', {
+            'plan_id': str(self.plan.id),
+            'entrada': entrada.isoformat(),
+            'salida': (entrada + timedelta(days=self.plan.duracion_dias)).isoformat(),
+            'adultos': '2',
+            'ninos': '1',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['ok'])
+        reserva = Reservas.objects.get(id=response.json()['reserva_id'])
+        self.assertEqual(reserva.planes, self.plan)
+        self.assertEqual(reserva.fechaentrada, entrada)
+        self.assertEqual(reserva.estado, 'Pendiente')
+        self.assertEqual(
+            Pagos.objects.get(reservas=reserva).estado_pago,
+            'Pendiente',
+        )
+
+    def test_database_error_returns_json_and_rolls_back_plan_reservation(self):
+        entrada = timezone.localdate() + timedelta(days=5)
+
+        with patch(
+            'caribeconfort.views.Pagos.objects.create',
+            side_effect=OperationalError('column estado_pago does not exist'),
+        ):
+            response = self.client.post('/reservar-plan/crear/', {
+                'plan_id': str(self.plan.id),
+                'entrada': entrada.isoformat(),
+                'salida': (entrada + timedelta(days=self.plan.duracion_dias)).isoformat(),
+                'adultos': '1',
+                'ninos': '0',
+            })
+
+        self.assertEqual(response.status_code, 500)
+        self.assertJSONEqual(response.content, {
+            'ok': False,
+            'error': 'No se pudo guardar la reserva. Verifica que las migraciones de la base de datos estén aplicadas.',
+        })
+        self.assertFalse(Reservas.objects.filter(planes=self.plan).exists())
+        self.plan.refresh_from_db()
+        self.assertEqual(self.plan.disponibles, 4)
+
+    def test_guest_cannot_create_plan_reservation_in_the_past(self):
+        entrada = timezone.localdate() - timedelta(days=1)
+
+        response = self.client.post('/reservar-plan/crear/', {
+            'plan_id': str(self.plan.id),
+            'entrada': entrada.isoformat(),
+            'salida': (entrada + timedelta(days=self.plan.duracion_dias)).isoformat(),
+            'adultos': '1',
+            'ninos': '0',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()['ok'])
+        self.assertFalse(Reservas.objects.filter(planes=self.plan).exists())
 
 
 class ReservationDashboardCountTests(TestCase):
@@ -1123,6 +1255,7 @@ class BookingDateDefaultsTests(TestCase):
         self.assertContains(response, '15 disponibles')
         self.assertContains(response, 'tag-disponible')
         self.assertNotContains(response, 'tag-agotado')
+        self.assertContains(response, 'src="/static/img/imagenes/BASO.jpg"')
         tipos_renderizados = response.context['tipos']
         self.assertEqual(len(tipos_renderizados), 1)
         tipo_renderizado = tipos_renderizados[0]
