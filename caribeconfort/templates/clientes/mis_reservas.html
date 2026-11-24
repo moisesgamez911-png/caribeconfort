@@ -115,6 +115,9 @@
                     <aside class="reservation-payment">
                         <span class="payment-label">Total pagado</span>
                         <strong class="payment-total">$ {{ r.total_pagado|precio:0 }} <small>COP</small></strong>
+                        {% if r.pago_en_validacion > 0 %}
+                            <span class="payment-note payment-validating">Pago en validación: $ {{ r.pago_en_validacion|precio:0 }} COP</span>
+                        {% endif %}
                         {% if r.total_reembolsado > 0 %}
                             <span class="payment-note payment-refunded">Reembolsado: $ {{ r.total_reembolsado|precio:0 }} COP</span>
                         {% endif %}
@@ -155,6 +158,8 @@
                                 data-pagado="$ {{ r.total_pagado|precio:0 }} COP"
                                 data-pagado-numerico="{{ r.total_pagado|unlocalize }}"
                                 data-pagado-neto-numerico="{{ r.abono_pagado|unlocalize }}"
+                                data-pago-validacion="$ {{ r.pago_en_validacion|precio:0 }} COP"
+                                data-pago-validacion-numerico="{{ r.pago_en_validacion|unlocalize }}"
                                 data-reembolsado="$ {{ r.total_reembolsado|precio:0 }} COP"
                                 data-reembolsado-numerico="{{ r.total_reembolsado|unlocalize }}"
                                 data-saldo="$ {{ r.saldo_pendiente|precio:0 }} COP"
@@ -445,6 +450,14 @@
                     </div>
                 </div>
 
+                <div class="elemento-resumen" id="mdPagoValidacionRow" hidden>
+                    <i class="bi bi-hourglass-split"></i>
+                    <div>
+                        <span class="etiqueta">Pago en validación</span>
+                        <p id="mdPagoValidacion">$ 0 COP</p>
+                    </div>
+                </div>
+
                 <div class="elemento-resumen" id="mdReembolsoRow" hidden>
                     <i class="bi bi-arrow-return-left"></i>
                     <div>
@@ -555,7 +568,7 @@
 
 <script src="{% static 'js/bootstrap.bundle.js' %}"></script>
 <script src="{% static 'js/feedback.js' %}?v=1"></script>
-<script src="{% static 'js/mi_reserva.js' %}?v=30"></script>
+<script src="{% static 'js/mi_reserva.js' %}?v=31"></script>
 <script src="{% static 'js/cliente-menu-movil.js' %}?v=1"></script>
 
 </body>

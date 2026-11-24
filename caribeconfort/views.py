@@ -535,7 +535,7 @@ def planes(request):
 
     for p in planes_qs:
         p.precio_fmt = f"{int(p.precio):,}".replace(",", ".")
-        p.url_imagen = _url_imagen_local(p.imagen)
+        p.url_imagen = _url_imagen_plan(p)
 
     context = {
         'planes': planes_qs,
@@ -570,6 +570,9 @@ def servicios(request):
         servicio.url_imagen = _url_imagen_local(servicio.imagen)
     servicio_destacado = next((servicio for servicio in servicios_disponibles if servicio.destacado), None)
     servicios_catalogo = [servicio for servicio in servicios_disponibles if servicio != servicio_destacado]
+    for servicio in servicios_catalogo:
+        if not servicio.url_imagen:
+            servicio.url_imagen = _url_imagen_servicio(servicio)
 
     total_general = Servicios.objects.filter(estado=True).count()
 
@@ -968,6 +971,31 @@ def _url_imagen_local(ruta):
                 return f'/{prefijo_static}img/imagenes/{ruta}'
         return ''
     return ''
+
+
+def _url_imagen_estatica(ruta):
+    return f'{settings.STATIC_URL.rstrip("/")}/img/imagenes/{ruta}'
+
+
+def _url_imagen_plan(plan):
+    url = _url_imagen_local(plan.imagen)
+    if url:
+        return url
+    imagenes = ('plan1.jpg', 'plan2.jpg', 'plan3.jpg')
+    indice = (plan.pk - 1) % len(imagenes)
+    return _url_imagen_estatica(imagenes[indice])
+
+
+def _url_imagen_servicio(servicio):
+    url = _url_imagen_local(servicio.imagen)
+    if url:
+        return url
+    imagenes = (
+        'uploads/servicios/0163ae68fc124958bca3197c8287765c.jpg',
+        'uploads/servicios/5ea2e217ef2042a4890a7043ddc83be7.jpg',
+    )
+    indice = (servicio.pk - 1) % len(imagenes)
+    return _url_imagen_estatica(imagenes[indice])
 
 
 def registrarhabitacion(request):
@@ -1605,6 +1633,19 @@ def mis_reservas(request):
             ),
         )
     }
+    pagos_en_validacion = {
+        pago['reservas_id']: pago['monto']
+        for pago in Pagos.objects.filter(
+            reservas_id__in=[reserva.id for reserva in reservas],
+            estado_pago='Pendiente',
+            valor__gt=0,
+            concepto__in=['Reserva', 'Servicio'],
+        ).exclude(
+            metodopago='Pendiente',
+        ).values('reservas_id').annotate(
+            monto=Sum('valor'),
+        )
+    }
 
     hoy = timezone.localdate()
     activas = []
@@ -1623,6 +1664,7 @@ def mis_reservas(request):
             Decimal('0.00'),
             r.total_pagado - r.total_reembolsado,
         )
+        r.pago_en_validacion = pagos_en_validacion.get(r.id) or Decimal('0.00')
         r.saldo_pendiente = max(Decimal('0.00'), r.valortotal - r.abono_pagado)
         r.esta_pagada = r.saldo_pendiente == Decimal('0.00')
         
@@ -1648,6 +1690,10 @@ def mis_reservas(request):
             r.reserva_imagen_url = _url_imagen_local(ruta_imagen)
             if r.reserva_imagen_url:
                 break
+        if not r.reserva_imagen_url and r.planes:
+            r.reserva_imagen_url = _url_imagen_plan(r.planes)
+        elif not r.reserva_imagen_url and r.habitaciones:
+            r.reserva_imagen_url = _url_imagen_estatica('foto2.png')
 
         if r.estado in ['Pendiente', 'Pagada - Por validar', 'Confirmada', 'En curso'] and r.fechasalida >= hoy:
             activas.append(r)
@@ -1658,8 +1704,8 @@ def mis_reservas(request):
         reservas__huespedes=huesped
     ).select_related('servicios', 'reservas').order_by('-id')
     for servicio_reserva in historial_servicios:
-        servicio_reserva.servicios.url_imagen = _url_imagen_local(
-            servicio_reserva.servicios.imagen
+        servicio_reserva.servicios.url_imagen = _url_imagen_servicio(
+            servicio_reserva.servicios
         )
 
     return render(request, 'clientes/mis_reservas.html', {

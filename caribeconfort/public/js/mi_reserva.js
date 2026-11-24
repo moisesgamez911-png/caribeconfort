@@ -212,6 +212,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 setVal("mdTotalPagado", this.dataset.pagado || '$ 0 COP');
                 setVal("mdTotalReembolsado", this.dataset.reembolsado || '$ 0 COP');
                 setVal("mdSaldoPendiente", this.dataset.saldo || '$ 0 COP');
+                setVal("mdPagoValidacion", this.dataset.pagoValidacion || '$ 0 COP');
+                const pagoEnValidacion = Number.parseFloat(this.dataset.pagoValidacionNumerico || "0");
+                const filaPagoValidacion = document.getElementById("mdPagoValidacionRow");
+                if (filaPagoValidacion) filaPagoValidacion.hidden = pagoEnValidacion <= 0;
                 const totalReembolsado = Number.parseFloat(this.dataset.reembolsadoNumerico || "0");
                 const filaReembolso = document.getElementById("mdReembolsoRow");
                 if (filaReembolso) filaReembolso.hidden = totalReembolsado <= 0;

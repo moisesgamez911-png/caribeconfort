@@ -67,6 +67,8 @@ from caribeconfort.views import (
     reservasadmin,
     servir_logo_hotel,
     _url_imagen_local,
+    _url_imagen_plan,
+    _url_imagen_servicio,
     solicitar_servicio,
 )
 
@@ -109,6 +111,34 @@ def crear_reserva_prueba(huesped, fechaentrada=None):
 
 
 class LocalImageURLTests(SimpleTestCase):
+    def test_missing_plan_image_uses_tracked_static_photo_by_plan_id(self):
+        plan = Planes(id=2, imagen='uploads/planes/imagen-perdida.jpg')
+
+        with TemporaryDirectory() as media_root, override_settings(
+            MEDIA_ROOT=media_root,
+            STATICFILES_DIRS=[],
+            STATIC_URL='/static/',
+            MEDIA_URL='/media/',
+        ):
+            self.assertEqual(
+                _url_imagen_plan(plan),
+                '/static/img/imagenes/plan2.jpg',
+            )
+
+    def test_missing_service_image_uses_tracked_static_photo_by_service_id(self):
+        servicio = Servicios(id=2, imagen='uploads/servicios/imagen-perdida.jpg')
+
+        with TemporaryDirectory() as media_root, override_settings(
+            MEDIA_ROOT=media_root,
+            STATICFILES_DIRS=[],
+            STATIC_URL='/static/',
+            MEDIA_URL='/media/',
+        ):
+            self.assertEqual(
+                _url_imagen_servicio(servicio),
+                '/static/img/imagenes/uploads/servicios/5ea2e217ef2042a4890a7043ddc83be7.jpg',
+            )
+
     def test_missing_uploaded_image_uses_existing_legacy_static_file(self):
         with TemporaryDirectory() as media_root, TemporaryDirectory() as static_root:
             ruta = 'uploads/servicios/imagen.jpg'
@@ -605,6 +635,11 @@ class PlanReservationCreationTests(TestCase):
         response = self.client.get('/planes')
 
         self.assertEqual(response.status_code, 200)
+        imagen_esperada = f'plan{((self.plan.pk - 1) % 3) + 1}.jpg'
+        self.assertContains(
+            response,
+            f'src="/static/img/imagenes/{imagen_esperada}"',
+        )
         self.assertContains(
             response,
             f'id="planEntrada" class="form-control-modalentrada" min="{timezone.localdate():%Y-%m-%d}"',
@@ -1879,6 +1914,61 @@ class MisReservasPaymentSummaryTests(TestCase):
         self.assertEqual(reserva.total_pagado, Decimal('60.00'))
         self.assertEqual(reserva.total_reembolsado, Decimal('20.00'))
         self.assertEqual(reserva.abono_pagado, Decimal('40.00'))
+
+    def test_payment_under_validation_is_shown_without_counting_as_paid(self):
+        self.reserva.estado = 'Pagada - Por validar'
+        self.reserva.save(update_fields=['estado'])
+        Pagos.objects.create(
+            reservas=self.reserva,
+            valor=Decimal('75.00'),
+            metodopago='Transferencia',
+            concepto='Reserva',
+            estado_pago='Pendiente',
+        )
+
+        response = self.client.get('/mis-reservas')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Pago en validación: $ 75 COP')
+        reserva = response.context['activas'][0]
+        self.assertEqual(reserva.total_pagado, Decimal('60.00'))
+        self.assertEqual(reserva.pago_en_validacion, Decimal('75.00'))
+
+    def test_plan_history_card_uses_static_photo_when_upload_is_missing(self):
+        plan = Planes.objects.create(
+            nombre='Plan sin foto',
+            precio=Decimal('100000.00'),
+        )
+        self.reserva.planes = plan
+        self.reserva.estado = 'Finalizada'
+        self.reserva.save(update_fields=['planes', 'estado'])
+
+        response = self.client.get('/mis-reservas')
+
+        self.assertEqual(response.status_code, 200)
+        imagen_esperada = f'plan{((plan.pk - 1) % 3) + 1}.jpg'
+        self.assertContains(
+            response,
+            f'src="/static/img/imagenes/{imagen_esperada}"',
+        )
+
+
+class PublicServiceImageFallbackTests(TestCase):
+    def test_service_card_uses_tracked_photo_when_upload_is_missing(self):
+        Servicios.objects.create(
+            nombre='Servicio de prueba',
+            descripcion='Servicio con imagen no disponible',
+            precio=Decimal('10000.00'),
+            categoria='Otros',
+        )
+
+        response = self.client.get('/servicios')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'src="/static/img/imagenes/uploads/servicios/0163ae68fc124958bca3197c8287765c.jpg"',
+        )
 
 
 class ReservationReminderCommandTests(TestCase):
