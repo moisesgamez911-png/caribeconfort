@@ -58,7 +58,7 @@ body.checkin-page {
     
         }
 
-        body.checkin-page .ck-card {
+        /*body.checkin-page .ck-card {
                 background: var(--ck-surface) !important;
                 backdrop-filter: blur(10px);
                 color: var(--ck-text);
@@ -70,7 +70,7 @@ body.checkin-page {
         .ck-body {
                 padding: 40px 48px;
                 background: transparent !important; 
-            }
+            }*/
         .ck-header::after {
             content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
             height: 4px;
@@ -127,8 +127,11 @@ body.checkin-page {
         }
         .ck-summary {
             background: var(--ck-surface-muted); border-radius: 16px;
-            padding: 24px; margin-bottom: 32px;
+            padding: 24px; margin-bottom: 32px
+
         }
+
+
         .ck-summary--compact { padding: 20px; }
         .ck-summary-grid {
             display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
