@@ -75,7 +75,7 @@ body.checkin-page {
         }
         .ck-header p { font-size: 14px; color: rgba(255,255,255,0.75); }
         .ck-res-id { color: #E6C76A; font-weight: 600; }
-        .ck-body { padding: 40px 48px; background: var(--ck-surface); }
+        .ck-body { padding: 40px 48px; background: #ffffff65 !important; }
         .ck-section-title {
             font-family: 'Segoe UI', Arial, sans-serif !important;
             font-size: 22px; font-weight: 700; color: var(--ck-heading);
