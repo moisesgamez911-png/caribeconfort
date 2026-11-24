@@ -642,14 +642,7 @@ def cancelar_reserva(request, reserva_id):
             ).update(estado_pago='Anulado')
             reserva.estado = 'Cancelada'
             reserva.save(update_fields=['estado'])
-            if reserva.habitaciones_id and not Reservas.objects.filter(
-                habitaciones_id=reserva.habitaciones_id,
-                estado__in=['Pendiente', 'Pagada - Por validar', 'Confirmada', 'En curso'],
-                fechaentrada__lt=reserva.fechasalida,
-                fechasalida__gt=reserva.fechaentrada,
-            ).exclude(id=reserva.id).exists():
-                reserva.habitaciones.estado = 'Disponible'
-                reserva.habitaciones.save(update_fields=['estado'])
+            _liberar_habitacion_si_no_hay_estancia_en_curso(reserva.habitaciones_id)
     except Http404:
         return JsonResponse({'success': False, 'message': 'Reserva no encontrada o no te pertenece.'}, status=404)
     except DatabaseError:
@@ -695,6 +688,23 @@ def cancelar_reserva(request, reserva_id):
             else 'Reserva cancelada. No se pudo enviar el correo de confirmación; verifica la configuración SMTP y el correo del huésped.'
         ),
     })
+
+
+def _liberar_habitacion_si_no_hay_estancia_en_curso(habitacion_id):
+    if not habitacion_id:
+        return
+    habitacion = Habitaciones.objects.select_for_update().filter(
+        id=habitacion_id,
+    ).first()
+    if not habitacion or habitacion.estado != 'Ocupada':
+        return
+    if not Reservas.objects.filter(
+        habitaciones_id=habitacion_id,
+        estado='En curso',
+    ).exists():
+        habitacion.estado = 'Disponible'
+        habitacion.save(update_fields=['estado'])
+
 
 def solicitar_servicio(request):
     if not request.session.get('usuario_id'):
@@ -1223,7 +1233,7 @@ def crear_reserva(request):
             )
             if len(habitaciones) != len(lista_ids):
                 return JsonResponse({'ok': False, 'error': 'Una o más habitaciones ya no están disponibles.'}, status=409)
-            if any(habitacion.estado != 'Disponible' for habitacion in habitaciones):
+            if any(habitacion.estado not in {'Disponible', 'Ocupada'} for habitacion in habitaciones):
                 return JsonResponse({'ok': False, 'error': 'Una o más habitaciones ya no están disponibles.'}, status=409)
             if Reservas.objects.filter(
                 habitaciones_id__in=[habitacion.id for habitacion in habitaciones],
@@ -1471,13 +1481,16 @@ def finalizar_reservas_vencidas(request=None, enviar_invitaciones=True):
             reserva.estado = 'Finalizada'
             reserva.save(update_fields=['estado'])
             finalizadas += 1
-            if reserva.habitaciones_id and not Reservas.objects.filter(
-                habitaciones_id=reserva.habitaciones_id,
-                estado__in=['Pendiente', 'Pagada - Por validar', 'Confirmada', 'En curso'],
-                fechaentrada__lt=reserva.fechasalida,
-                fechasalida__gt=reserva.fechaentrada,
-            ).exclude(id=reserva.id).exists():
-                Habitaciones.objects.filter(id=reserva.habitaciones_id).update(estado='Disponible')
+            _liberar_habitacion_si_no_hay_estancia_en_curso(reserva.habitaciones_id)
+
+    habitaciones_con_estancia = Reservas.objects.filter(
+        estado='En curso',
+        habitaciones_id__isnull=False,
+    ).values('habitaciones_id')
+    Habitaciones.objects.filter(estado='Ocupada').exclude(
+        id__in=habitaciones_con_estancia,
+    ).update(estado='Disponible')
+
     if not enviar_invitaciones:
         return finalizadas
 
@@ -2385,16 +2398,9 @@ def checkout_reserva(request, reserva_id):
                 return redirect(destino)
             Pagos.objects.create(reservas=reserva, valor=monto, metodopago=metodo, concepto='Reserva')
 
-        if reserva.habitaciones_id and not Reservas.objects.filter(
-            habitaciones_id=reserva.habitaciones_id,
-            estado='En curso',
-            fechaentrada__lt=reserva.fechasalida,
-            fechasalida__gt=reserva.fechaentrada,
-        ).exclude(id=reserva.id).exists():
-            reserva.habitaciones.estado = 'Disponible'
-            reserva.habitaciones.save(update_fields=['estado'])
         reserva.estado = 'Finalizada'
         reserva.save(update_fields=['estado'])
+        _liberar_habitacion_si_no_hay_estancia_en_curso(reserva.habitaciones_id)
 
     factura_enviada = False
     try:
@@ -4895,6 +4901,24 @@ def buscar_disponibilidad(request):
     hoy = timezone.localdate()
     fecha_entrada = request.GET.get('entrada') or hoy.isoformat()
     fecha_salida  = request.GET.get('salida') or (hoy + timedelta(days=1)).isoformat()
+    error_fechas = ''
+    try:
+        entrada_filtro = date.fromisoformat(fecha_entrada)
+        salida_filtro = date.fromisoformat(fecha_salida)
+    except (TypeError, ValueError):
+        entrada_filtro = hoy
+        salida_filtro = hoy + timedelta(days=1)
+        error_fechas = 'Las fechas no son válidas; se muestran opciones desde hoy.'
+
+    if entrada_filtro < hoy:
+        entrada_filtro = hoy
+        error_fechas = 'La fecha de llegada no puede estar en el pasado.'
+    if salida_filtro <= entrada_filtro:
+        salida_filtro = entrada_filtro + timedelta(days=1)
+        error_fechas = 'La fecha de salida debe ser posterior a la fecha de llegada.'
+
+    fecha_entrada = entrada_filtro.isoformat()
+    fecha_salida = salida_filtro.isoformat()
     adultos       = int(request.GET.get('adultos') or 2)
     ninos         = int(request.GET.get('ninos') or 0)
     habitaciones_n = request.GET.get('habitaciones') or '1'
@@ -4912,24 +4936,18 @@ def buscar_disponibilidad(request):
             codigo_error = 'El código no existe, venció o ya fue utilizado.'
 
     habitaciones_qs = Habitaciones.objects.filter(
-        estado='Disponible',
+        estado__in=['Disponible', 'Ocupada'],
         capacidad__gte=adultos + ninos,
     )
-    try:
-        entrada_filtro = date.fromisoformat(fecha_entrada)
-        salida_filtro = date.fromisoformat(fecha_salida)
-    except (TypeError, ValueError):
-        entrada_filtro = salida_filtro = None
-    if entrada_filtro and salida_filtro and salida_filtro > entrada_filtro:
-        reservas_solapadas = Reservas.objects.filter(
-            habitaciones_id=OuterRef('pk'),
-            estado__in=['Pendiente', 'Pagada - Por validar', 'Confirmada', 'En curso'],
-            fechaentrada__lt=salida_filtro,
-            fechasalida__gt=entrada_filtro,
-        )
-        habitaciones_qs = habitaciones_qs.annotate(
-            tiene_reserva_solapada=Exists(reservas_solapadas)
-        ).filter(tiene_reserva_solapada=False)
+    reservas_solapadas = Reservas.objects.filter(
+        habitaciones_id=OuterRef('pk'),
+        estado__in=['Pendiente', 'Pagada - Por validar', 'Confirmada', 'En curso'],
+        fechaentrada__lt=salida_filtro,
+        fechasalida__gt=entrada_filtro,
+    )
+    habitaciones_qs = habitaciones_qs.annotate(
+        tiene_reserva_solapada=Exists(reservas_solapadas)
+    ).filter(tiene_reserva_solapada=False)
     if tipo:
         habitaciones_qs = habitaciones_qs.filter(tipohabitacion__nombre=tipo)
 
@@ -4978,6 +4996,8 @@ def buscar_disponibilidad(request):
         'tipos': tipos_qs,
         'fecha_entrada':  fecha_entrada,
         'fecha_salida':   fecha_salida,
+        'fecha_salida_min': (entrada_filtro + timedelta(days=1)).isoformat(),
+        'error_fechas': error_fechas,
         'adultos':        str(adultos),
         'ninos':          str(ninos),
         'habitaciones_n': habitaciones_n,
@@ -5693,14 +5713,9 @@ def gestionar_reserva(request, reserva_id):
                 ).update(estado_pago='Anulado')
                 reserva.estado = 'Cancelada'
                 reserva.save(update_fields=['estado'])
-                if habitacion and not Reservas.objects.filter(
-                    habitaciones_id=habitacion.id,
-                    estado__in=['Pendiente', 'Pagada - Por validar', 'Confirmada', 'En curso'],
-                    fechaentrada__lt=reserva.fechasalida,
-                    fechasalida__gt=reserva.fechaentrada,
-                ).exclude(id=reserva.id).exists():
-                    habitacion.estado = 'Disponible'
-                    habitacion.save(update_fields=['estado'])
+                _liberar_habitacion_si_no_hay_estancia_en_curso(
+                    habitacion.id if habitacion else None
+                )
     except Exception:
         logger.exception('No se pudo %s la reserva CC-%s.', accion, reserva_id)
         return JsonResponse({

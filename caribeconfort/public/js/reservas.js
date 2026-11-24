@@ -13,6 +13,27 @@ document.addEventListener("DOMContentLoaded", function() {
     const btnAplicarCodigo = document.getElementById("btnAplicarCodigo");
     const formBuscador = document.getElementById("bookingForm");
 
+    function fechaSiguiente(value) {
+        const partes = value.split("-").map(Number);
+        const fecha = new Date(Date.UTC(partes[0], partes[1] - 1, partes[2] + 1));
+        return [
+            fecha.getUTCFullYear(),
+            String(fecha.getUTCMonth() + 1).padStart(2, "0"),
+            String(fecha.getUTCDate()).padStart(2, "0")
+        ].join("-");
+    }
+
+    function actualizarSalidaMinima() {
+        if (!inEntrada || !inSalida || !inEntrada.value) return;
+        const fechaMinima = fechaSiguiente(inEntrada.value);
+        inSalida.min = fechaMinima;
+        if (inSalida.value && inSalida.value < fechaMinima) {
+            inSalida.value = fechaMinima;
+        }
+    }
+
+    actualizarSalidaMinima();
+
     const modalConfirm = document.getElementById("miModalReserva");
     const btnCerrarModal = document.getElementById("btnCerrarModal");
     const btnCancelarModal = document.getElementById("btnCancelarModal");
@@ -124,7 +145,10 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     if (selectTipo) selectTipo.addEventListener("change", () => aplicarFiltros(true));
-    if (inEntrada) inEntrada.addEventListener("change", () => aplicarFiltros(true));
+    if (inEntrada) inEntrada.addEventListener("change", () => {
+        actualizarSalidaMinima();
+        aplicarFiltros(true);
+    });
     if (inSalida) inSalida.addEventListener("change", () => aplicarFiltros(true));
     if (selectAdultos) selectAdultos.addEventListener("change", () => aplicarFiltros(true));
     if (selectNinos) selectNinos.addEventListener("change", () => aplicarFiltros(true));

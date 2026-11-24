@@ -49,6 +49,8 @@ from caribeconfort.views import (
     _enviar_correo_hotel,
     buscar_disponibilidad,
     administrador,
+    cancelar_reserva,
+    checkout_reserva,
     configuracionadmin,
     descargar_certificado_pagos,
     descargar_factura_reserva,
@@ -579,13 +581,22 @@ class ReservationDashboardCountTests(TestCase):
         self.assertEqual(context['total_reservas'], 2)
 
 
-class ExpiredReservationFinalizationTests(TestCase):
+class ReservationRoomLifecycleTests(TestCase):
     def test_dashboard_can_finalize_expired_reservations_without_sending_email(self):
         huesped = crear_huesped_prueba()
+        habitacion = Habitaciones.objects.create(
+            numero='F01',
+            capacidad=2,
+            precio=Decimal('50000.00'),
+            estado='Ocupada',
+        )
         reserva = crear_reserva_prueba(
             huesped,
             fechaentrada=timezone.localdate() - timedelta(days=10),
         )
+        reserva.habitaciones = habitacion
+        reserva.estado = 'En curso'
+        reserva.save(update_fields=['habitaciones', 'estado'])
         request = RequestFactory().get('/administrador')
 
         with patch(
@@ -597,8 +608,67 @@ class ExpiredReservationFinalizationTests(TestCase):
             )
 
         reserva.refresh_from_db()
+        habitacion.refresh_from_db()
         self.assertEqual(reserva.estado, 'Finalizada')
+        self.assertEqual(habitacion.estado, 'Disponible')
         send_review_invitation.assert_not_called()
+
+    def test_cancellation_releases_room_after_active_stay_is_cancelled(self):
+        huesped = crear_huesped_prueba()
+        habitacion = Habitaciones.objects.create(
+            numero='C01',
+            capacidad=2,
+            precio=Decimal('50000.00'),
+            estado='Ocupada',
+        )
+        reserva = crear_reserva_prueba(huesped)
+        reserva.habitaciones = habitacion
+        reserva.estado = 'En curso'
+        reserva.save(update_fields=['habitaciones', 'estado'])
+        request = RequestFactory().post(
+            f'/api/cancelar-reserva/{reserva.id}/',
+            data='{}',
+            content_type='application/json',
+        )
+        request.session = {'rol': 'Administrador'}
+
+        with patch('caribeconfort.views._enviar_correo_hotel', return_value=True):
+            response = cancelar_reserva(request, reserva.id)
+
+        habitacion.refresh_from_db()
+        reserva.refresh_from_db()
+        self.assertTrue(json.loads(response.content)['success'])
+        self.assertEqual(reserva.estado, 'Cancelada')
+        self.assertEqual(habitacion.estado, 'Disponible')
+
+    def test_checkout_releases_room_when_stay_is_finalized(self):
+        huesped = crear_huesped_prueba()
+        habitacion = Habitaciones.objects.create(
+            numero='CO01',
+            capacidad=2,
+            precio=Decimal('50000.00'),
+            estado='Ocupada',
+        )
+        reserva = crear_reserva_prueba(huesped)
+        reserva.habitaciones = habitacion
+        reserva.estado = 'En curso'
+        reserva.valortotal = Decimal('0.00')
+        reserva.save(update_fields=['habitaciones', 'estado', 'valortotal'])
+        request = RequestFactory().post(f'/adminreserva/checkout/{reserva.id}/')
+        request.session = {'rol': 'Administrador'}
+        request._messages = Mock()
+
+        with patch('caribeconfort.views._enviar_factura_reserva'), patch(
+            'caribeconfort.views._enviar_invitacion_resena',
+            return_value=True,
+        ):
+            response = checkout_reserva(request, reserva.id)
+
+        habitacion.refresh_from_db()
+        reserva.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(reserva.estado, 'Finalizada')
+        self.assertEqual(habitacion.estado, 'Disponible')
 
 
 class ResenaInvitationTests(SimpleTestCase):
@@ -927,6 +997,106 @@ class BookingDateDefaultsTests(TestCase):
         today = timezone.localdate()
         self.assertEqual(context['fecha_entrada'], today.isoformat())
         self.assertEqual(context['fecha_salida'], (today + timedelta(days=1)).isoformat())
+        self.assertEqual(context['fecha_salida_min'], (today + timedelta(days=1)).isoformat())
+
+    def test_search_moves_checkout_after_arrival_when_requested_range_is_invalid(self):
+        entrada = timezone.localdate() + timedelta(days=5)
+        response = self.client.get('/reservas', {
+            'entrada': entrada.isoformat(),
+            'salida': (entrada - timedelta(days=1)).isoformat(),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context['fecha_salida'],
+            (entrada + timedelta(days=1)).isoformat(),
+        )
+        self.assertEqual(
+            response.context['fecha_salida_min'],
+            (entrada + timedelta(days=1)).isoformat(),
+        )
+        self.assertContains(response, 'La fecha de salida debe ser posterior')
+        self.assertContains(
+            response,
+            f'min="{(entrada + timedelta(days=1)).isoformat()}"',
+        )
+
+    def test_search_includes_occupied_room_when_requested_dates_do_not_overlap(self):
+        tipo = TipoHabitacion.objects.create(
+            nombre='Estándar',
+            capacidad=2,
+            tarifa=Decimal('50000.00'),
+        )
+        ocupada = Habitaciones.objects.create(
+            tipohabitacion=tipo,
+            numero='E01',
+            capacidad=2,
+            precio=Decimal('50000.00'),
+            estado='Ocupada',
+        )
+        Habitaciones.objects.create(
+            tipohabitacion=tipo,
+            numero='E02',
+            capacidad=2,
+            precio=Decimal('50000.00'),
+            estado='Bloqueada',
+        )
+        huesped = crear_huesped_prueba()
+        reserva_en_curso = crear_reserva_prueba(
+            huesped,
+            fechaentrada=timezone.localdate(),
+        )
+        reserva_en_curso.habitaciones = ocupada
+        reserva_en_curso.estado = 'En curso'
+        reserva_en_curso.save(update_fields=['habitaciones', 'estado'])
+
+        entrada = timezone.localdate() + timedelta(days=3)
+        response = self.client.get('/reservas', {
+            'entrada': entrada.isoformat(),
+            'salida': (entrada + timedelta(days=1)).isoformat(),
+        })
+
+        tipo_renderizado = response.context['tipos'][0]
+        self.assertEqual(tipo_renderizado.cant_disponibles, 1)
+        self.assertEqual(tipo_renderizado.ids_disponibles, [ocupada.id])
+
+    def test_booking_accepts_occupied_room_for_dates_after_current_stay(self):
+        tipo = TipoHabitacion.objects.create(
+            nombre='Estándar',
+            capacidad=2,
+            tarifa=Decimal('50000.00'),
+        )
+        ocupada = Habitaciones.objects.create(
+            tipohabitacion=tipo,
+            numero='E03',
+            capacidad=2,
+            precio=Decimal('50000.00'),
+            estado='Ocupada',
+        )
+        huesped_actual = crear_huesped_prueba()
+        reserva_actual = crear_reserva_prueba(
+            huesped_actual,
+            fechaentrada=timezone.localdate(),
+        )
+        reserva_actual.habitaciones = ocupada
+        reserva_actual.estado = 'En curso'
+        reserva_actual.save(update_fields=['habitaciones', 'estado'])
+        huesped_nuevo = crear_huesped_prueba()
+        session = self.client.session
+        session['usuario_id'] = huesped_nuevo.usuarios_id
+        session.save()
+        entrada = timezone.localdate() + timedelta(days=3)
+
+        response = self.client.post('/reservas/crear', {
+            'habitacion_ids': str(ocupada.id),
+            'entrada': entrada.isoformat(),
+            'salida': (entrada + timedelta(days=1)).isoformat(),
+            'adultos': '1',
+            'ninos': '0',
+        }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['ok'])
 
     def test_search_renders_fifteen_available_rooms_as_available(self):
         tipo = TipoHabitacion.objects.create(

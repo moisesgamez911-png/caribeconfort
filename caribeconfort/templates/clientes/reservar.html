@@ -36,7 +36,7 @@
         </div>
         <div class="field">
             <label for="salida">{% trans "Salida" %}</label>
-            <input type="date" id="salida" name="salida" value="{{ fecha_salida }}" min="{% now 'Y-m-d' %}" required>
+            <input type="date" id="salida" name="salida" value="{{ fecha_salida }}" min="{{ fecha_salida_min }}" required>
         </div>
         <div class="field">
             <label for="adultos">{% trans "Huéspedes" %}</label>
@@ -82,6 +82,9 @@
         </div>
          {% endif %}
     </form>
+    {% if error_fechas %}
+    <div class="codigo-aplicado codigo-error" role="alert">{{ error_fechas }}</div>
+    {% endif %}
 
     <a class="back-home" href="/home">‹ {% trans "Volver al inicio" %}</a>
     <div id="mensajeReserva" class="notice"></div>
@@ -251,7 +254,7 @@
 
 <script src="{% static 'js/bootstrap.bundle.js' %}"></script>
 <script src="{% static 'js/feedback.js' %}?v=1"></script>
-<script src="{% static 'js/reservas.js' %}?v=34"></script>
+<script src="{% static 'js/reservas.js' %}?v=35"></script>
 
 <div class="modal-reserva" id="miModalReserva">
     <div class="modal-caja">
