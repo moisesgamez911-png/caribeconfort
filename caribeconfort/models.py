@@ -203,7 +203,7 @@ class Reservas (models.Model):
         ('Pagada - Por validar','Pagada - Por validar')
     ]
     estado=models.CharField(max_length=50, choices=estados, default='Pendiente')
-    valortotal=models.DecimalField(max_digits=10, decimal_places=2)
+    valortotal=models.DecimalField(max_digits=12, decimal_places=2)
     recordatorio_dos_dias_enviado=models.BooleanField(default=False)
     recordatorio_un_dia_enviado=models.BooleanField(default=False)
 
@@ -282,7 +282,7 @@ class Pagos (models.Model):
         related_name='reembolsos',
     )
     fecha=models.DateTimeField(auto_now_add=True)
-    valor=models.DecimalField(max_digits=10, decimal_places=2)
+    valor=models.DecimalField(max_digits=12, decimal_places=2)
     estado_pago=models.CharField(max_length=20, choices=estados_pago, default='Confirmado')
     estados=[('Pendiente','Pendiente'),
         ('Efectivo','Efectivo'),

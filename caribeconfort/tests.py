@@ -632,6 +632,25 @@ class PlanReservationCreationTests(TestCase):
             'Pendiente',
         )
 
+    def test_guest_can_create_plan_reservation_above_one_hundred_million(self):
+        self.plan.precio = Decimal('300000000.00')
+        self.plan.save(update_fields=['precio'])
+        entrada = timezone.localdate() + timedelta(days=5)
+
+        response = self.client.post('/reservar-plan/crear/', {
+            'plan_id': str(self.plan.id),
+            'entrada': entrada.isoformat(),
+            'salida': (entrada + timedelta(days=self.plan.duracion_dias)).isoformat(),
+            'adultos': '1',
+            'ninos': '0',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        reserva = Reservas.objects.get(id=response.json()['reserva_id'])
+        pago = Pagos.objects.get(reservas=reserva)
+        self.assertEqual(reserva.valortotal, Decimal('300000000.00'))
+        self.assertEqual(pago.valor, Decimal('150000000.00'))
+
     def test_database_error_returns_json_and_rolls_back_plan_reservation(self):
         entrada = timezone.localdate() + timedelta(days=5)
 
@@ -650,7 +669,7 @@ class PlanReservationCreationTests(TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertJSONEqual(response.content, {
             'ok': False,
-            'error': 'No se pudo guardar la reserva. Verifica que las migraciones de la base de datos estén aplicadas.',
+            'error': 'No se pudo guardar la reserva. Inténtalo nuevamente más tarde.',
         })
         self.assertFalse(Reservas.objects.filter(planes=self.plan).exists())
         self.plan.refresh_from_db()

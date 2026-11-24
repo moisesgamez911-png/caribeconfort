@@ -1814,7 +1814,7 @@ def crear_reserva_plan(request):
         logger.exception('Error de base de datos al crear una reserva para el plan %s.', plan_id)
         return JsonResponse({
             'ok': False,
-            'error': 'No se pudo guardar la reserva. Verifica que las migraciones de la base de datos estén aplicadas.',
+            'error': 'No se pudo guardar la reserva. Inténtalo nuevamente más tarde.',
         }, status=500)
 
     return JsonResponse({
