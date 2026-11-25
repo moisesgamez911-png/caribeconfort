@@ -36,7 +36,7 @@ html[data-theme="dark"] {
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body.checkin-page {
             font-family: 'Segoe UI', Arial, sans-serif !important;
-            background-image: var(--ck-background-overlay), url('../../img/imagenes/plan2.jpg');
+            background-image: var(--ck-background-overlay), url('../../img/imagenes/plan2.webp');
             background-position: center;
             background-size: cover;
             background-repeat: no-repeat;

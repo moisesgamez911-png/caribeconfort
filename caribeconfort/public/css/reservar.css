@@ -33,7 +33,7 @@ body {
     position: absolute;
     inset: 0;
     z-index: -1;
-    background: linear-gradient(90deg, rgba(13,42,42,.57), rgba(17,54,53,.13) 75%), linear-gradient(180deg, rgba(15,48,49,.28), transparent 75%), url("../img/imagenes/foto2.png") center 48% / cover;
+    background: linear-gradient(90deg, rgba(13,42,42,.57), rgba(17,54,53,.13) 75%), linear-gradient(180deg, rgba(15,48,49,.28), transparent 75%), url("../img/imagenes/foto2.webp") center 48% / cover;
     filter: brightness(0.85) contrast(1.1) saturate(1.2);
 }
 
@@ -1415,7 +1415,7 @@ html {
 }
 
 .reservas-page .hero::before {
-    background: linear-gradient(180deg, rgba(10, 23, 24, .55), rgba(10, 23, 24, .32)), url("../img/imagenes/foto1.png") center 48% / cover;
+    background: linear-gradient(180deg, rgba(10, 23, 24, .55), rgba(10, 23, 24, .32)), url("../img/imagenes/foto1.webp") center 48% / cover;
     filter: none;
 }
 
@@ -2464,7 +2464,7 @@ html[data-theme="dark"] .cc-feedback-actions .cc-feedback-accept {
 }
 
 .reservas-page .hero::before {
-    background: linear-gradient(180deg, rgba(0, 0, 0, .42), rgba(0, 0, 0, .18)), url("../img/imagenes/foto2.png") center 48% / cover;
+    background: linear-gradient(180deg, rgba(0, 0, 0, .42), rgba(0, 0, 0, .18)), url("../img/imagenes/foto2.webp") center 48% / cover;
     filter: none;
 }
 

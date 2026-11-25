@@ -42,7 +42,7 @@ body {
 
 .page-header {
     padding: 0 0 62px;
-    background: linear-gradient(90deg, rgba(13,42,42,.88), rgba(17,54,53,.55) 60%, rgba(17,54,53,.2)), url("../img/imagenes/foto2.png") center/cover;
+    background: linear-gradient(90deg, rgba(13,42,42,.88), rgba(17,54,53,.55) 60%, rgba(17,54,53,.2)), url("../img/imagenes/foto2.webp") center/cover;
     color: #fff;
 }
 
@@ -1673,7 +1673,7 @@ button {
     position: absolute;
     inset: 0;
     z-index: -1;
-    background: linear-gradient(90deg, rgba(11, 34, 36, .9), rgba(11, 34, 36, .58) 60%, rgba(0, 0, 0, .24)), url("../img/imagenes/foto2.png") center 48% / cover;
+    background: linear-gradient(90deg, rgba(11, 34, 36, .9), rgba(11, 34, 36, .58) 60%, rgba(0, 0, 0, .24)), url("../img/imagenes/foto2.webp") center 48% / cover;
     content: "";
 }
 

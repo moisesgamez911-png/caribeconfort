@@ -136,6 +136,7 @@
                             <div class="adm-field">
                                 <label for="imagen{{ habitacion.id }}">Cambiar imagen</label>
                                 <input id="imagen{{ habitacion.id }}" name="imagen" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif">
+                                {% if habitacion.imagen %}<label class="user-active"><input type="checkbox" name="quitar_imagen"> Quitar imagen actual</label>{% endif %}
                             </div>
                         </div>
                         {% if habitacion.tiene_estadia_actual %}<p class="room-note">La habitación tiene una estadía en curso: no se puede cambiar su estado ni reducir su capacidad por debajo de los huéspedes actuales.</p>{% endif %}

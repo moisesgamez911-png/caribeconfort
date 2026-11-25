@@ -37,7 +37,7 @@
 </svg>
 
 <header class="services-hero">
-    <img class="services-hero-image" src="{% static 'img/imagenes/FBAR.jpg' %}" alt="">
+    <img class="services-hero-image" src="{% static 'img/imagenes/FBAR.webp' %}" alt="">
     <div class="services-hero-overlay" aria-hidden="true"></div>
     {% include 'inc/usuariomenu.html' %}
     <div class="services-hero-copy">
@@ -73,7 +73,7 @@
                 {% if servicio_destacado.url_imagen %}
                     <img src="{{ servicio_destacado.url_imagen }}" alt="{{ servicio_destacado.nombre }}" loading="lazy">
                 {% else %}
-                    <img src="{% static 'img/imagenes/FBAR.jpg' %}" alt="{{ servicio_destacado.nombre }}" loading="lazy">
+                    <img src="{% static 'img/imagenes/FBAR.webp' %}" alt="{{ servicio_destacado.nombre }}" loading="lazy">
                 {% endif %}
                 <span class="featured-image-badge">{% trans "Experiencia destacada" %}</span>
             </div>

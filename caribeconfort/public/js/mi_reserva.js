@@ -265,15 +265,43 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 
                 const habImg = document.getElementById("mdHabImagen");
-                if(this.dataset.habNumero && this.dataset.habNumero !== 'None') {
+                const esPlan = this.dataset.tipoReserva === 'plan';
+                const serviciosHabitacion = document.querySelector('.servicios-habitacion');
+                if (esPlan) {
+                    setVal("mdAlojamientoTitulo", "Plan reservado");
+                    setVal("mdHabNumeroEtiqueta", "Tipo de reserva");
+                    setVal("mdHabNumero", "Plan");
+                    setVal("mdHabTipoEtiqueta", "Nombre del plan");
+                    setVal("mdHabTipo", this.dataset.habTipo || 'Plan reservado');
+                    setVal("mdHabCama", "Incluido en el plan");
+                    if (serviciosHabitacion) serviciosHabitacion.style.display = 'none';
+                    if (habImg) {
+                        habImg.src = this.dataset.habImagen || '/static/img/imagenes/foto2.webp';
+                        habImg.alt = 'Imagen del plan';
+                    }
+                } else if(this.dataset.habNumero && this.dataset.habNumero !== 'None') {
+                    setVal("mdAlojamientoTitulo", "Habitación");
+                    setVal("mdHabNumeroEtiqueta", "N.º habitación");
+                    setVal("mdHabTipoEtiqueta", "Tipo de habitación");
+                    if (serviciosHabitacion) serviciosHabitacion.style.display = '';
                     setVal("mdHabNumero", this.dataset.habNumero);
                     setVal("mdHabTipo", this.dataset.habTipo || '');
-                    if (habImg) habImg.src = this.dataset.habImagen || '/static/img/imagenes/foto2.png';
+                    if (habImg) {
+                        habImg.src = this.dataset.habImagen || '/static/img/imagenes/foto2.webp';
+                        habImg.alt = 'Habitación de hotel';
+                    }
                     setVal("mdHabCama", this.dataset.habCama || 'Cama estándar');
                 } else {
+                    setVal("mdAlojamientoTitulo", "Alojamiento");
+                    setVal("mdHabNumeroEtiqueta", "Tipo de reserva");
+                    setVal("mdHabTipoEtiqueta", "Detalle");
+                    if (serviciosHabitacion) serviciosHabitacion.style.display = 'none';
                     setVal("mdHabNumero", 'N/A');
-                    setVal("mdHabTipo", this.dataset.habTipo || 'Plan / Servicio');
-                    if (habImg) habImg.src = this.dataset.habImagen || '/static/img/imagenes/foto2.png';
+                    setVal("mdHabTipo", this.dataset.habTipo || 'Sin detalle');
+                    if (habImg) {
+                        habImg.src = this.dataset.habImagen || '/static/img/imagenes/foto2.webp';
+                        habImg.alt = 'Alojamiento del hotel';
+                    }
                 }
 
                 const badges = document.querySelectorAll("#mdEstadoBadge, #mdEstadoBadge2");

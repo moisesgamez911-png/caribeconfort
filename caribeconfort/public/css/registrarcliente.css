@@ -5,7 +5,7 @@
     color: var(--ink);
     background:
         linear-gradient(180deg, rgba(15, 40, 40, .55), rgba(15, 40, 40, .75)),
-        url("../img/imagenes/foto2.png") center/cover no-repeat fixed;
+        url("../img/imagenes/foto2.webp") center/cover no-repeat fixed;
     background-attachment: fixed;
     overflow-x: hidden;
 }
@@ -107,7 +107,7 @@
     position: relative;
     background:
         linear-gradient(180deg, rgba(15, 55, 55, .35), rgba(15, 55, 55, .75)),
-        url("../img/imagenes/FBAR.jpg") center/cover no-repeat;
+        url("../img/imagenes/FBAR.webp") center/cover no-repeat;
     color: #fff;
     display: flex;
     align-items: center;

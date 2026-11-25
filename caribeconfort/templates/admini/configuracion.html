@@ -88,6 +88,7 @@
                 <div class="adm-field adm-span-2">
                     <label for="hotelFotografias">Ruta o referencia de fotografías</label>
                     <input id="hotelFotografias" name="fotografias" maxlength="255" value="{{ hotel.fotografias|default:'' }}">
+                    {% if hotel.fotografias %}<label class="user-active"><input type="checkbox" name="quitar_fotografias"> Quitar la referencia actual</label>{% endif %}
                 </div>
                 <div class="adm-field adm-span-2">
                     <label for="hotelLogo">Logo del hotel</label>

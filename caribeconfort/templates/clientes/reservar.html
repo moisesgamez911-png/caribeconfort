@@ -102,11 +102,11 @@
             <button type="button" class="room-carousel-arrow room-carousel-prev" id="prev" aria-label="{% trans 'Habitación anterior' %}">‹</button>
             <div class="rooms" id="rooms">
                 {% for t in tipos %}
-                    {% cycle 'BASO.jpg' 'pexels-bertellifotografia-9056663.jpg' as habitacion_imagen silent %}
-                    {% cycle 'pexels-bertellifotografia-12513475.jpg' 'pexels-muhammedtarikkahraman-17395984.jpg' as habitacion_foto_uno silent %}
-                    {% cycle 'pexels-manuel-aldana-321951004-13893887.jpg' 'pexels-quang-nguyen-vinh-222549-14025904.jpg' as habitacion_foto_dos silent %}
-                    {% cycle 'pexels-quang-nguyen-vinh-222549-14025907.jpg' 'pexels-rebornfilmes-27638193.jpg' as habitacion_foto_tres silent %}
-                    {% cycle 'pexels-muhammedtarikkahraman-17395984.jpg' 'pexels-bertellifotografia-9056663.jpg' as habitacion_foto_cuatro silent %}
+                    {% cycle 'BASO.webp' 'pexels-bertellifotografia-9056663.webp' as habitacion_imagen silent %}
+                    {% cycle 'pexels-bertellifotografia-12513475.webp' 'pexels-muhammedtarikkahraman-17395984.webp' as habitacion_foto_uno silent %}
+                    {% cycle 'pexels-manuel-aldana-321951004-13893887.webp' 'pexels-quang-nguyen-vinh-222549-14025904.webp' as habitacion_foto_dos silent %}
+                    {% cycle 'pexels-quang-nguyen-vinh-222549-14025907.webp' 'pexels-rebornfilmes-27638193.webp' as habitacion_foto_tres silent %}
+                    {% cycle 'pexels-muhammedtarikkahraman-17395984.webp' 'pexels-bertellifotografia-9056663.webp' as habitacion_foto_cuatro silent %}
                     <article class="room-card" data-tipo="{{ t.nombre }}">
                         <div class="room-card-head">
                             <div class="room-heading">

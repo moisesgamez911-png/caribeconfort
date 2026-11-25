@@ -37,13 +37,18 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 from caribeconfort.formato import formato_numero_colombiano
+from caribeconfort.image_optimization import (
+    eliminar_variante_webp as _borrar_variante_webp,
+    guardar_variante_webp as _crear_variante_webp,
+    ruta_variante_webp as _ruta_variante_webp,
+)
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from caribeconfort.models import (Habitaciones, Servicios,TipoHabitacion, Usuarios, CategoriaGaleria, ImagenGaleria,
+from caribeconfort.models import (Habitaciones, Servicios,TipoHabitacion, Usuarios, CategoriaGaleria, CategoriaServicio, ImagenGaleria,
 Planes, CaracteristicaPlan, Huespedes, Roles, Pagos, Reservas, Hoteles, ServicioReserva, Acompanante,
 CodigosConvenio, TipoConvenio, ReglaDescuento)
 from caribeconfort.models import Resena
@@ -545,21 +550,35 @@ def planes(request):
 
 def servicios(request):
     categoria_activa = (request.GET.get('categoria') or '').strip()
-
-    categorias_base = [
-        {'nombre': 'Habitación',   'icono': 'cama'},
-        {'nombre': 'Alimentación', 'icono': 'restaurante'},
-        {'nombre': 'Minibar',      'icono': 'copa'},
-        {'nombre': 'Recreación',   'icono': 'piscina'},
-        {'nombre': 'Eventos',      'icono': 'evento'},
-        {'nombre': 'Lavandería',   'icono': 'lavanderia'},
-        {'nombre': 'Transporte',   'icono': 'transporte'},
-        {'nombre': 'Otros',        'icono': 'estrella'},
-    ]
-
-    for c in categorias_base:
-        c['total'] = Servicios.objects.filter(estado=True, categoria=c['nombre']).count()
-    categorias = [categoria for categoria in categorias_base if categoria['total']]
+    iconos_categoria = {
+        'habitación': 'cama',
+        'alimentación': 'restaurante',
+        'minibar': 'copa',
+        'recreación': 'piscina',
+        'eventos': 'evento',
+        'lavandería': 'lavanderia',
+        'transporte': 'transporte',
+    }
+    categorias_por_nombre = {}
+    nombres_categorias = Servicios.objects.filter(
+        estado=True,
+    ).values_list('categoria', flat=True).distinct().order_by('categoria')
+    for nombre_categoria in nombres_categorias:
+        nombre_categoria = (nombre_categoria or '').strip()
+        if not nombre_categoria:
+            continue
+        clave_categoria = nombre_categoria.casefold()
+        if clave_categoria in categorias_por_nombre:
+            continue
+        categorias_por_nombre[clave_categoria] = {
+            'nombre': nombre_categoria,
+            'icono': iconos_categoria.get(clave_categoria, 'estrella'),
+            'total': Servicios.objects.filter(
+                estado=True,
+                categoria=nombre_categoria,
+            ).count(),
+        }
+    categorias = list(categorias_por_nombre.values())
 
     servicios_qs = Servicios.objects.filter(estado=True).order_by('-destacado', 'nombre')
     if categoria_activa:
@@ -867,6 +886,28 @@ def imagenes(request):
 TAMANO_MAXIMO_IMAGEN = 10 * 1024 * 1024
 
 
+def _guardar_variante_webp(almacenamiento, ruta):
+    try:
+        return _crear_variante_webp(almacenamiento, ruta)
+    except (OSError, ValueError) as error:
+        almacenamiento.delete(ruta)
+        _eliminar_variante_webp(almacenamiento, ruta)
+        raise ValueError('No se pudo procesar la imagen. Prueba con otro archivo.') from error
+
+def _eliminar_variante_webp(almacenamiento, ruta):
+    return _borrar_variante_webp(almacenamiento, ruta)
+
+
+def _ruta_estatica_webp(ruta):
+    if Path(ruta).suffix.lower() not in {'.jpg', '.jpeg', '.png'}:
+        return ruta
+    ruta_webp = Path(ruta).with_suffix('.webp').as_posix()
+    for directorio in getattr(settings, 'STATICFILES_DIRS', []):
+        if (Path(directorio) / ruta_webp).is_file():
+            return ruta_webp
+    return ruta
+
+
 def _guardar_imagen_catalogo(archivo, carpeta):
     extension = Path(archivo.name).suffix.lower()
     firmas = {
@@ -885,7 +926,9 @@ def _guardar_imagen_catalogo(archivo, carpeta):
     if not firmas[extension](encabezado):
         raise ValueError('El contenido del archivo no coincide con un formato de imagen permitido.')
     almacenamiento = FileSystemStorage(location=settings.MEDIA_ROOT)
-    return almacenamiento.save(f'uploads/{carpeta}/{uuid4().hex}{extension}', archivo)
+    ruta = almacenamiento.save(f'uploads/{carpeta}/{uuid4().hex}{extension}', archivo)
+    _guardar_variante_webp(almacenamiento, ruta)
+    return ruta
 
 
 def _guardar_imagen_habitacion(archivo):
@@ -893,8 +936,17 @@ def _guardar_imagen_habitacion(archivo):
 
 
 def _eliminar_imagen_habitacion(ruta):
-    if ruta.startswith('uploads/habitaciones/') and '..' not in Path(ruta).parts:
-        FileSystemStorage(location=settings.MEDIA_ROOT).delete(ruta)
+    if not ruta.startswith('uploads/habitaciones/') or '..' in Path(ruta).parts:
+        return
+    try:
+        if Habitaciones.objects.filter(imagen=ruta).exists():
+            return
+    except DatabaseError:
+        logger.exception('No se pudo comprobar si la imagen de habitación sigue en uso: %s', ruta)
+        return
+    almacenamiento = FileSystemStorage(location=settings.MEDIA_ROOT)
+    almacenamiento.delete(ruta)
+    _eliminar_variante_webp(almacenamiento, ruta)
 
 
 def _guardar_imagen_servicio(archivo):
@@ -909,6 +961,34 @@ def _guardar_imagen_plan(archivo):
     return _guardar_imagen_catalogo(archivo, 'planes')
 
 
+def _eliminar_imagen_tipo_habitacion(ruta):
+    if not ruta.startswith('uploads/tipos-habitacion/') or '..' in Path(ruta).parts:
+        return
+    try:
+        if TipoHabitacion.objects.filter(imagen=ruta).exists():
+            return
+    except DatabaseError:
+        logger.exception('No se pudo comprobar si la imagen del tipo sigue en uso: %s', ruta)
+        return
+    almacenamiento = FileSystemStorage(location=settings.MEDIA_ROOT)
+    almacenamiento.delete(ruta)
+    _eliminar_variante_webp(almacenamiento, ruta)
+
+
+def _eliminar_imagen_plan(ruta):
+    if not ruta.startswith('uploads/planes/') or '..' in Path(ruta).parts:
+        return
+    try:
+        if Planes.objects.filter(imagen=ruta).exists():
+            return
+    except DatabaseError:
+        logger.exception('No se pudo comprobar si la imagen del plan sigue en uso: %s', ruta)
+        return
+    almacenamiento = FileSystemStorage(location=settings.MEDIA_ROOT)
+    almacenamiento.delete(ruta)
+    _eliminar_variante_webp(almacenamiento, ruta)
+
+
 def _eliminar_imagen_servicio(ruta):
     if not ruta.startswith('uploads/servicios/') or '..' in Path(ruta).parts:
         return
@@ -918,16 +998,22 @@ def _eliminar_imagen_servicio(ruta):
     except DatabaseError:
         logger.exception('No se pudo comprobar si la imagen del servicio sigue en uso: %s', ruta)
         return
-    FileSystemStorage(location=settings.MEDIA_ROOT).delete(ruta)
+    almacenamiento = FileSystemStorage(location=settings.MEDIA_ROOT)
+    almacenamiento.delete(ruta)
+    _eliminar_variante_webp(almacenamiento, ruta)
 
 
 def _url_imagen_habitacion(ruta):
     if not ruta:
         return ''
     if ruta.startswith('img/imagenes/'):
-        return f'/{settings.STATIC_URL.lstrip("/")}{ruta}'
+        return _url_imagen_estatica(ruta[len('img/imagenes/'):])
     if ruta.startswith(('http://', 'https://', '/')):
         return ruta
+    almacenamiento = FileSystemStorage(location=settings.MEDIA_ROOT)
+    ruta_webp = _ruta_variante_webp(ruta)
+    if almacenamiento.exists(ruta_webp):
+        ruta = ruta_webp
     return f'/{settings.MEDIA_URL.strip("/")}/{ruta}'
 
 
@@ -945,7 +1031,8 @@ def _url_imagen_local(ruta):
     if ruta.startswith(f'/{settings.MEDIA_URL.lstrip("/")}'):
         ruta = ruta[1:]
     elif ruta.startswith(f'/{prefijo_static}'):
-        ruta = ruta[1:]
+        ruta = ruta[len(f'/{prefijo_static}'):]
+        return _url_imagen_estatica(ruta)
     elif ruta.startswith('/'):
         return ''
     # Algunos registros históricos guardaron la URL completa, no el nombre del
@@ -953,20 +1040,26 @@ def _url_imagen_local(ruta):
     if ruta.startswith(settings.MEDIA_URL.lstrip('/')):
         ruta = ruta[len(settings.MEDIA_URL.lstrip('/')):]
     if ruta.startswith(prefijo_static):
-        return f'/{ruta}'
+        return _url_imagen_estatica(ruta[len(prefijo_static):])
     if ruta.startswith('img/imagenes/'):
-        return f'/{prefijo_static}{ruta}'
+        return _url_imagen_estatica(ruta[len('img/imagenes/'):])
     if '/' not in ruta:
-        return f'/{prefijo_static}img/imagenes/{ruta}'
+        return _url_imagen_estatica(ruta)
     if ruta.startswith('uploads/'):
         # En desarrollo los archivos suelen estar en MEDIA_ROOT; algunas cargas
         # anteriores quedaron en el directorio estático del proyecto. Resolver
         # primero el archivo que sí existe evita URLs rotas tras despliegues.
         almacenamiento = FileSystemStorage(location=settings.MEDIA_ROOT)
+        ruta_webp = _ruta_variante_webp(ruta)
+        if almacenamiento.exists(ruta_webp):
+            return f'/{settings.MEDIA_URL.strip("/")}/{ruta_webp}'
         if almacenamiento.exists(ruta):
             return f'/{settings.MEDIA_URL.strip("/")}/{ruta}'
         for directorio in getattr(settings, 'STATICFILES_DIRS', []):
             legado = Path(directorio) / 'img' / 'imagenes' / ruta
+            legado_webp = Path(directorio) / 'img' / 'imagenes' / ruta_webp
+            if legado_webp.is_file():
+                return f'/{prefijo_static}img/imagenes/{ruta_webp}'
             if legado.is_file():
                 return f'/{prefijo_static}img/imagenes/{ruta}'
         return ''
@@ -974,6 +1067,8 @@ def _url_imagen_local(ruta):
 
 
 def _url_imagen_estatica(ruta):
+    ruta_completa = _ruta_estatica_webp(f'img/imagenes/{ruta}')
+    ruta = ruta_completa[len('img/imagenes/'):]
     return f'{settings.STATIC_URL.rstrip("/")}/img/imagenes/{ruta}'
 
 
@@ -2867,6 +2962,9 @@ def habitacionesadmin(request):
                         raise ValueError('La capacidad no puede ser menor que la cantidad de huéspedes de la estadía actual.')
 
                     archivo = request.FILES.get('imagen')
+                    quitar_imagen = request.POST.get('quitar_imagen') == 'on'
+                    if archivo and quitar_imagen:
+                        raise ValueError('Sube una imagen nueva o marca quitar la actual, no ambas.')
                     if archivo:
                         ruta_nueva = _guardar_imagen_habitacion(archivo)
                     ruta_anterior = habitacion.imagen
@@ -2877,8 +2975,10 @@ def habitacionesadmin(request):
                     habitacion.estado = estado
                     if ruta_nueva:
                         habitacion.imagen = ruta_nueva
+                    elif quitar_imagen:
+                        habitacion.imagen = None
                     habitacion.save()
-                    if ruta_nueva:
+                    if ruta_nueva or quitar_imagen:
                         _eliminar_imagen_habitacion(ruta_anterior or '')
                     messages.success(request, f'Habitación {habitacion.numero} actualizada correctamente.')
                 else:
@@ -3275,6 +3375,76 @@ def serviciosadmin(request):
 
     if request.method == 'POST':
         accion = request.POST.get('accion', 'crear')
+        if accion == 'crear_categoria':
+            nombre_categoria = request.POST.get('nombre_categoria', '').strip()
+            if not nombre_categoria or len(nombre_categoria) > 50:
+                messages.error(request, 'Ingresa un nombre de categoría de hasta 50 caracteres.')
+            elif CategoriaServicio.objects.filter(
+                nombre__iexact=nombre_categoria,
+            ).exists():
+                messages.error(request, 'Ya existe una categoría con ese nombre.')
+            else:
+                try:
+                    CategoriaServicio.objects.create(nombre=nombre_categoria)
+                except IntegrityError:
+                    messages.error(request, 'Ya existe una categoría con ese nombre.')
+                else:
+                    messages.success(request, 'Categoría creada correctamente.')
+            return redirect('/adminservicios')
+
+        if accion == 'eliminar_categoria':
+            categoria_id = request.POST.get('categoria_id', '')
+            categoria = (
+                CategoriaServicio.objects.filter(id=categoria_id).first()
+                if categoria_id.isdigit()
+                else None
+            )
+            if not categoria:
+                messages.error(request, 'Selecciona una categoría válida.')
+            elif Servicios.objects.filter(
+                Q(categoria_catalogo=categoria)
+                | Q(categoria__iexact=categoria.nombre),
+            ).exists():
+                messages.error(
+                    request,
+                    'No se puede eliminar una categoría que todavía tiene servicios. '
+                    'Reasígnalos o elimínalos primero.',
+                )
+            else:
+                try:
+                    categoria.delete()
+                except (ProtectedError, IntegrityError):
+                    messages.error(
+                        request,
+                        'No se puede eliminar una categoría que todavía tiene servicios.',
+                    )
+                else:
+                    messages.success(request, 'Categoría eliminada correctamente.')
+            return redirect('/adminservicios')
+
+        if accion == 'eliminar':
+            servicio_id = request.POST.get('servicio_id', '')
+            servicio = (
+                Servicios.objects.filter(id=servicio_id).first()
+                if servicio_id.isdigit()
+                else None
+            )
+            if not servicio:
+                messages.error(request, 'Selecciona un servicio válido.')
+                return redirect('/adminservicios')
+            ruta_imagen = servicio.imagen or ''
+            try:
+                servicio.delete()
+            except ProtectedError:
+                messages.error(
+                    request,
+                    'No se puede eliminar este servicio porque tiene solicitudes o historial asociado.',
+                )
+            else:
+                _eliminar_imagen_servicio(ruta_imagen)
+                messages.success(request, 'Servicio eliminado correctamente.')
+            return redirect('/adminservicios')
+
         if accion not in {'crear', 'editar'}:
             messages.error(request, 'La acción solicitada no es válida.')
             return redirect('/adminservicios')
@@ -3307,7 +3477,21 @@ def serviciosadmin(request):
         else:
             servicio = Servicios()
 
+        categoria_id = request.POST.get('categoria_id', '').strip()
+        categoria = (
+            CategoriaServicio.objects.filter(id=categoria_id).first()
+            if categoria_id.isdigit()
+            else None
+        )
+        if categoria is None:
+            messages.error(request, 'Selecciona una categoría de servicio válida.')
+            return redirect('/adminservicios')
+
         archivo = request.FILES.get('imagen') or request.FILES.get('txtImg')
+        quitar_imagen = accion == 'editar' and request.POST.get('quitar_imagen') == 'on'
+        if archivo and quitar_imagen:
+            messages.error(request, 'Sube una imagen nueva o marca quitar la actual, no ambas.')
+            return redirect('/adminservicios')
         ruta_anterior = servicio.imagen or ''
         ruta_nueva = ''
         if archivo:
@@ -3320,10 +3504,14 @@ def serviciosadmin(request):
         servicio.nombre = nombre
         servicio.descripcion = descripcion
         servicio.precio = precio
+        servicio.categoria = categoria.nombre
+        servicio.categoria_catalogo = categoria
         servicio.estado = estado
         servicio.destacado = destacado and estado
         if ruta_nueva:
             servicio.imagen = ruta_nueva
+        elif quitar_imagen:
+            servicio.imagen = None
         try:
             with transaction.atomic():
                 if servicio.destacado:
@@ -3335,12 +3523,22 @@ def serviciosadmin(request):
             logger.exception('No se pudo guardar el servicio %s.', nombre)
             messages.error(request, 'No se pudo guardar el servicio. Vuelve a intentarlo.')
             return redirect('/adminservicios')
-        if ruta_nueva and ruta_anterior:
+        if (ruta_nueva or quitar_imagen) and ruta_anterior:
             _eliminar_imagen_servicio(ruta_anterior)
         messages.success(request, 'Servicio guardado correctamente.')
         return redirect('/adminservicios')
 
-    servicios = list(Servicios.objects.order_by('nombre'))
+    categorias_servicio = list(CategoriaServicio.objects.annotate(
+        cantidad_servicios=Count('servicios'),
+    ).order_by('nombre'))
+    for categoria in categorias_servicio:
+        categoria.cantidad_servicios += Servicios.objects.filter(
+            categoria_catalogo__isnull=True,
+            categoria__iexact=categoria.nombre,
+        ).count()
+    servicios = list(Servicios.objects.select_related(
+        'categoria_catalogo',
+    ).order_by('nombre'))
     for servicio in servicios:
         servicio.url_imagen = _url_imagen_local(servicio.imagen)
     servicios_pendientes = ServicioReserva.objects.filter(
@@ -3392,6 +3590,7 @@ def serviciosadmin(request):
             item.reembolso_disponible = min(disponible_pago, disponible_reserva)
     return render(request, 'admini/servicios.html', {
         'servicios': servicios,
+        'categorias_servicio': categorias_servicio,
         'servicios_pendientes': servicios_pendientes,
         'servicios_recientes': servicios_recientes,
         'fecha_limite_servicios': fecha_limite_servicios,
@@ -3453,6 +3652,10 @@ def tiposhabitacionadmin(request):
                 else:
                     tipo = TipoHabitacion()
                 archivo_imagen = request.FILES.get('imagen')
+                quitar_imagen = accion == 'editar' and request.POST.get('quitar_imagen') == 'on'
+                if archivo_imagen and quitar_imagen:
+                    messages.error(request, 'Sube una imagen nueva o marca quitar la actual, no ambas.')
+                    return redirect(destino)
                 ruta_nueva = ''
                 if archivo_imagen:
                     try:
@@ -3463,10 +3666,15 @@ def tiposhabitacionadmin(request):
                 tipo.nombre = nombre
                 tipo.capacidad = capacidad
                 tipo.tarifa = tarifa
+                ruta_anterior = tipo.imagen or ''
                 if ruta_nueva:
                     tipo.imagen = ruta_nueva
+                elif quitar_imagen:
+                    tipo.imagen = None
                 tipo.save()
-                # Se conserva la imagen anterior para no romper referencias históricas.
+                if quitar_imagen and ruta_anterior:
+                    _eliminar_imagen_tipo_habitacion(ruta_anterior)
+                # Al reemplazar se conserva el archivo anterior; solo se borra al quitarlo explícitamente.
                 mensaje = 'Tipo de habitación actualizado correctamente.' if accion == 'editar' else 'Tipo de habitación creado correctamente.'
                 messages.success(request, mensaje)
             return redirect('/admintiposhabitacion')
@@ -3559,6 +3767,11 @@ def tiposhabitacionadmin(request):
             return redirect(destino)
 
         archivo_imagen = request.FILES.get('imagen')
+        quitar_imagen = accion == 'editar_plan' and request.POST.get('quitar_imagen') == 'on'
+        if archivo_imagen and quitar_imagen:
+            messages.error(request, 'Sube una imagen nueva o marca quitar la actual, no ambas.')
+            return redirect(destino)
+        ruta_anterior = plan.imagen or ''
         ruta_nueva = ''
         if archivo_imagen:
             try:
@@ -3572,6 +3785,8 @@ def tiposhabitacionadmin(request):
         plan.precio = precio
         if ruta_nueva:
             plan.imagen = ruta_nueva
+        elif quitar_imagen:
+            plan.imagen = None
         elif not plan.imagen:
             plan.imagen = None
         plan.estado = request.POST.get('estado') == 'on'
@@ -3593,6 +3808,8 @@ def tiposhabitacionadmin(request):
             )
             for orden_caracteristica, caracteristica in enumerate(caracteristicas)
         ])
+        if quitar_imagen and ruta_anterior:
+            _eliminar_imagen_plan(ruta_anterior)
         mensaje = (
             'Tipo de plan actualizado correctamente.'
             if accion == 'editar_plan'
@@ -4454,7 +4671,9 @@ def _guardar_imagen_galeria(archivo):
         raise ValueError('El contenido del archivo no coincide con un formato de imagen permitido.')
     almacenamiento = FileSystemStorage(location=settings.MEDIA_ROOT)
     ruta = f'uploads/galeria/{uuid4().hex}{extension}'
-    return almacenamiento.save(ruta, archivo)
+    ruta = almacenamiento.save(ruta, archivo)
+    _guardar_variante_webp(almacenamiento, ruta)
+    return ruta
 
 
 def _eliminar_archivo_galeria(ruta):
@@ -4466,7 +4685,9 @@ def _eliminar_archivo_galeria(ruta):
     except DatabaseError:
         logger.exception('No se pudo verificar si el archivo de galería sigue en uso: %s', ruta)
         return
-    FileSystemStorage(location=settings.MEDIA_ROOT).delete(ruta)
+    almacenamiento = FileSystemStorage(location=settings.MEDIA_ROOT)
+    almacenamiento.delete(ruta)
+    _eliminar_variante_webp(almacenamiento, ruta)
 
 
 def galeriaadmin(request):
@@ -4484,7 +4705,7 @@ def galeriaadmin(request):
                 or icono not in ICONOS_CATEGORIA_GALERIA
             ):
                 messages.error(request, 'Ingresa un nombre e icono válidos para la categoría.')
-                return redirect('/admingaleria')
+                return redirect('/admingaleria?tab=categorias')
             nombres_existentes = CategoriaGaleria.objects.values_list(
                 'nombre',
                 flat=True,
@@ -4494,7 +4715,7 @@ def galeriaadmin(request):
                 for existente in nombres_existentes
             ):
                 messages.error(request, 'Ya existe una categoría con ese nombre.')
-                return redirect('/admingaleria')
+                return redirect('/admingaleria?tab=categorias')
             ultimo_orden = CategoriaGaleria.objects.order_by(
                 '-orden',
             ).values_list('orden', flat=True).first()
@@ -4505,7 +4726,7 @@ def galeriaadmin(request):
                 estado=True,
             )
             messages.success(request, f'Categoría "{nombre}" creada correctamente.')
-            return redirect('/admingaleria')
+            return redirect('/admingaleria?tab=categorias')
 
         if accion == 'editar_categoria':
             categoria_id = request.POST.get('categoria_id', '').strip()
@@ -4513,7 +4734,7 @@ def galeriaadmin(request):
             icono = request.POST.get('icono', '').strip()
             if not categoria_id.isdigit():
                 messages.error(request, 'La categoría seleccionada no es válida.')
-                return redirect('/admingaleria')
+                return redirect('/admingaleria?tab=categorias')
             categoria = get_object_or_404(CategoriaGaleria, id=int(categoria_id))
             if (
                 not nombre
@@ -4521,7 +4742,7 @@ def galeriaadmin(request):
                 or icono not in ICONOS_CATEGORIA_GALERIA
             ):
                 messages.error(request, 'Ingresa un nombre e icono válidos para la categoría.')
-                return redirect('/admingaleria')
+                return redirect('/admingaleria?tab=categorias')
             nombres_existentes = CategoriaGaleria.objects.exclude(
                 id=categoria.id,
             ).values_list('nombre', flat=True)
@@ -4530,20 +4751,20 @@ def galeriaadmin(request):
                 for existente in nombres_existentes
             ):
                 messages.error(request, 'Ya existe otra categoría con ese nombre.')
-                return redirect('/admingaleria')
+                return redirect('/admingaleria?tab=categorias')
             categoria.nombre = nombre
             categoria.icono = icono
             categoria.estado = request.POST.get('estado') == 'on'
             categoria.save(update_fields=['nombre', 'icono', 'estado'])
             messages.success(request, f'Categoría "{nombre}" actualizada correctamente.')
-            return redirect('/admingaleria')
+            return redirect('/admingaleria?tab=categorias')
 
         if accion == 'eliminar_categoria':
             categoria_id = request.POST.get('categoria_id', '').strip()
             destino_id = request.POST.get('destino_categoria_id', '').strip()
             if not categoria_id.isdigit():
                 messages.error(request, 'La categoría seleccionada no es válida.')
-                return redirect('/admingaleria')
+                return redirect('/admingaleria?tab=categorias')
             try:
                 with transaction.atomic():
                     categoria = get_object_or_404(
@@ -4558,14 +4779,14 @@ def galeriaadmin(request):
                                 request,
                                 f'La categoría tiene {cantidad_imagenes} imágenes. Elige otra categoría para conservarlas antes de eliminarla.',
                             )
-                            return redirect('/admingaleria')
+                            return redirect('/admingaleria?tab=categorias')
                         destino = CategoriaGaleria.objects.filter(
                             id=int(destino_id),
                             estado=True,
                         ).exclude(id=categoria.id).first()
                         if destino is None:
                             messages.error(request, 'El destino para las imágenes no es válido.')
-                            return redirect('/admingaleria')
+                            return redirect('/admingaleria?tab=categorias')
                         imagenes_categoria.update(categoria=destino)
                     nombre_eliminado = categoria.nombre
                     categoria.delete()
@@ -4574,13 +4795,13 @@ def galeriaadmin(request):
                     request,
                     'No se pudo eliminar la categoría porque todavía tiene imágenes asociadas. Reasígnalas a otra categoría e inténtalo de nuevo.',
                 )
-                return redirect('/admingaleria')
+                return redirect('/admingaleria?tab=categorias')
             messages.success(
                 request,
                 f'Categoría "{nombre_eliminado}" eliminada. Las imágenes asociadas se conservaron en la categoría de destino.'
                 if cantidad_imagenes else f'Categoría "{nombre_eliminado}" eliminada correctamente.',
             )
-            return redirect('/admingaleria')
+            return redirect('/admingaleria?tab=categorias')
 
         if accion == 'eliminar':
             imagen_id = request.POST.get('imagen_id', '')
@@ -4625,6 +4846,10 @@ def galeriaadmin(request):
                 return redirect('/admingaleria')
 
         archivo = request.FILES.get('archivo')
+        quitar_imagen = accion == 'editar' and request.POST.get('quitar_imagen') == 'on'
+        if archivo and quitar_imagen:
+            messages.error(request, 'Sube una imagen nueva o marca quitar la actual, no ambas.')
+            return redirect('/admingaleria')
         if accion == 'crear' and not archivo:
             messages.error(request, 'Selecciona una imagen para subir.')
             return redirect('/admingaleria')
@@ -4672,6 +4897,8 @@ def galeriaadmin(request):
                     imagen.estado = request.POST.get('estado') == 'on'
                     if ruta_nueva:
                         imagen.imagen = ruta_nueva
+                    elif quitar_imagen:
+                        imagen.imagen = ''
                     imagen.save(update_fields=['titulo', 'seccion', 'categoria', 'estado', 'imagen'])
                 else:
                     ImagenGaleria.objects.create(
@@ -4688,21 +4915,21 @@ def galeriaadmin(request):
             messages.error(request, 'No se pudo guardar la imagen. Verifica el archivo y vuelve a intentarlo.')
             return redirect('/admingaleria')
 
-        if ruta_nueva and ruta_anterior:
+        if (ruta_nueva or quitar_imagen) and ruta_anterior:
             _eliminar_archivo_galeria(ruta_anterior)
         messages.success(request, 'Imagen guardada correctamente.')
         return redirect('/admingaleria')
 
     imagenes = list(ImagenGaleria.objects.select_related('categoria').order_by('seccion', 'id'))
-    prefijo_static = f'/{settings.STATIC_URL.lstrip("/")}'
-    prefijo_media = f'/{settings.MEDIA_URL.strip("/")}/'
     for imagen in imagenes:
-        if imagen.imagen.startswith('img/imagenes/'):
-            imagen.url_gestor = f'{prefijo_static}{imagen.imagen}'
+        if not imagen.imagen:
+            imagen.url_gestor = ''
+        elif imagen.imagen.startswith('img/imagenes/'):
+            imagen.url_gestor = _url_imagen_local(imagen.imagen)
         elif imagen.imagen.startswith(('http://', 'https://', '/')):
             imagen.url_gestor = imagen.imagen
         else:
-            imagen.url_gestor = f'{prefijo_media}{imagen.imagen}'
+            imagen.url_gestor = _url_imagen_local(imagen.imagen)
 
     categorias_galeria = list(CategoriaGaleria.objects.annotate(
         total_imagenes=Count('imagengaleria'),
@@ -4718,6 +4945,9 @@ def galeriaadmin(request):
         'secciones_galeria': ImagenGaleria.SECCIONES,
         'categorias_galeria': categorias_galeria,
         'iconos_categoria_galeria': sorted(ICONOS_CATEGORIA_GALERIA),
+        'pestana_galeria': (
+            'categorias' if request.GET.get('tab') == 'categorias' else 'galeria'
+        ),
         'nombre': request.session.get('usuario_nom', 'Administrador'),
         'rol': request.session.get('rol', 'Administrador'),
     })
@@ -4861,7 +5091,10 @@ def configuracionadmin(request):
                         'checkout': request.POST.get('checkout', '').strip(),
                         'recepcion': request.POST.get('recepcion', '').strip(),
                         'desayuno': request.POST.get('desayuno', '').strip(),
-                        'fotografias': request.POST.get('fotografias', '').strip(),
+                        'fotografias': (
+                            '' if request.POST.get('quitar_fotografias') == 'on'
+                            else request.POST.get('fotografias', '').strip()
+                        ),
                     }
                     limites = {
                         'nombre': 100, 'direccion': 100, 'municipio': 100,
@@ -4913,6 +5146,16 @@ def registrarservicio(request):
     if request.session.get('rol') != 'Administrador':
         return redirect('/login')
     if request.method == 'POST':
+        categoria_id = request.POST.get('categoria_id', '').strip()
+        categoria = (
+            CategoriaServicio.objects.filter(id=categoria_id).first()
+            if categoria_id.isdigit()
+            else None
+        )
+        if categoria is None:
+            messages.error(request, 'Selecciona una categoría de servicio válida.')
+            return redirect('/rservicios')
+
         servicio = Servicios()
         servicio.nombre = (request.POST.get('txtNombre') or '').strip()
         servicio.descripcion = (request.POST.get('txtDescripcion') or '').strip()
@@ -4927,6 +5170,8 @@ def registrarservicio(request):
         if servicio.precio < 0 or servicio.precio > Decimal('99999999.99'):
             messages.error(request, 'Ingresa un precio válido para el servicio.')
             return redirect('/adminservicios')
+        servicio.categoria = categoria.nombre
+        servicio.categoria_catalogo = categoria
         servicio.estado = True
         archivo = request.FILES.get('txtImg') or request.FILES.get('imagen')
         ruta_nueva = ''
@@ -4946,7 +5191,9 @@ def registrarservicio(request):
             return redirect('/adminservicios')
         return redirect('/adminservicios')
 
-    return render(request, 'admini/registrarservicio.html')
+    return render(request, 'admini/registrarservicio.html', {
+        'categorias_servicio': CategoriaServicio.objects.order_by('nombre'),
+    })
 
 def buscar_disponibilidad(request):
     finalizar_reservas_vencidas(request)

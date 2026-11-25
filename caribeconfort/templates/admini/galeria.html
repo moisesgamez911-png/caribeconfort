@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=103">
     <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}?v=3">
     <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
-    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=13">
+    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=14">
 </head>
 <body>
 {% include 'inc/admin_header.html' %}
@@ -32,6 +32,31 @@
         {% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}
     </div>
     {% endif %}
+
+    <nav class="adm-gallery-tabs" role="tablist" aria-label="Administrar galería">
+        <button
+            class="adm-gallery-tab{% if pestana_galeria == 'galeria' %} is-active{% endif %}"
+            id="tabGaleria"
+            type="button"
+            role="tab"
+            aria-controls="panelGaleria"
+            aria-selected="{% if pestana_galeria == 'galeria' %}true{% else %}false{% endif %}"
+            tabindex="{% if pestana_galeria == 'galeria' %}0{% else %}-1{% endif %}"
+            data-gallery-tab="galeria">
+            Galería <span>{{ imagenes|length }}</span>
+        </button>
+        <button
+            class="adm-gallery-tab{% if pestana_galeria == 'categorias' %} is-active{% endif %}"
+            id="tabCategorias"
+            type="button"
+            role="tab"
+            aria-controls="panelCategorias"
+            aria-selected="{% if pestana_galeria == 'categorias' %}true{% else %}false{% endif %}"
+            tabindex="{% if pestana_galeria == 'categorias' %}0{% else %}-1{% endif %}"
+            data-gallery-tab="categorias">
+            Categorías <span>{{ categorias_galeria|length }}</span>
+        </button>
+    </nav>
 
     <section class="adm-card adm-upload-card">
         <div class="adm-card-heading">
@@ -72,6 +97,12 @@
         </form>
     </section>
 
+    <div
+        class="adm-gallery-workspace-panel"
+        id="panelCategorias"
+        role="tabpanel"
+        aria-labelledby="tabCategorias"
+        data-gallery-panel="categorias"{% if pestana_galeria != 'categorias' %} hidden{% endif %}>
     <section class="adm-card adm-form-card">
         <div class="adm-card-heading">
             <div><h2>Crear categoría</h2><p>Las categorías creadas estarán disponibles al subir o editar imágenes.</p></div>
@@ -156,9 +187,16 @@
             {% endfor %}
         </div>
     </section>
+    </div>
 
+    <div
+        class="adm-gallery-workspace-panel"
+        id="panelGaleria"
+        role="tabpanel"
+        aria-labelledby="tabGaleria"
+        data-gallery-panel="galeria"{% if pestana_galeria != 'galeria' %} hidden{% endif %}>
     <section class="adm-gallery-section">
-        <details class="adm-gallery-details">
+        <details class="adm-gallery-details" open>
             <summary class="adm-gallery-summary">
                 <span class="adm-gallery-summary-copy">
                     <strong>Galerías existentes</strong>
@@ -199,7 +237,8 @@
                     {% for imagen in imagenes %}
                     <article class="adm-image-card" data-section="{{ imagen.seccion }}" data-state="{% if imagen.estado %}active{% else %}inactive{% endif %}" data-search="{{ imagen.titulo|default:'' }} {{ imagen.categoria.nombre }} {{ imagen.seccion }} {{ imagen.id }}">
                         <div class="adm-image-preview">
-                            <img data-preview-image src="{{ imagen.url_gestor }}" alt="{{ imagen.titulo|default:imagen.categoria.nombre }}" loading="lazy">
+                            <img data-preview-image {% if imagen.url_gestor %}src="{{ imagen.url_gestor }}"{% else %}hidden{% endif %} alt="{{ imagen.titulo|default:imagen.categoria.nombre }}" loading="lazy">
+                            <div class="adm-image-placeholder" data-preview-placeholder {% if imagen.url_gestor %}hidden{% endif %}>Sin imagen</div>
                             <div class="adm-image-preview-top">
                                 <span class="adm-image-section-pill">{{ imagen.get_seccion_display }}</span>
                                 <span class="adm-pill {% if imagen.estado %}green{% else %}gray{% endif %}" data-preview-status>{% if imagen.estado %}Activa{% else %}Inactiva{% endif %}</span>
@@ -237,6 +276,7 @@
                             <div class="adm-field">
                                 <label for="imagenArchivo{{ imagen.id }}">Reemplazar imagen</label>
                                 <input id="imagenArchivo{{ imagen.id }}" name="archivo" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" data-preview-input>
+                                {% if imagen.imagen %}<label class="user-active"><input type="checkbox" name="quitar_imagen" data-remove-image> Quitar imagen actual</label>{% endif %}
                             </div>
                             <label class="user-active adm-image-active-toggle"><input type="checkbox" name="estado" {% if imagen.estado %}checked{% endif %} data-preview-active> Mostrar imagen en el sitio</label>
                             <div class="adm-image-actions">
@@ -258,9 +298,12 @@
             </div>
         </details>
     </section>
+    </div>
 </main>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    var workspaceTabs = Array.from(document.querySelectorAll('[data-gallery-tab]'));
+    var workspacePanels = Array.from(document.querySelectorAll('[data-gallery-panel]'));
     var cards = Array.from(document.querySelectorAll('.adm-image-card'));
     var filterButtons = Array.from(document.querySelectorAll('.adm-gallery-filter'));
     var search = document.getElementById('buscarImagenGaleria');
@@ -269,9 +312,41 @@ document.addEventListener('DOMContentLoaded', function () {
     var empty = document.getElementById('galeriaSinCoincidencias');
     var section = 'all';
 
+    function selectWorkspaceTab(tab, moveFocus) {
+        var selectedPanel = tab.dataset.galleryTab;
+        workspaceTabs.forEach(function (item) {
+            var selected = item === tab;
+            item.classList.toggle('is-active', selected);
+            item.setAttribute('aria-selected', selected ? 'true' : 'false');
+            item.tabIndex = selected ? 0 : -1;
+        });
+        workspacePanels.forEach(function (panel) {
+            panel.hidden = panel.dataset.galleryPanel !== selectedPanel;
+        });
+        if (moveFocus) tab.focus();
+    }
+
+    workspaceTabs.forEach(function (tab, index) {
+        tab.addEventListener('click', function () {
+            selectWorkspaceTab(tab, false);
+        });
+        tab.addEventListener('keydown', function (event) {
+            var nextIndex = index;
+            if (event.key === 'ArrowRight') nextIndex = (index + 1) % workspaceTabs.length;
+            else if (event.key === 'ArrowLeft') nextIndex = (index - 1 + workspaceTabs.length) % workspaceTabs.length;
+            else if (event.key === 'Home') nextIndex = 0;
+            else if (event.key === 'End') nextIndex = workspaceTabs.length - 1;
+            else return;
+            event.preventDefault();
+            selectWorkspaceTab(workspaceTabs[nextIndex], true);
+        });
+    });
+
     document.querySelectorAll('.adm-image-card').forEach(function (card) {
         var input = card.querySelector('[data-preview-input]');
         var image = card.querySelector('[data-preview-image]');
+        var placeholder = card.querySelector('[data-preview-placeholder]');
+        var removeImage = card.querySelector('[data-remove-image]');
         var title = card.querySelector('[name="titulo"]');
         var previewTitle = card.querySelector('[data-preview-title]');
         var active = card.querySelector('[data-preview-active]');
@@ -285,7 +360,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (previewUrl) URL.revokeObjectURL(previewUrl);
                 previewUrl = URL.createObjectURL(file);
                 image.src = previewUrl;
+                image.hidden = false;
+                if (placeholder) placeholder.hidden = true;
+                if (removeImage) removeImage.checked = false;
                 image.alt = title && title.value.trim() ? title.value.trim() : file.name;
+            });
+        }
+        if (removeImage && image) {
+            removeImage.addEventListener('change', function () {
+                if (removeImage.checked && input) input.value = '';
+                image.hidden = removeImage.checked;
+                if (placeholder) placeholder.hidden = !removeImage.checked;
             });
         }
         if (title && previewTitle) {

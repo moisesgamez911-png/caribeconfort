@@ -52,9 +52,9 @@
                         {% if r.reserva_imagen_url %}
                             <img src="{{ r.reserva_imagen_url }}" alt="{% if r.habitaciones %}Habitación {{ r.habitaciones.numero }}{% elif r.planes %}{{ r.planes.nombre }}{% else %}{{ nombre_hotel }}{% endif %}" loading="lazy" decoding="async">
                         {% else %}
-                            <img src="{% static 'img/imagenes/foto2.png' %}" alt="{{ nombre_hotel }}" loading="lazy" decoding="async">
+                            <img src="{% static 'img/imagenes/foto2.webp' %}" alt="{{ nombre_hotel }}" loading="lazy" decoding="async">
                         {% endif %}
-                        <span class="reservation-photo-tag">{% if r.habitaciones %}Hab. {{ r.habitaciones.numero }}{% else %}Plan{% endif %}</span>
+                        <span class="reservation-photo-tag">{% if r.planes %}Plan{% elif r.habitaciones %}Hab. {{ r.habitaciones.numero }}{% else %}Plan{% endif %}</span>
                     </div>
 
                     <div class="reservation-main">
@@ -62,9 +62,7 @@
                             <div>
                                 <h3>Reserva #{{ r.formatted_id }}</h3>
                                 <p class="reservation-description">
-                                    {% if r.habitaciones %}{{ r.habitaciones.tipohabitacion.nombre }}{% endif %}
-                                    {% if r.planes %}{% if r.habitaciones %} · {% endif %}{{ r.planes.nombre }}{% endif %}
-                                    {% if not r.habitaciones and not r.planes %}Plan reservado{% endif %}
+                                    {% if r.planes %}Plan: {{ r.planes.nombre }}{% elif r.habitaciones %}{{ r.habitaciones.tipohabitacion.nombre }}{% else %}Plan reservado{% endif %}
                                 </p>
                             </div>
                             <span class="status-pill {% if r.estado == 'Confirmada' %}status-confirmada{% elif r.estado == 'En curso' %}status-en-curso{% elif r.estado == 'Pendiente' %}status-pendiente{% elif r.estado == 'Pagada - Por validar' %}status-validar{% else %}status-finalizada{% endif %}">
@@ -165,9 +163,10 @@
                                 data-saldo="$ {{ r.saldo_pendiente|precio:0 }} COP"
                                 data-saldo-numerico="{{ r.saldo_pendiente|unlocalize }}"
                                 data-pago-url="/pagar-reserva/{{ r.id }}/"
+                                data-tipo-reserva="{% if r.planes %}plan{% else %}habitacion{% endif %}"
                                 data-hab-numero="{% if r.habitaciones %}{{ r.habitaciones.numero }}{% endif %}"
-                                data-hab-tipo="{% if r.habitaciones %}{{ r.habitaciones.tipohabitacion.nombre }}{% else %}{{ r.planes.nombre|default:'Plan reservado' }}{% endif %}"
-                                data-hab-imagen="{% if r.reserva_imagen_url %}{{ r.reserva_imagen_url }}{% else %}{% static 'img/imagenes/foto2.png' %}{% endif %}"
+                                data-hab-tipo="{% if r.planes %}{{ r.planes.nombre }}{% elif r.habitaciones %}{{ r.habitaciones.tipohabitacion.nombre }}{% else %}Plan reservado{% endif %}"
+                                data-hab-imagen="{% if r.reserva_imagen_url %}{{ r.reserva_imagen_url }}{% else %}{% static 'img/imagenes/foto2.webp' %}{% endif %}"
                                 data-hab-cama="{% if r.habitaciones %}{{ r.habitaciones.tipohabitacion.tipo_cama }}{% endif %}"
                                 data-fecha-registro="{{ r.fechasolicitud|date:'d/m/Y - h:i a' }}">
                                 <i class="bi bi-receipt" aria-hidden="true"></i>
@@ -229,7 +228,7 @@
                             <span class="status-pill {% if r.estado == 'En curso' %}status-en-curso{% elif r.estado == 'Cancelada' %}status-cancelada{% elif r.estado == 'Finalizada' %}status-finalizada{% else %}status-pendiente{% endif %}">{{ r.estado }}</span>
                         </div>
                         <p class="history-description">
-                            {% if r.habitaciones %}Hab. {{ r.habitaciones.numero }} · {{ r.habitaciones.tipohabitacion.nombre }}{% else %}{{ r.planes.nombre|default:"Plan reservado" }}{% endif %}
+                            {% if r.planes %}Plan: {{ r.planes.nombre }}{% elif r.habitaciones %}Hab. {{ r.habitaciones.numero }} · {{ r.habitaciones.tipohabitacion.nombre }}{% else %}Plan reservado{% endif %}
                         </p>
                         <p class="history-dates">{{ r.fechaentrada|date:"d M Y" }} – {{ r.fechasalida|date:"d M Y" }}</p>
                         <strong class="history-total">$ {{ r.valortotal|precio:0 }} COP</strong>
@@ -398,17 +397,17 @@
             <section class="tarjeta tarjeta-habitacion">
                 <h3 class="titulo-tarjeta">
                     <i class="bi bi-layout-text-sidebar-reverse"></i>
-                    Habitación
+                    <span id="mdAlojamientoTitulo">Habitación</span>
                 </h3>
 
                 <div class="habitacion-contenido">
                     <img class="foto-habitacion" id="mdHabImagen" src="" alt="Habitación de hotel con cama doble">
 
                     <div class="habitacion-datos">
-                        <span class="etiqueta">N.º habitación</span>
+                        <span class="etiqueta" id="mdHabNumeroEtiqueta">N.º habitación</span>
                         <strong class="numero-habitacion" id="mdHabNumero">102</strong>
 
-                        <span class="etiqueta etiqueta-tipo">Tipo de habitación</span>
+                        <span class="etiqueta etiqueta-tipo" id="mdHabTipoEtiqueta">Tipo de habitación</span>
                         <strong class="tipo-habitacion" id="mdHabTipo">Estándar</strong>
                     </div>
                 </div>
@@ -568,7 +567,7 @@
 
 <script src="{% static 'js/bootstrap.bundle.js' %}"></script>
 <script src="{% static 'js/feedback.js' %}?v=1"></script>
-<script src="{% static 'js/mi_reserva.js' %}?v=31"></script>
+<script src="{% static 'js/mi_reserva.js' %}?v=32"></script>
 <script src="{% static 'js/cliente-menu-movil.js' %}?v=1"></script>
 
 </body>

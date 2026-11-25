@@ -19,6 +19,7 @@
     <header class="adm-heading">
         <div><p class="adm-eyebrow">CATÁLOGO DEL HOTEL</p><h1>Registrar servicio</h1><p>Agrega un servicio y configura su información y tarifa.</p></div>
     </header>
+    {% if messages %}<div class="adm-messages" role="status">{% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}</div>{% endif %}
     <section class="adm-card">
     <form action="" method="POST" enctype="multipart/form-data" autocomplete="off" class="adm-form adm-form-grid">
         {% csrf_token %}
@@ -36,6 +37,15 @@
         <div class="adm-field">
             <label>Precio</label>
             <input type="number" step="0.01" name="txtPrecio" required>
+        </div>
+
+        <div class="adm-field">
+            <label for="categoriaServicio">Categoría</label>
+            <select id="categoriaServicio" name="categoria_id" required>
+                {% for categoria in categorias_servicio %}
+                <option value="{{ categoria.id }}">{{ categoria.nombre }}</option>
+                {% endfor %}
+            </select>
         </div>
 
         <div class="adm-field">

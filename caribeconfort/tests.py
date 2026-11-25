@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from cryptography.fernet import Fernet
 from PIL import Image
+from django.apps import apps as django_apps
 from django.conf import settings
 from django.contrib.auth.hashers import check_password
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -32,6 +33,7 @@ from caribeconfort.models import (
     Huespedes,
     Hoteles,
     ImagenGaleria,
+    CategoriaServicio,
     Pagos,
     Planes,
     Reservas,
@@ -48,6 +50,7 @@ from caribeconfort.views import (
     _conexion_correo_hotel,
     _enviar_invitacion_resena,
     _enviar_correo_hotel,
+    _guardar_imagen_catalogo,
     buscar_disponibilidad,
     administrador,
     cancelar_reserva,
@@ -59,6 +62,7 @@ from caribeconfort.views import (
     finalizar_reservas_vencidas,
     galeria,
     galeriaadmin,
+    habitacionesadmin,
     home,
     mis_reservas,
     procesar_reembolso,
@@ -70,6 +74,8 @@ from caribeconfort.views import (
     _url_imagen_plan,
     _url_imagen_servicio,
     solicitar_servicio,
+    serviciosadmin,
+    tiposhabitacionadmin,
 )
 
 
@@ -170,6 +176,70 @@ class LocalImageURLTests(SimpleTestCase):
                     '',
                 )
 
+    def test_existing_uploaded_webp_variant_is_used(self):
+        with TemporaryDirectory() as media_root:
+            ruta = 'uploads/habitaciones/room.jpg'
+            original = Path(media_root, *ruta.split('/'))
+            original.parent.mkdir(parents=True)
+            original.touch()
+            original.with_suffix('.webp').touch()
+
+            with override_settings(MEDIA_ROOT=media_root, MEDIA_URL='/media/'):
+                self.assertEqual(
+                    _url_imagen_local(ruta),
+                    '/media/uploads/habitaciones/room.webp',
+                )
+
+    def test_static_image_uses_webp_variant_when_available(self):
+        with TemporaryDirectory() as static_root:
+            ruta = Path(static_root, 'img', 'imagenes', 'portada.jpg')
+            ruta.parent.mkdir(parents=True)
+            ruta.touch()
+            ruta.with_suffix('.webp').touch()
+
+            with override_settings(
+                STATICFILES_DIRS=[static_root],
+                STATIC_URL='/static/',
+            ):
+                self.assertEqual(
+                    _url_imagen_local('img/imagenes/portada.jpg'),
+                    '/static/img/imagenes/portada.webp',
+                )
+
+    def test_catalog_upload_keeps_original_and_creates_webp_variant(self):
+        contenido = BytesIO()
+        Image.new('RGB', (3200, 1600), color='#c6a15b').save(contenido, format='JPEG')
+        archivo = SimpleUploadedFile(
+            'habitacion.jpg',
+            contenido.getvalue(),
+            content_type='image/jpeg',
+        )
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            ruta = _guardar_imagen_catalogo(archivo, 'habitaciones')
+            original = Path(media_root, *ruta.split('/'))
+            variante = original.with_suffix('.webp')
+
+            self.assertTrue(original.is_file())
+            self.assertTrue(variante.is_file())
+            with Image.open(variante) as imagen:
+                self.assertEqual(imagen.size, (2560, 1280))
+            self.assertEqual(
+                _url_imagen_local(ruta),
+                f'/media/{variante.relative_to(media_root).as_posix()}',
+            )
+
+    def test_optimization_command_creates_variants_for_existing_media(self):
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            ruta = Path(media_root, 'uploads', 'galeria', 'anterior.png')
+            ruta.parent.mkdir(parents=True)
+            Image.effect_noise((500, 500), 100).save(ruta, format='PNG')
+
+            call_command('optimizar_imagenes')
+
+            self.assertTrue(ruta.is_file())
+            self.assertTrue(ruta.with_suffix('.webp').is_file())
+
 
 class ReservationCancellationTests(TestCase):
                 def test_customer_cancellation_uses_csrf_cookie_from_reservations_page(self):
@@ -241,19 +311,25 @@ class ReservationRejectionTests(TestCase):
 
 
 class GalleryAdminPageTests(TestCase):
-    def test_existing_gallery_list_is_separated_and_collapsed_by_default(self):
-                    client = Client()
-                    session = client.session
-                    session['rol'] = 'Administrador'
-                    session['usuario_nom'] = 'Admin'
-                    session.save()
+    def test_gallery_and_category_management_have_separate_tabs(self):
+        client = Client()
+        session = client.session
+        session['rol'] = 'Administrador'
+        session['usuario_nom'] = 'Admin'
+        session.save()
 
-                    response = client.get('/admingaleria')
+        response = client.get('/admingaleria')
 
-                    self.assertEqual(response.status_code, 200)
-                    self.assertContains(response, 'Ver galerías existentes')
-                    self.assertContains(response, 'class="adm-gallery-details"')
-                    self.assertNotContains(response, 'class="adm-gallery-details" open')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-gallery-tab="galeria"')
+        self.assertContains(response, 'data-gallery-tab="categorias"')
+        self.assertContains(response, 'class="adm-gallery-details" open')
+        self.assertContains(response, 'data-gallery-panel="categorias" hidden')
+
+        response = client.get('/admingaleria?tab=categorias')
+
+        self.assertEqual(response.context['pestana_galeria'], 'categorias')
+        self.assertContains(response, 'data-gallery-panel="galeria" hidden')
 
 
 class StaffAccountEditTests(TestCase):
@@ -591,9 +667,10 @@ class AdminPlanTypeManagementTests(TestCase):
             plan.refresh_from_db()
             self.assertTrue(plan.imagen.startswith('uploads/planes/'))
             self.assertTrue(Path(media_root, plan.imagen).is_file())
+            ruta_webp = Path(plan.imagen).with_suffix('.webp').as_posix()
             self.assertContains(
                 self.client.get('/admintiposhabitacion?tab=planes'),
-                f'src="/media/{plan.imagen}"',
+                f'src="/media/{ruta_webp}"',
             )
 
     def test_plan_referenced_by_reservation_cannot_be_deleted(self):
@@ -1058,6 +1135,7 @@ class AdminGalleryCategoryTests(TestCase):
         response = galeriaadmin(create_category)
 
         self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/admingaleria?tab=categorias')
         categoria = CategoriaGaleria.objects.get(nombre='Exteriores')
 
         upload = RequestFactory().post(
@@ -1151,9 +1229,10 @@ class AdminGalleryImageUpdateTests(TestCase):
                 imagen_publica for imagen_publica in imagenes_publicas
                 if imagen_publica.pk == imagen.pk
             )
+            ruta_webp = Path(imagen.imagen).with_suffix('.webp').as_posix()
             self.assertEqual(
                 imagen_publica_actualizada.url_imagen,
-                f'/media/{imagen.imagen}',
+                f'/media/{ruta_webp}',
             )
 
             with patch(
@@ -1169,8 +1248,374 @@ class AdminGalleryImageUpdateTests(TestCase):
             )
             self.assertEqual(
                 imagen_portada_actualizada.url_imagen,
-                f'/media/{imagen.imagen}',
+                f'/media/{ruta_webp}',
             )
+
+
+class AdminImageRemovalTests(TestCase):
+    @staticmethod
+    def _create_stored_image(media_root, image_path):
+        stored_path = Path(media_root, *image_path.split('/'))
+        stored_path.parent.mkdir(parents=True, exist_ok=True)
+        stored_path.write_bytes(b'old image')
+        return stored_path
+
+    @staticmethod
+    def _post(path, data):
+        request = RequestFactory().post(path, data)
+        request.session = {'rol': 'Administrador', 'usuario_nom': 'Admin'}
+        request._messages = Mock()
+        return request
+
+    def test_room_image_can_be_removed_without_uploading_a_replacement(self):
+        tipo = TipoHabitacion.objects.create(
+            nombre='Estándar',
+            capacidad=2,
+            tarifa=Decimal('100.00'),
+        )
+        imagen_anterior = 'uploads/habitaciones/anterior.jpg'
+        habitacion = Habitaciones.objects.create(
+            tipohabitacion=tipo,
+            numero='101',
+            capacidad=2,
+            precio=Decimal('100.00'),
+            imagen=imagen_anterior,
+        )
+        datos = {
+            'accion': 'editar',
+            'habitacion_id': str(habitacion.pk),
+            'numero': habitacion.numero,
+            'tipohabitacion': str(tipo.pk),
+            'capacidad': '2',
+            'precio': '100.00',
+            'estado': 'Disponible',
+            'quitar_imagen': 'on',
+        }
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            archivo_anterior = self._create_stored_image(media_root, imagen_anterior)
+            respuesta = habitacionesadmin(self._post('/adminhabitaciones', datos))
+
+            self.assertEqual(respuesta.status_code, 302)
+            habitacion.refresh_from_db()
+            self.assertIsNone(habitacion.imagen)
+            self.assertFalse(archivo_anterior.exists())
+
+    def test_service_image_can_be_removed_without_uploading_a_replacement(self):
+        categoria = CategoriaServicio.objects.get(nombre='Otros')
+        imagen_anterior = 'uploads/servicios/anterior.jpg'
+        servicio = Servicios.objects.create(
+            nombre='Desayuno',
+            precio=Decimal('10.00'),
+            imagen=imagen_anterior,
+            categoria='Otros',
+            categoria_catalogo=categoria,
+        )
+        datos = {
+            'accion': 'editar',
+            'servicio_id': str(servicio.pk),
+            'nombre': servicio.nombre,
+            'descripcion': '',
+            'precio': '10.00',
+            'categoria_id': str(categoria.pk),
+            'estado': 'on',
+            'quitar_imagen': 'on',
+        }
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            archivo_anterior = self._create_stored_image(media_root, imagen_anterior)
+            respuesta = serviciosadmin(self._post('/adminservicios', datos))
+
+            self.assertEqual(respuesta.status_code, 302)
+            servicio.refresh_from_db()
+            self.assertIsNone(servicio.imagen)
+            self.assertFalse(archivo_anterior.exists())
+
+    def test_room_type_image_can_be_removed_without_uploading_a_replacement(self):
+        imagen_anterior = 'uploads/tipos-habitacion/anterior.jpg'
+        tipo = TipoHabitacion.objects.create(
+            nombre='Estándar',
+            capacidad=2,
+            tarifa=Decimal('100.00'),
+            imagen=imagen_anterior,
+        )
+        datos = {
+            'accion': 'editar',
+            'tab': 'habitaciones',
+            'tipo_id': str(tipo.pk),
+            'nombre': tipo.nombre,
+            'capacidad': '2',
+            'tarifa': '100.00',
+            'quitar_imagen': 'on',
+        }
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            archivo_anterior = self._create_stored_image(media_root, imagen_anterior)
+            respuesta = tiposhabitacionadmin(self._post('/admintiposhabitacion', datos))
+
+            self.assertEqual(respuesta.status_code, 302)
+            tipo.refresh_from_db()
+            self.assertIsNone(tipo.imagen)
+            self.assertFalse(archivo_anterior.exists())
+
+    def test_plan_image_can_be_removed_without_uploading_a_replacement(self):
+        imagen_anterior = 'uploads/planes/anterior.jpg'
+        plan = Planes.objects.create(
+            nombre='Escapada',
+            precio=Decimal('200.00'),
+            imagen=imagen_anterior,
+        )
+        datos = {
+            'accion': 'editar_plan',
+            'tab': 'planes',
+            'plan_id': str(plan.pk),
+            'nombre': plan.nombre,
+            'descripcion': '',
+            'precio': '200.00',
+            'disponibles': '10',
+            'duracion_dias': '5',
+            'max_adultos': '4',
+            'max_ninos': '4',
+            'orden': '0',
+            'quitar_imagen': 'on',
+        }
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            archivo_anterior = self._create_stored_image(media_root, imagen_anterior)
+            respuesta = tiposhabitacionadmin(self._post('/admintiposhabitacion', datos))
+
+            self.assertEqual(respuesta.status_code, 302)
+            plan.refresh_from_db()
+            self.assertIsNone(plan.imagen)
+            self.assertFalse(archivo_anterior.exists())
+
+    def test_gallery_image_can_be_removed_and_shared_file_is_preserved(self):
+        categoria, _ = CategoriaGaleria.objects.get_or_create(
+            nombre='Carrusel',
+            defaults={'estado': True},
+        )
+        imagen_anterior = 'uploads/galeria/compartida.jpg'
+        imagen = ImagenGaleria.objects.create(
+            categoria=categoria,
+            titulo='Imagen a retirar',
+            imagen=imagen_anterior,
+            seccion='carrusel',
+        )
+        ImagenGaleria.objects.create(
+            categoria=categoria,
+            titulo='Imagen que la comparte',
+            imagen=imagen_anterior,
+            seccion='carrusel',
+        )
+        datos = {
+            'accion': 'editar',
+            'imagen_id': str(imagen.pk),
+            'titulo': imagen.titulo,
+            'seccion': 'carrusel',
+            'estado': 'on',
+            'quitar_imagen': 'on',
+        }
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            archivo_anterior = self._create_stored_image(media_root, imagen_anterior)
+            respuesta = galeriaadmin(self._post('/admingaleria', datos))
+
+            self.assertEqual(respuesta.status_code, 302)
+            imagen.refresh_from_db()
+            self.assertEqual(imagen.imagen, '')
+            self.assertTrue(archivo_anterior.exists())
+
+    def test_gallery_image_file_is_deleted_when_no_other_record_uses_it(self):
+        categoria, _ = CategoriaGaleria.objects.get_or_create(
+            nombre='Carrusel',
+            defaults={'estado': True},
+        )
+        imagen_anterior = 'uploads/galeria/individual.jpg'
+        imagen = ImagenGaleria.objects.create(
+            categoria=categoria,
+            titulo='Imagen',
+            imagen=imagen_anterior,
+            seccion='carrusel',
+        )
+        datos = {
+            'accion': 'editar',
+            'imagen_id': str(imagen.pk),
+            'titulo': imagen.titulo,
+            'seccion': 'carrusel',
+            'estado': 'on',
+            'quitar_imagen': 'on',
+        }
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            archivo_anterior = self._create_stored_image(media_root, imagen_anterior)
+            respuesta = galeriaadmin(self._post('/admingaleria', datos))
+
+            self.assertEqual(respuesta.status_code, 302)
+            imagen.refresh_from_db()
+            self.assertEqual(imagen.imagen, '')
+            self.assertFalse(archivo_anterior.exists())
+            cliente = Client()
+            sesion = cliente.session
+            sesion['rol'] = 'Administrador'
+            sesion['usuario_nom'] = 'Admin'
+            sesion.save()
+            respuesta_galeria = cliente.get('/admingaleria')
+            self.assertContains(respuesta_galeria, 'Sin imagen')
+            self.assertNotContains(respuesta_galeria, 'src="/media/"')
+
+
+class AdminServiceCategoryTests(TestCase):
+    @staticmethod
+    def _post(datos):
+        request = RequestFactory().post('/adminservicios', datos)
+        request.session = {'rol': 'Administrador', 'usuario_nom': 'Admin'}
+        request._messages = Mock()
+        return request
+
+    @staticmethod
+    def _service(name, category):
+        return Servicios.objects.create(
+            nombre=name,
+            precio=Decimal('10000.00'),
+            categoria=category.nombre,
+            categoria_catalogo=category,
+        )
+
+    def test_admin_can_create_category_and_assign_a_new_service(self):
+        response = serviciosadmin(self._post({
+            'accion': 'crear_categoria',
+            'nombre_categoria': 'Bienestar',
+        }))
+        self.assertEqual(response.status_code, 302)
+        category = CategoriaServicio.objects.get(nombre='Bienestar')
+
+        response = serviciosadmin(self._post({
+            'accion': 'crear',
+            'nombre': 'Masaje relajante',
+            'descripcion': 'Sesión de bienestar',
+            'precio': '85000',
+            'categoria_id': str(category.pk),
+            'estado': 'on',
+        }))
+
+        self.assertEqual(response.status_code, 302)
+        service = Servicios.objects.get(nombre='Masaje relajante')
+        self.assertEqual(service.categoria_catalogo, category)
+        self.assertEqual(service.categoria, 'Bienestar')
+        session = self.client.session
+        session['rol'] = 'Administrador'
+        session['usuario_nom'] = 'Admin'
+        session.save()
+        admin_response = self.client.get('/adminservicios')
+        self.assertEqual(admin_response.status_code, 200)
+        self.assertContains(admin_response, 'Categorías de servicios')
+        self.assertContains(admin_response, 'Bienestar')
+
+    def test_admin_cannot_delete_a_category_that_still_has_services(self):
+        category = CategoriaServicio.objects.create(nombre='Deportes')
+        self._service('Alquiler de bicicleta', category)
+
+        response = serviciosadmin(self._post({
+            'accion': 'eliminar_categoria',
+            'categoria_id': str(category.pk),
+        }))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(CategoriaServicio.objects.filter(pk=category.pk).exists())
+
+    def test_category_deletion_also_checks_legacy_service_strings(self):
+        category = CategoriaServicio.objects.get(nombre='Otros')
+        Servicios.objects.create(
+            nombre='Servicio antiguo',
+            precio=Decimal('10000.00'),
+            categoria='Otros',
+        )
+
+        response = serviciosadmin(self._post({
+            'accion': 'eliminar_categoria',
+            'categoria_id': str(category.pk),
+        }))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(CategoriaServicio.objects.filter(pk=category.pk).exists())
+
+    def test_migration_links_existing_service_category_strings(self):
+        service = Servicios.objects.create(
+            nombre='Servicio importado',
+            precio=Decimal('10000.00'),
+            categoria='Experiencias locales',
+        )
+        migration = import_module(
+            'caribeconfort.migrations.0039_backfill_service_categories',
+        )
+        schema_editor = SimpleNamespace(connection=SimpleNamespace(alias='default'))
+
+        migration.backfill_service_categories(django_apps, schema_editor)
+
+        service.refresh_from_db()
+        self.assertIsNotNone(service.categoria_catalogo_id)
+        self.assertEqual(service.categoria_catalogo.nombre, 'Experiencias locales')
+
+    def test_admin_can_delete_an_empty_category(self):
+        category = CategoriaServicio.objects.create(nombre='Temporal')
+
+        response = serviciosadmin(self._post({
+            'accion': 'eliminar_categoria',
+            'categoria_id': str(category.pk),
+        }))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(CategoriaServicio.objects.filter(pk=category.pk).exists())
+
+    def test_admin_can_delete_a_service_without_history(self):
+        category = CategoriaServicio.objects.get(nombre='Otros')
+        image_path = 'uploads/servicios/temporal.jpg'
+        service = self._service('Servicio temporal', category)
+        service.imagen = image_path
+        service.save(update_fields=['imagen'])
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            stored_path = Path(media_root, *image_path.split('/'))
+            stored_path.parent.mkdir(parents=True, exist_ok=True)
+            stored_path.write_bytes(b'old image')
+
+            response = serviciosadmin(self._post({
+                'accion': 'eliminar',
+                'servicio_id': str(service.pk),
+            }))
+
+            self.assertEqual(response.status_code, 302)
+            self.assertFalse(Servicios.objects.filter(pk=service.pk).exists())
+            self.assertFalse(stored_path.exists())
+
+    def test_admin_cannot_delete_a_service_with_reservation_history(self):
+        category = CategoriaServicio.objects.get(nombre='Otros')
+        service = self._service('Servicio histórico', category)
+        reservation = crear_reserva_prueba(crear_huesped_prueba(cuenta=False))
+        ServicioReserva.objects.create(
+            reservas=reservation,
+            servicios=service,
+            cantidad=1,
+            valor=service.precio,
+        )
+
+        response = serviciosadmin(self._post({
+            'accion': 'eliminar',
+            'servicio_id': str(service.pk),
+        }))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Servicios.objects.filter(pk=service.pk).exists())
+
+    def test_public_service_filters_include_custom_categories(self):
+        category = CategoriaServicio.objects.create(nombre='Aventura')
+        self._service('Paseo en kayak', category)
+
+        response = self.client.get('/servicios?categoria=Aventura')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Paseo en kayak')
+        self.assertContains(response, 'Aventura')
 
 
 class BookingDateDefaultsTests(TestCase):
@@ -1309,7 +1754,7 @@ class BookingDateDefaultsTests(TestCase):
         self.assertContains(response, '15 disponibles')
         self.assertContains(response, 'tag-disponible')
         self.assertNotContains(response, 'tag-agotado')
-        self.assertContains(response, 'src="/static/img/imagenes/BASO.jpg"')
+        self.assertContains(response, 'src="/static/img/imagenes/BASO.webp"')
         tipos_renderizados = response.context['tipos']
         self.assertEqual(len(tipos_renderizados), 1)
         tipo_renderizado = tipos_renderizados[0]
@@ -1596,6 +2041,40 @@ class HotelBrandingAdminTests(TestCase):
             )
             self.assertEqual(respuesta_logo['Content-Type'], 'image/png')
             respuesta_logo.file_to_stream.close()
+
+    def test_admin_can_remove_existing_logo_and_photo_reference(self):
+        archivo_logo = SimpleUploadedFile(
+            'anterior.png',
+            b'old logo image',
+            content_type='image/png',
+        )
+        datos = {
+            'nombre': self.hotel.nombre,
+            'descripcion': '',
+            'direccion': self.hotel.direccion,
+            'municipio': self.hotel.municipio,
+            'telefono': self.hotel.telefono,
+            'correo': self.hotel.correo,
+            'fotografias': '/media/uploads/fotografias/anterior.jpg',
+            'quitar_logo': 'on',
+            'quitar_fotografias': 'on',
+        }
+        request = RequestFactory().post('/adminconfiguracion', datos)
+        request.session = {'rol': 'Administrador', 'usuario_nom': 'Admin'}
+        request._messages = Mock()
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            self.hotel.logo.save('anterior.png', archivo_logo, save=True)
+            archivo_anterior = Path(media_root, self.hotel.logo.name)
+            self.assertTrue(archivo_anterior.is_file())
+
+            respuesta = configuracionadmin(request)
+
+            self.assertEqual(respuesta.status_code, 302)
+            self.hotel.refresh_from_db()
+            self.assertFalse(self.hotel.logo)
+            self.assertEqual(self.hotel.fotografias, '')
+            self.assertFalse(archivo_anterior.exists())
 
     def test_invalid_logo_does_not_change_hotel_brand(self):
         archivo = SimpleUploadedFile(
@@ -1946,11 +2425,41 @@ class MisReservasPaymentSummaryTests(TestCase):
         response = self.client.get('/mis-reservas')
 
         self.assertEqual(response.status_code, 200)
-        imagen_esperada = f'plan{((plan.pk - 1) % 3) + 1}.jpg'
+        imagen_esperada = f'plan{((plan.pk - 1) % 3) + 1}.webp'
         self.assertContains(
             response,
             f'src="/static/img/imagenes/{imagen_esperada}"',
         )
+
+    def test_active_plan_reservation_is_labeled_in_card_and_details(self):
+        plan = Planes.objects.create(
+            nombre='Escapada romántica',
+            precio=Decimal('250000.00'),
+        )
+        self.reserva.planes = plan
+        self.reserva.save(update_fields=['planes'])
+
+        response = self.client.get('/mis-reservas')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Plan: Escapada romántica')
+        self.assertContains(response, 'class="reservation-photo-tag">Plan</span>')
+        self.assertContains(response, 'data-tipo-reserva="plan"')
+        self.assertContains(response, 'data-hab-tipo="Escapada romántica"')
+
+    def test_plan_history_reservation_is_labeled_as_a_plan(self):
+        plan = Planes.objects.create(
+            nombre='Plan de descanso',
+            precio=Decimal('250000.00'),
+        )
+        self.reserva.planes = plan
+        self.reserva.estado = 'Finalizada'
+        self.reserva.save(update_fields=['planes', 'estado'])
+
+        response = self.client.get('/mis-reservas')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Plan: Plan de descanso')
 
 
 class PublicServiceImageFallbackTests(TestCase):
@@ -1967,7 +2476,7 @@ class PublicServiceImageFallbackTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            'src="/static/img/imagenes/uploads/servicios/0163ae68fc124958bca3197c8287765c.jpg"',
+            'src="/static/img/imagenes/uploads/servicios/5ea2e217ef2042a4890a7043ddc83be7.webp"',
         )
 
 

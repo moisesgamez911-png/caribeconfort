@@ -20,6 +20,7 @@
         <label for="planImagen{{ form_id }}">{% trans "Imagen del plan (opcional)" %}</label>
         <input id="planImagen{{ form_id }}" name="imagen" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif">
         {% if plan.url_imagen %}<img src="{{ plan.url_imagen }}" alt="{{ plan.nombre }}" width="220" style="display:block;margin-top:10px;border-radius:10px">{% endif %}
+        {% if plan.imagen %}<label class="user-active"><input type="checkbox" name="quitar_imagen"> {% trans "Quitar imagen actual" %}</label>{% endif %}
     </div>
     <div class="adm-field">
         <label for="planDuracion{{ form_id }}">{% trans "Duración en días" %}</label>

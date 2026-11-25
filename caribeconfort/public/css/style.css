@@ -2082,7 +2082,7 @@ input[type="file"]:focus-visible {
     justify-content: center;
     width: 100%;
     align-items: center;
-    background-image: url("../img/imagenes/HotelInterfaz2.png");
+    background-image: url("../img/imagenes/HotelInterfaz2.webp");
     border-radius: 0px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25); 
     overflow: hidden;     
@@ -2150,7 +2150,7 @@ input[type="file"]:focus-visible {
     min-height: 400px;
     text-align: center;
     border-radius: 10px;
-    background-image: url("../img/imagenes/BASO.jpg");
+    background-image: url("../img/imagenes/BASO.webp");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;

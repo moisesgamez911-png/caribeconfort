@@ -136,21 +136,29 @@ class CodigosConvenio(models.Model):
     class Meta:
         db_table='codigosconvenio'
 
+class CategoriaServicio(models.Model):
+    nombre = models.CharField(max_length=50, unique=True)
+
+    class Meta:
+        db_table = 'categoriaservicio'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
+
 class Servicios(models.Model):
-    CATEGORIAS = [
-        ('Habitación',    'Habitación'),
-        ('Alimentación',  'Alimentación'),
-        ('Minibar',       'Minibar'),
-        ('Recreación',    'Recreación'),
-        ('Eventos',       'Eventos'),
-        ('Lavandería',    'Lavandería'),
-        ('Transporte',    'Transporte'),
-        ('Otros',         'Otros'),
-    ]
     nombre      = models.CharField(max_length=100)
     descripcion = models.CharField(max_length=255, blank=True, null=True)
     precio      = models.DecimalField(max_digits=10, decimal_places=2)
-    categoria   = models.CharField(max_length=50, choices=CATEGORIAS, default='Otros')
+    categoria   = models.CharField(max_length=50, default='Otros')
+    categoria_catalogo = models.ForeignKey(
+        CategoriaServicio,
+        on_delete=models.PROTECT,
+        related_name='servicios',
+        blank=True,
+        null=True,
+    )
     estado      = models.BooleanField(default=1)
     imagen      = models.CharField(max_length=255, null=True, blank=True)
     destacado   = models.BooleanField(default=False)
