@@ -13,8 +13,16 @@
         <textarea id="planCaracteristicas{{ form_id }}" name="caracteristicas" rows="4">{% if plan %}{% for caracteristica in plan.caracteristicas.all %}{{ caracteristica.texto }}{% if not forloop.last %}&#10;{% endif %}{% endfor %}{% endif %}</textarea>
     </div>
     <div class="adm-field">
-        <label for="planPrecio{{ form_id }}">{% trans "Precio (COP)" %}</label>
+        <label for="planModoPrecio{{ form_id }}">{% trans "Modalidad del precio" %}</label>
+        <select id="planModoPrecio{{ form_id }}" name="modo_precio">
+            <option value="manual" {% if not plan or plan.modo_precio == 'manual' %}selected{% endif %}>{% trans "Precio manual, total fijo por reserva" %}</option>
+            <option value="habitacion" {% if plan.modo_precio == 'habitacion' %}selected{% endif %}>{% trans "Tarifa de habitación × días × cantidad" %}</option>
+        </select>
+    </div>
+    <div class="adm-field" data-manual-price-field>
+        <label for="planPrecio{{ form_id }}">{% trans "Precio manual total (COP)" %}</label>
         <input id="planPrecio{{ form_id }}" name="precio" type="number" min="0.01" step="0.01" value="{% if plan %}{{ plan.precio|unlocalize }}{% endif %}" required>
+        <small>{% trans "Se aplica como un total fijo, sin multiplicarse por la cantidad de habitaciones." %}</small>
     </div>
     <div class="adm-field adm-span-2">
         <label for="planImagen{{ form_id }}">{% trans "Imagen del plan (opcional)" %}</label>
@@ -44,21 +52,58 @@
     </div>
     <div class="adm-field">
         <label for="planHabitacion{{ form_id }}">{% trans "Tipo de habitación asociado" %}</label>
-        <select id="planHabitacion{{ form_id }}" name="tipo_habitacion">
+        <select id="planHabitacion{{ form_id }}" name="tipo_habitacion" required>
             <option value="">{% trans "Sin tipo de habitación" %}</option>
             {% for tipo in tipos_habitacion %}
             <option value="{{ tipo.id }}" {% if plan.tipo_habitacion_id == tipo.id %}selected{% endif %}>{{ tipo.nombre|reparar_texto }}</option>
             {% endfor %}
         </select>
     </div>
-    <div class="adm-field adm-span-2">
-        <label for="planServicios{{ form_id }}">{% trans "Servicios incluidos" %}</label>
-        <select id="planServicios{{ form_id }}" name="servicios" class="plan-services-select" multiple>
-            {% for servicio in servicios_admin %}
-            <option value="{{ servicio.id }}" {% if plan and servicio in plan.Servicios_tipos.all %}selected{% endif %}>{{ servicio.nombre }}</option>
+    <div class="adm-field">
+        <label for="planCantidadHabitaciones{{ form_id }}">{% trans "Habitaciones incluidas" %}</label>
+        <input id="planCantidadHabitaciones{{ form_id }}" name="cantidad_habitaciones_incluidas" type="number" min="1" max="1000" value="{% if plan %}{{ plan.cantidad_habitaciones_incluidas }}{% else %}1{% endif %}" required>
+    </div>
+    <div class="adm-field adm-span-2 plan-service-builder" data-plan-service-builder data-form-id="{{ form_id }}">
+        <span class="plan-section-title">{% trans "Servicios incluidos" %}</span>
+        <div class="plan-service-picker">
+            <div class="plan-service-picker-field">
+                <label for="planServicioCategoria{{ form_id }}">{% trans "Categoría" %}</label>
+                <select id="planServicioCategoria{{ form_id }}" data-service-category>
+                    <option value="">{% trans "Todas las categorías" %}</option>
+                    {% for categoria in categorias_servicio %}
+                    <option value="{{ categoria }}">{{ categoria }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="plan-service-picker-field">
+                <label for="planServicioSeleccion{{ form_id }}">{% trans "Servicio" %}</label>
+                <select id="planServicioSeleccion{{ form_id }}" data-service-select>
+                    <option value="">{% trans "Selecciona un servicio" %}</option>
+                    {% for servicio in servicios_admin %}
+                    <option value="{{ servicio.id }}" data-category="{{ servicio.categoria_plan }}">{{ servicio.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button class="adm-button secondary" type="button" data-add-service>{% trans "Añadir servicio" %}</button>
+        </div>
+        <p class="plan-service-help">{% trans "Los servicios añadidos se guardarán en el plan y aparecerán en su descripción pública." %}</p>
+        <p class="plan-service-feedback" data-service-feedback role="status" aria-live="polite"></p>
+        <div class="plan-service-list" data-service-list>
+            {% for servicio_config in servicios_plan %}
+            <div class="plan-service-item" data-service-id="{{ servicio_config.servicio.id }}">
+                <input type="hidden" name="servicios" value="{{ servicio_config.servicio.id }}">
+                <div class="plan-service-item-info">
+                    <strong>{{ servicio_config.servicio.nombre }}</strong>
+                    <small>{{ servicio_config.servicio.categoria_plan }}</small>
+                </div>
+                <label for="planServicioCantidad{{ form_id }}{{ servicio_config.servicio.id }}">{% trans "Cantidad" %}</label>
+                <input id="planServicioCantidad{{ form_id }}{{ servicio_config.servicio.id }}" name="servicio_cantidad_{{ servicio_config.servicio.id }}" type="number" min="1" max="1000" value="{{ servicio_config.cantidad }}" required>
+                <button class="plan-service-remove" type="button" data-remove-service aria-label="{% trans 'Quitar servicio' %} {{ servicio_config.servicio.nombre }}">&times;</button>
+            </div>
             {% endfor %}
-        </select>
-        <small>{% trans "Usa Ctrl o Cmd para seleccionar varios servicios." %}</small>
+            <p class="plan-service-empty" data-service-empty {% if plan.servicios_plan %}hidden{% endif %}>{% trans "Aún no has añadido servicios a este plan." %}</p>
+        </div>
+        <p class="plan-service-summary" data-service-summary>{% trans "Sin servicios incluidos." %}</p>
     </div>
     <label class="adm-field plan-active-field">
         <span>{% trans "Plan visible para reservar" %}</span>

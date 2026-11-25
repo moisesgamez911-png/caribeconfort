@@ -2737,3 +2737,90 @@ button {
     .confirm-actions { display: grid; grid-template-columns: 1fr; gap: 9px; }
     .confirm-actions .boton { width: 100%; min-height: 48px; justify-content: center; font-size: 14px; }
 }
+
+@media (max-width: 767px) {
+    .reservas-content,
+    .reservas-content > section,
+    .reservation-carousel,
+    .history-carousel,
+    .services-carousel,
+    .reservation-carousel-track,
+    .history-track,
+    .services-track {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .reservation-carousel-track {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .reservation-card {
+        width: 100%;
+        min-width: 100%;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .reservation-heading {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .reservation-heading > div,
+    .reservation-heading h3 {
+        min-width: 0;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+    }
+
+    .status-pill {
+        max-width: 100%;
+        white-space: normal;
+    }
+
+    .payment-total {
+        max-width: 100%;
+        font-size: clamp(20px, 7vw, 27px);
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .history-track,
+    .services-track {
+        flex-direction: column;
+        gap: 12px;
+        overflow: visible;
+        scroll-snap-type: none;
+        padding: 0;
+    }
+
+    .history-track {
+        display: flex;
+    }
+
+    .history-card,
+    .service-row {
+        width: 100%;
+        max-width: 100%;
+        flex: 0 0 auto;
+    }
+
+    .history-card {
+        min-height: 0;
+    }
+
+    .services-track {
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .service-row {
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 4px 15px rgba(24, 61, 61, .035);
+    }
+}

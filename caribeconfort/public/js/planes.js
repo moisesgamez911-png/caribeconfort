@@ -31,10 +31,14 @@ document.addEventListener("DOMContentLoaded", function () {
     const txtPlanSalida = document.getElementById('txtPlanSalida');
     const selectAdultos = document.getElementById('planAdultos');
     const selectNinos = document.getElementById('planNinos');
+    const selectTipoHabitacion = document.getElementById('planTipoHabitacion');
+    const inputCantidadHabitaciones = document.getElementById('planCantidadHabitaciones');
+    const textoDisponibilidad = document.getElementById('planDisponibilidadHabitaciones');
     const txtTotal = document.getElementById('txtTotal');
     const btnConfirmarPlan = document.getElementById('btnConfirmarPlan');
 
     let planActual = null;
+    let solicitudDisponibilidad = 0;
 
     const modalAlerta = document.getElementById('modalAlertaFecha');
     const btnCerrarAlerta = document.getElementById('btnCerrarAlertaFecha');
@@ -72,14 +76,24 @@ document.addEventListener("DOMContentLoaded", function () {
             planActual = {
                 id: this.dataset.id,
                 nombre: this.dataset.nombre,
-                precio: parseFloat(this.dataset.precio),
                 duracion: parseInt(this.dataset.duracion) || 1,
                 maxAdultos: parseInt(this.dataset.maxAdultos) || 2,
-                maxNinos: parseInt(this.dataset.maxNinos) || 2
+                maxNinos: parseInt(this.dataset.maxNinos) || 2,
+                modoPrecio: this.dataset.modoPrecio || 'manual',
+                precio: parseFloat(this.dataset.precio) || 0,
+                tipoHabitacion: this.dataset.tipoHabitacion,
+                cantidadHabitaciones: parseInt(this.dataset.cantidadHabitaciones) || 1
             };
 
             inPlanId.value = planActual.id;
             if (inPlanCodigoConvenio) inPlanCodigoConvenio.value = '';
+            selectTipoHabitacion.value = planActual.tipoHabitacion;
+            selectTipoHabitacion.disabled = true;
+            inputCantidadHabitaciones.value = String(planActual.cantidadHabitaciones);
+            inputCantidadHabitaciones.readOnly = true;
+            inputCantidadHabitaciones.removeAttribute('max');
+            delete inputCantidadHabitaciones.dataset.disponibles;
+            textoDisponibilidad.textContent = 'Selecciona tipo y fechas para consultar disponibilidad.';
             
             txtPlanEntrada.value = '';
             txtPlanSalida.textContent = '--';
@@ -109,6 +123,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 txtPlanSalida.textContent = '--';
                 inPlanSalida.value = '';
                 actualizarTotal();
+                consultarDisponibilidad().catch(error => {
+                    textoDisponibilidad.textContent = error.message;
+                });
                 return;
             }
 
@@ -125,17 +142,69 @@ document.addEventListener("DOMContentLoaded", function () {
             
             inPlanEntrada.value = this.value;
             inPlanSalida.value = `${yyyy}-${mm}-${dd}`;
+            consultarDisponibilidad().catch(error => {
+                textoDisponibilidad.textContent = error.message;
+            });
         });
     }
 
     function actualizarTotal() {
         if (!planActual) return;
         let total = planActual.precio;
+        if (planActual.modoPrecio === 'habitacion') {
+            const opcionTipo = selectTipoHabitacion.selectedOptions[0];
+            const tarifa = opcionTipo ? Number(opcionTipo.dataset.tarifa) : 0;
+            const cantidad = Number(inputCantidadHabitaciones.value) || 0;
+            total = tarifa * planActual.duracion * cantidad;
+        }
         txtTotal.textContent = new Intl.NumberFormat('es-CO', {
             style: 'currency', currency: 'COP', maximumFractionDigits: 0
         }).format(total);
     }
 
+    async function consultarDisponibilidad() {
+        const solicitudActual = ++solicitudDisponibilidad;
+        const tipoId = selectTipoHabitacion.value;
+        const entrada = inPlanEntrada.value;
+        const salida = inPlanSalida.value;
+        if (!tipoId || !entrada || !salida) {
+            delete inputCantidadHabitaciones.dataset.disponibles;
+            inputCantidadHabitaciones.removeAttribute('max');
+            textoDisponibilidad.textContent = 'Selecciona tipo y fechas para consultar disponibilidad.';
+            actualizarTotal();
+            return null;
+        }
+
+        textoDisponibilidad.textContent = 'Consultando disponibilidad...';
+        const parametros = new URLSearchParams({ tipo_id: tipoId, entrada, salida });
+        const respuesta = await fetch(`/api/disponibilidad-plan/?${parametros.toString()}`);
+        const datos = await respuesta.json();
+        if (!respuesta.ok || !datos.ok) {
+            throw new Error(datos.error || 'No se pudo consultar la disponibilidad.');
+        }
+        if (solicitudActual !== solicitudDisponibilidad) return null;
+
+        const disponibles = Number(datos.disponibles);
+        inputCantidadHabitaciones.dataset.disponibles = String(disponibles);
+        inputCantidadHabitaciones.max = String(disponibles);
+        textoDisponibilidad.textContent = disponibles === 1
+            ? 'Hay 1 habitación disponible para estas fechas.'
+            : `Hay ${disponibles} habitaciones disponibles para estas fechas.`;
+        actualizarTotal();
+        return disponibles;
+    }
+
+    if (selectTipoHabitacion) {
+        selectTipoHabitacion.addEventListener('change', function() {
+            actualizarTotal();
+            consultarDisponibilidad().catch(error => {
+                textoDisponibilidad.textContent = error.message;
+            });
+        });
+    }
+    if (inputCantidadHabitaciones) {
+        inputCantidadHabitaciones.addEventListener('input', actualizarTotal);
+    }
     if (selectAdultos) selectAdultos.addEventListener('change', actualizarTotal);
     if (selectNinos) selectNinos.addEventListener('change', actualizarTotal);
 
@@ -147,8 +216,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (btnCancelarPlan) btnCancelarPlan.addEventListener('click', cerrarModalReserva);
 
     if (btnConfirmarPlan) {
-        btnConfirmarPlan.addEventListener('click', function(e) {
+        btnConfirmarPlan.addEventListener('click', async function(e) {
             e.preventDefault();
+            if (this.disabled) return;
 
             if (!txtPlanEntrada.value) {
                 abrirAlertaFecha("Debes seleccionar la fecha de entrada para poder reservar este plan.");
@@ -169,12 +239,55 @@ document.addEventListener("DOMContentLoaded", function () {
                 inPlanSalida.value = `${yyyy}-${mm}-${dd}`;
             }
 
+            if (!selectTipoHabitacion.value) {
+                abrirAlertaFecha('Selecciona el tipo de habitación para continuar.');
+                return;
+            }
+            const cantidadHabitaciones = Number(inputCantidadHabitaciones.value);
+            if (!Number.isInteger(cantidadHabitaciones) || cantidadHabitaciones < 1) {
+                abrirAlertaFecha('Indica una cantidad válida de habitaciones.');
+                return;
+            }
+            const tipoSeleccionado = selectTipoHabitacion.selectedOptions[0];
+            const huespedes = Number(selectAdultos.value) + Number(selectNinos.value);
+            if (huespedes > Number(tipoSeleccionado.dataset.capacidad) * cantidadHabitaciones) {
+                abrirAlertaFecha('La cantidad de habitaciones no tiene capacidad para todos los huéspedes.');
+                return;
+            }
+            const textoOriginal = this.innerHTML;
+            if (
+                cantidadHabitaciones !== planActual.cantidadHabitaciones
+                || selectTipoHabitacion.value !== planActual.tipoHabitacion
+            ) {
+                abrirAlertaFecha('La composición de habitaciones está definida por el plan. Contacta al hotel si necesitas un cambio logístico.');
+                return;
+            }
+            this.disabled = true;
+            let disponibles;
+            try {
+                disponibles = await consultarDisponibilidad();
+            } catch (error) {
+                abrirAlertaFecha(error.message || 'No se pudo consultar la disponibilidad.');
+                this.disabled = false;
+                return;
+            }
+            if (disponibles === null) {
+                abrirAlertaFecha('La disponibilidad cambió. Vuelve a consultar las fechas y el tipo de habitación.');
+                this.disabled = false;
+                return;
+            }
+            if (cantidadHabitaciones > disponibles) {
+                abrirAlertaFecha(disponibles === 0
+                    ? 'No hay habitaciones de ese tipo disponibles para las fechas elegidas.'
+                    : `Solo hay ${disponibles} habitaciones disponibles para las fechas elegidas.`);
+                this.disabled = false;
+                return;
+            }
+
             inPlanAdultos.value = selectAdultos.value;
             inPlanNinos.value = selectNinos.value;
 
-            const textoOriginal = this.innerHTML;
             this.innerHTML = 'Procesando...';
-            this.disabled = true;
 
             const formData = new FormData();
             formData.append('plan_id', inPlanId.value);
@@ -182,6 +295,8 @@ document.addEventListener("DOMContentLoaded", function () {
             formData.append('salida', inPlanSalida.value);
             formData.append('adultos', inPlanAdultos.value);
             formData.append('ninos', inPlanNinos.value);
+            formData.append('tipo_habitacion', selectTipoHabitacion.value);
+            formData.append('cantidad_habitaciones', String(cantidadHabitaciones));
             if (inPlanCodigoConvenio && inPlanCodigoConvenio.value.trim()) {
                 formData.append('codigo_convenio', inPlanCodigoConvenio.value.trim());
             }

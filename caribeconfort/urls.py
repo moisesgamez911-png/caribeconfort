@@ -16,7 +16,8 @@ from caribeconfort.views import (home, galeria, servicios, habitaciones, imagene
                                 registrar_solicitud_servicio_recepcion,
                                 reglas_descuento_admin, modificar_reserva, procesar_reembolso,
                                 dejar_resena, descargar_factura_reserva, reenviar_confirmacion_reserva,
-                                descargar_certificado_pagos, servir_logo_hotel)
+                                descargar_certificado_pagos, servir_logo_hotel,
+                                disponibilidad_plan)
 
 
 urlpatterns = [
@@ -63,6 +64,7 @@ urlpatterns = [
     path('pagar-reserva/<int:reserva_id>/', pagar_reserva, name='pagar_reserva'),
     path('procesar-pago/<int:reserva_id>/', procesar_pago, name='procesar_pago'),
     path('reservar-plan/crear/', crear_reserva_plan, name='crear_reserva_plan'),
+    path('api/disponibilidad-plan/', disponibilidad_plan, name='disponibilidad_plan'),
     path('servicios/solicitar',solicitar_servicio, name='solicitar_servicio'),
     path('mis-reservas', mis_reservas, name='mis_reservas'),
     path('mis-reservas/certificado-pagos/', descargar_certificado_pagos, name='certificado_pagos'),

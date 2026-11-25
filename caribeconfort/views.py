@@ -24,7 +24,19 @@ from django.core.mail import EmailMessage, get_connection, send_mail
 from django.core.paginator import Paginator
 from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
-from django.db.models import Avg, Count, Exists, OuterRef, Q, Sum
+from django.db.models import (
+    Avg,
+    Case,
+    Count,
+    Exists,
+    F,
+    IntegerField,
+    OuterRef,
+    Q,
+    Sum,
+    Value,
+    When,
+)
 from django.forms import ImageField
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -529,22 +541,35 @@ def planes(request):
     planes_qs = list(
         Planes.objects
         .filter(estado=True)
-        .prefetch_related('caracteristicas')
+        .select_related('tipo_habitacion')
+        .prefetch_related('caracteristicas', 'Servicios_tipos')
         .order_by('orden', 'id')
     )
     planesnombre = Planes.objects.all
-
     todoplanes = Planes.objects.all
 
-
+    tipos_habitacion_reserva = list(TipoHabitacion.objects.order_by('nombre'))
 
     for p in planes_qs:
         p.precio_fmt = f"{int(p.precio):,}".replace(",", ".")
         p.url_imagen = _url_imagen_plan(p)
+        p.precio_desde = (
+            p.tipo_habitacion.tarifa * p.duracion_dias * p.cantidad_habitaciones_incluidas
+            if p.modo_precio == 'habitacion' and p.tipo_habitacion_id
+            else (None if p.modo_precio == 'habitacion' else p.precio)
+        )
+        p.servicios_composicion = [
+            {
+                'servicio': servicio,
+                'cantidad': (p.servicios_cantidades or {}).get(str(servicio.id), 1),
+            }
+            for servicio in p.Servicios_tipos.all()
+        ]
 
     context = {
         'planes': planes_qs,
-        'todoplanes': todoplanes
+        'todoplanes': todoplanes,
+        'tipos_habitacion_reserva': tipos_habitacion_reserva,
     }
     return render(request, 'clientes/planes.html', context)
 
@@ -1860,6 +1885,49 @@ def validar_reserva(request, reserva_id):
             
     return JsonResponse({'success': False, 'message': 'Método no permitido'}, status=405)
 
+def _habitaciones_disponibles_tipo(tipo_habitacion_id, entrada, salida, bloquear=False):
+    habitaciones_qs = Habitaciones.objects.filter(
+        tipohabitacion_id=tipo_habitacion_id,
+    ).exclude(estado__in=['Bloqueada', 'Fuera-de-servicio'])
+    if bloquear:
+        habitaciones_qs = habitaciones_qs.select_for_update()
+    habitaciones_ids = list(habitaciones_qs.values_list('id', flat=True))
+    if not habitaciones_ids:
+        return 0
+
+    estados_activos = ['Pendiente', 'Pagada - Por validar', 'Confirmada', 'En curso']
+    reservas_solapadas = Reservas.objects.filter(
+        habitaciones_id__in=habitaciones_ids,
+        estado__in=estados_activos,
+        fechaentrada__lt=salida,
+        fechasalida__gt=entrada,
+    ).values_list('habitaciones_id', flat=True).distinct()
+    habitaciones_reservadas = set(reservas_solapadas)
+
+    reservas_de_plan = Reservas.objects.filter(
+        tipo_habitacion_solicitado_id=tipo_habitacion_id,
+        planes__isnull=False,
+        estado__in=estados_activos,
+        fechaentrada__lt=salida,
+        fechasalida__gt=entrada,
+    ).values(
+        'habitaciones_id',
+        'cantidad_habitaciones',
+    )
+    unidades_de_plan_sin_asignar = sum(
+        max(
+            reserva['cantidad_habitaciones']
+            - int(reserva['habitaciones_id'] in habitaciones_ids),
+            0,
+        )
+        for reserva in reservas_de_plan
+    )
+    return max(
+        0,
+        len(habitaciones_ids) - len(habitaciones_reservadas) - unidades_de_plan_sin_asignar,
+    )
+
+
 @requiere_login_cliente
 def crear_reserva_plan(request):
     if request.method != 'POST':
@@ -1870,6 +1938,8 @@ def crear_reserva_plan(request):
     salida_str = request.POST.get('salida')
     adultos_str = request.POST.get('adultos', '1')
     ninos_str = request.POST.get('ninos', '0')
+    tipo_habitacion_solicitado = request.POST.get('tipo_habitacion')
+    cantidad_habitaciones_solicitada = request.POST.get('cantidad_habitaciones')
     codigo_ingresado = request.POST.get('codigo_convenio', '').strip()
 
     if not plan_id or not entrada_str or not salida_str:
@@ -1890,6 +1960,11 @@ def crear_reserva_plan(request):
         plan = Planes.objects.get(id=plan_id, estado=True)
     except Planes.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'El plan no existe o no está disponible.'}, status=404)
+    if (salida_fecha - entrada_fecha).days != plan.duracion_dias:
+        return JsonResponse({
+            'ok': False,
+            'error': 'La duración de la reserva debe coincidir con la duración del plan.',
+        }, status=400)
 
     try: 
         adultos = int(adultos_str)
@@ -1904,6 +1979,36 @@ def crear_reserva_plan(request):
     
     if ninos > plan.max_ninos:
          return JsonResponse({'ok': False, 'error': f'Este plan permite máximo {plan.max_ninos} niños.'}, status=400)
+    tipo_habitacion = plan.tipo_habitacion
+    if not tipo_habitacion:
+        return JsonResponse({
+            'ok': False,
+            'error': 'Este plan no tiene configurado un tipo de habitación.',
+        }, status=400)
+    cantidad_habitaciones = plan.cantidad_habitaciones_incluidas
+    try:
+        composicion_no_coincide = (
+            tipo_habitacion_solicitado not in (None, '')
+            and int(tipo_habitacion_solicitado) != tipo_habitacion.pk
+        ) or (
+            cantidad_habitaciones_solicitada not in (None, '')
+            and int(cantidad_habitaciones_solicitada) != cantidad_habitaciones
+        )
+    except ValueError:
+        return JsonResponse({
+            'ok': False,
+            'error': 'La composición de habitaciones del plan no es válida.',
+        }, status=400)
+    if composicion_no_coincide:
+        return JsonResponse({
+            'ok': False,
+            'error': 'La composición del plan cambió. Actualiza la página antes de reservar.',
+        }, status=409)
+    if adultos + ninos > tipo_habitacion.capacidad * cantidad_habitaciones:
+        return JsonResponse({
+            'ok': False,
+            'error': 'La cantidad de habitaciones no tiene capacidad para todos los huéspedes.',
+        }, status=400)
 
     usuario_id = request.session.get('usuario_id')
     try:
@@ -1913,9 +2018,56 @@ def crear_reserva_plan(request):
     
     try:
         with transaction.atomic():
-            plan = Planes.objects.select_for_update().get(id=plan.id, estado=True)
+            plan = Planes.objects.select_for_update().select_related(
+                'tipo_habitacion',
+            ).get(id=plan.id, estado=True)
             if plan.disponibles <= 0:
                 return JsonResponse({'ok': False, 'error': 'Este plan ya no tiene disponibilidad.'}, status=409)
+            tipo_habitacion = plan.tipo_habitacion
+            cantidad_habitaciones = plan.cantidad_habitaciones_incluidas
+            if (salida_fecha - entrada_fecha).days != plan.duracion_dias:
+                return JsonResponse({
+                    'ok': False,
+                    'error': 'La configuración del plan cambió. Actualiza la página antes de reservar.',
+                }, status=409)
+            if not tipo_habitacion:
+                return JsonResponse({
+                    'ok': False,
+                    'error': 'Este plan no tiene configurado un tipo de habitación.',
+                }, status=409)
+            if (
+                tipo_habitacion_solicitado not in (None, '')
+                and int(tipo_habitacion_solicitado) != tipo_habitacion.pk
+            ) or (
+                cantidad_habitaciones_solicitada not in (None, '')
+                and int(cantidad_habitaciones_solicitada) != cantidad_habitaciones
+            ):
+                return JsonResponse({
+                    'ok': False,
+                    'error': 'La composición del plan cambió. Actualiza la página antes de reservar.',
+                }, status=409)
+            if adultos + ninos > tipo_habitacion.capacidad * cantidad_habitaciones:
+                return JsonResponse({
+                    'ok': False,
+                    'error': 'La configuración de habitaciones del plan no tiene capacidad para los huéspedes.',
+                }, status=409)
+            habitaciones_disponibles = _habitaciones_disponibles_tipo(
+                tipo_habitacion.pk,
+                entrada_fecha,
+                salida_fecha,
+                bloquear=True,
+            )
+            if cantidad_habitaciones > habitaciones_disponibles:
+                etiqueta_habitacion = (
+                    'habitación' if habitaciones_disponibles == 1 else 'habitaciones'
+                )
+                return JsonResponse({
+                    'ok': False,
+                    'error': (
+                        f'Solo hay {habitaciones_disponibles} {etiqueta_habitacion} de ese tipo '
+                        'disponibles para las fechas elegidas.'
+                    ),
+                }, status=409)
             convenio = _buscar_convenio_valido(codigo_ingresado, bloquear=True) if codigo_ingresado else None
             if codigo_ingresado and not convenio:
                 return JsonResponse({'ok': False, 'error': 'El código de convenio no existe, venció o ya fue utilizado.'}, status=400)
@@ -1923,10 +2075,24 @@ def crear_reserva_plan(request):
                 return JsonResponse({'ok': False, 'error': 'El código de convenio ya fue aplicado.'}, status=409)
 
             porcentaje = convenio.tipoConvenio.PorcentajeDescuento if convenio else Decimal('0')
-            valor_total = (plan.precio * (Decimal('100') - porcentaje) / Decimal('100')).quantize(Decimal('0.01'))
+            precio_base = (
+                tipo_habitacion.tarifa * plan.duracion_dias * cantidad_habitaciones
+                if plan.modo_precio == 'habitacion'
+                else plan.precio
+            )
+            valor_total = (
+                precio_base * (Decimal('100') - porcentaje) / Decimal('100')
+            ).quantize(Decimal('0.01'))
+            if valor_total > Decimal('9999999999.99'):
+                return JsonResponse({
+                    'ok': False,
+                    'error': 'El valor total supera el máximo permitido para una reserva.',
+                }, status=400)
             reserva = Reservas.objects.create(
                 huespedes=huesped,
                 planes=plan,
+                tipo_habitacion_solicitado=tipo_habitacion,
+                cantidad_habitaciones=cantidad_habitaciones,
                 codigosConvenio=convenio,
                 habitaciones=None,
                 fechaentrada=entrada_fecha,
@@ -1963,6 +2129,31 @@ def crear_reserva_plan(request):
         'reserva_id': reserva.id,
         'total': str(valor_total),
         'descuento': str(porcentaje),
+    })
+
+
+def disponibilidad_plan(request):
+    if request.method != 'GET':
+        return JsonResponse({'ok': False, 'error': 'Método no permitido.'}, status=405)
+
+    try:
+        tipo_habitacion_id = int(request.GET.get('tipo_id', ''))
+        entrada = date.fromisoformat(request.GET.get('entrada', ''))
+        salida = date.fromisoformat(request.GET.get('salida', ''))
+    except (TypeError, ValueError):
+        return JsonResponse({'ok': False, 'error': 'Indica el tipo y fechas válidas.'}, status=400)
+    if tipo_habitacion_id < 1 or entrada < timezone.localdate() or salida <= entrada:
+        return JsonResponse({'ok': False, 'error': 'Indica el tipo y fechas válidas.'}, status=400)
+    if not TipoHabitacion.objects.filter(id=tipo_habitacion_id).exists():
+        return JsonResponse({'ok': False, 'error': 'El tipo de habitación no existe.'}, status=404)
+
+    return JsonResponse({
+        'ok': True,
+        'disponibles': _habitaciones_disponibles_tipo(
+            tipo_habitacion_id,
+            entrada,
+            salida,
+        ),
     })
 
 
@@ -3711,10 +3902,19 @@ def tiposhabitacionadmin(request):
         nombre = request.POST.get('nombre', '').strip()
         descripcion = request.POST.get('descripcion', '').strip()
         imagen = plan.imagen or ''
+        modo_precio = request.POST.get('modo_precio', 'manual')
         try:
-            precio = Decimal(request.POST.get('precio', '').strip())
+            precio_str = request.POST.get('precio', '').strip()
+            precio = (
+                Decimal(precio_str)
+                if precio_str
+                else (plan.precio if plan.pk else Decimal('0.00'))
+            )
             disponibles = int(request.POST.get('disponibles', ''))
             duracion_dias = int(request.POST.get('duracion_dias', ''))
+            cantidad_habitaciones_incluidas = int(
+                request.POST.get('cantidad_habitaciones_incluidas', '1')
+            )
             max_adultos = int(request.POST.get('max_adultos', ''))
             max_ninos = int(request.POST.get('max_ninos', ''))
             orden = int(request.POST.get('orden', ''))
@@ -3724,6 +3924,9 @@ def tiposhabitacionadmin(request):
         except (ValueError, InvalidOperation, AttributeError):
             messages.error(request, 'Ingresa valores numéricos válidos para el tipo de plan.')
             return redirect(destino)
+        if modo_precio not in {'manual', 'habitacion'}:
+            messages.error(request, 'Selecciona una modalidad de precio válida.')
+            return redirect(destino)
 
         servicio_ids = request.POST.getlist('servicios')
         if any(not servicio_id.isdigit() for servicio_id in servicio_ids):
@@ -3732,6 +3935,16 @@ def tiposhabitacionadmin(request):
         servicios = list(Servicios.objects.filter(id__in=servicio_ids))
         if len(servicios) != len(set(servicio_ids)):
             messages.error(request, 'Uno o más servicios seleccionados ya no existen.')
+            return redirect(destino)
+        servicios_cantidades = {}
+        try:
+            for servicio_id in set(servicio_ids):
+                cantidad = int(request.POST.get(f'servicio_cantidad_{servicio_id}', '1'))
+                if cantidad < 1 or cantidad > 1000:
+                    raise ValueError
+                servicios_cantidades[servicio_id] = cantidad
+        except ValueError:
+            messages.error(request, 'Define una cantidad entre 1 y 1000 para cada servicio seleccionado.')
             return redirect(destino)
         caracteristicas = [
             linea.strip()
@@ -3747,18 +3960,20 @@ def tiposhabitacionadmin(request):
                 if tipo_habitacion_id.isdigit()
                 else None
             )
-            if not tipo_habitacion:
-                messages.error(request, 'Selecciona un tipo de habitación válido.')
-                return redirect(destino)
+        if not tipo_habitacion:
+            messages.error(request, 'Selecciona un tipo de habitación válido.')
+            return redirect(destino)
 
         if (
             not nombre or len(nombre) > 100
             or len(descripcion) > 255
             or len(imagen) > 255
             or any(len(caracteristica) > 100 for caracteristica in caracteristicas)
-            or precio <= 0 or precio > Decimal('9999999999.99')
+            or precio < (Decimal('0.01') if modo_precio == 'manual' else Decimal('0.00'))
+            or precio > Decimal('9999999999.99')
             or disponibles < 0 or disponibles > 2147483647
             or duracion_dias < 1 or duracion_dias > 365
+            or cantidad_habitaciones_incluidas < 1 or cantidad_habitaciones_incluidas > 1000
             or max_adultos < 1 or max_adultos > 100
             or max_ninos < 0 or max_ninos > 100
             or orden < 0 or orden > 2147483647
@@ -3783,6 +3998,7 @@ def tiposhabitacionadmin(request):
         plan.nombre = nombre
         plan.descripcion = descripcion
         plan.precio = precio
+        plan.modo_precio = modo_precio
         if ruta_nueva:
             plan.imagen = ruta_nueva
         elif quitar_imagen:
@@ -3792,6 +4008,8 @@ def tiposhabitacionadmin(request):
         plan.estado = request.POST.get('estado') == 'on'
         plan.disponibles = disponibles
         plan.tipo_habitacion = tipo_habitacion
+        plan.cantidad_habitaciones_incluidas = cantidad_habitaciones_incluidas
+        plan.servicios_cantidades = servicios_cantidades
         plan.duracion_dias = duracion_dias
         plan.max_adultos = max_adultos
         plan.max_ninos = max_ninos
@@ -3821,6 +4039,23 @@ def tiposhabitacionadmin(request):
     tipos_habitacion = list(TipoHabitacion.objects.order_by('nombre'))
     for tipo in tipos_habitacion:
         tipo.url_imagen = _url_imagen_local(tipo.imagen)
+    servicios_admin = list(
+        Servicios.objects.select_related('categoria_catalogo').order_by('nombre')
+    )
+    categorias_servicio = list(
+        CategoriaServicio.objects.order_by('nombre').values_list('nombre', flat=True)
+    )
+    categorias_vistas = {categoria.casefold() for categoria in categorias_servicio}
+    for servicio in servicios_admin:
+        servicio.categoria_plan = (
+            servicio.categoria_catalogo.nombre
+            if servicio.categoria_catalogo_id
+            else (servicio.categoria or 'Otros')
+        )
+        if servicio.categoria_plan.casefold() not in categorias_vistas:
+            categorias_servicio.append(servicio.categoria_plan)
+            categorias_vistas.add(servicio.categoria_plan.casefold())
+    categorias_servicio.sort(key=str.casefold)
     planes_admin = list(Planes.objects.select_related(
             'tipo_habitacion',
         ).prefetch_related(
@@ -3829,11 +4064,24 @@ def tiposhabitacionadmin(request):
         ).order_by('orden', 'id'))
     for plan in planes_admin:
         plan.url_imagen = _url_imagen_local(plan.imagen)
+        servicios_seleccionados = {
+            servicio.id for servicio in plan.Servicios_tipos.all()
+        }
+        plan.servicios_plan = [
+            {
+                'servicio': servicio,
+                'cantidad': (plan.servicios_cantidades or {}).get(str(servicio.id), 1),
+            }
+            for servicio in servicios_admin
+            if servicio.id in servicios_seleccionados
+        ]
 
     return render(request, 'admini/tipos_habitacion.html', {
         'tipos_habitacion': tipos_habitacion,
         'planes_admin': planes_admin,
-        'servicios_admin': Servicios.objects.order_by('nombre'),
+        'servicios_admin': servicios_admin,
+        'categorias_servicio': categorias_servicio,
+        'servicios_plan_nuevo': [],
         'tab_tipos': 'planes' if request.GET.get('tab') == 'planes' else 'habitaciones',
         'nombre': request.session.get('usuario_nom', 'Administrador'),
         'rol': request.session.get('rol', 'Administrador'),
@@ -5612,9 +5860,15 @@ def administrador(request):
             fechaentrada__lte=dia_actual,
             fechasalida__gt=dia_actual,
             estado__in=estados_proyectados,
-            habitaciones__isnull=False
         ).aggregate(
-            total=Count('habitaciones_id', distinct=True)
+            total=Sum(
+                Case(
+                    When(habitaciones__isnull=False, then=Value(1)),
+                    When(planes__isnull=False, then=F('cantidad_habitaciones')),
+                    default=Value(0),
+                    output_field=IntegerField(),
+                )
+            )
         )['total'] or 0
 
         porcentaje_real = round(

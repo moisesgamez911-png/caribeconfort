@@ -536,6 +536,11 @@ class AdminNotificationContextTests(TestCase):
 class AdminPlanTypeManagementTests(TestCase):
     def setUp(self):
         self.client = Client()
+        self.tipo_habitacion = TipoHabitacion.objects.create(
+            nombre='Tipo plan',
+            capacidad=2,
+            tarifa=Decimal('50000.00'),
+        )
         session = self.client.session
         session['rol'] = 'Administrador'
         session['usuario_nom'] = 'Admin'
@@ -560,10 +565,8 @@ class AdminPlanTypeManagementTests(TestCase):
         self.assertContains(response, 'Tipos de planes')
         self.assertContains(response, 'Plan visible')
         self.assertContains(response, 'Desayuno incluido')
-        self.assertContains(
-            response,
-            f'<option value="{servicio.id}" selected>Desayuno incluido</option>',
-        )
+        self.assertContains(response, f'data-service-id="{servicio.id}"')
+        self.assertContains(response, f'name="servicios" value="{servicio.id}"')
         self.assertContains(response, 'adNotificationToggle')
 
     def test_create_edit_and_delete_unreferenced_plan_type(self):
@@ -576,6 +579,8 @@ class AdminPlanTypeManagementTests(TestCase):
             'imagen': 'planes/caribe.jpg',
             'disponibles': '8',
             'duracion_dias': '3',
+            'tipo_habitacion': str(self.tipo_habitacion.id),
+            'cantidad_habitaciones_incluidas': '2',
             'max_adultos': '2',
             'max_ninos': '1',
             'orden': '2',
@@ -592,6 +597,8 @@ class AdminPlanTypeManagementTests(TestCase):
         plan = Planes.objects.get(nombre='Plan Caribe')
         self.assertEqual(plan.precio, Decimal('250000.00'))
         self.assertEqual(plan.disponibles, 8)
+        self.assertEqual(plan.tipo_habitacion, self.tipo_habitacion)
+        self.assertEqual(plan.cantidad_habitaciones_incluidas, 2)
         self.assertEqual(plan.caracteristicas.count(), 2)
 
         datos.update({
@@ -627,6 +634,138 @@ class AdminPlanTypeManagementTests(TestCase):
         )
         self.assertFalse(Planes.objects.filter(id=plan.id).exists())
 
+    def test_plan_price_mode_can_be_changed_and_manual_total_edited(self):
+        response = self.client.post('/admintiposhabitacion', {
+            'accion': 'crear_plan',
+            'tab': 'planes',
+            'nombre': 'Plan tarifa habitación',
+            'precio': '',
+            'modo_precio': 'habitacion',
+            'tipo_habitacion': str(self.tipo_habitacion.id),
+            'cantidad_habitaciones_incluidas': '1',
+            'disponibles': '5',
+            'duracion_dias': '2',
+            'max_adultos': '2',
+            'max_ninos': '0',
+            'orden': '0',
+            'caracteristicas': '',
+            'estado': 'on',
+        })
+
+        self.assertRedirects(
+            response,
+            '/admintiposhabitacion?tab=planes',
+            fetch_redirect_response=False,
+        )
+        plan = Planes.objects.get(nombre='Plan tarifa habitación')
+        self.assertEqual(plan.modo_precio, 'habitacion')
+        self.assertEqual(plan.precio, Decimal('0.00'))
+
+        response = self.client.post('/admintiposhabitacion', {
+            'accion': 'editar_plan',
+            'tab': 'planes',
+            'plan_id': str(plan.id),
+            'nombre': plan.nombre,
+            'precio': '175000',
+            'modo_precio': 'manual',
+            'tipo_habitacion': str(self.tipo_habitacion.id),
+            'cantidad_habitaciones_incluidas': '1',
+            'disponibles': '5',
+            'duracion_dias': '2',
+            'max_adultos': '2',
+            'max_ninos': '0',
+            'orden': '0',
+            'caracteristicas': '',
+            'estado': 'on',
+        })
+
+        plan.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(plan.modo_precio, 'manual')
+        self.assertEqual(plan.precio, Decimal('175000.00'))
+
+    def test_plan_saves_and_displays_room_and_service_quantities(self):
+        servicio = Servicios.objects.create(
+            nombre='Desayuno',
+            precio=Decimal('12000.00'),
+        )
+        response = self.client.post('/admintiposhabitacion', {
+            'accion': 'crear_plan',
+            'tab': 'planes',
+            'nombre': 'Plan con cantidades',
+            'precio': '300000',
+            'modo_precio': 'manual',
+            'disponibles': '5',
+            'duracion_dias': '2',
+            'tipo_habitacion': str(self.tipo_habitacion.id),
+            'cantidad_habitaciones_incluidas': '2',
+            'servicios': [str(servicio.id)],
+            f'servicio_cantidad_{servicio.id}': '3',
+            'max_adultos': '2',
+            'max_ninos': '0',
+            'orden': '0',
+            'caracteristicas': '',
+            'estado': 'on',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        plan = Planes.objects.get(nombre='Plan con cantidades')
+        self.assertEqual(plan.cantidad_habitaciones_incluidas, 2)
+        self.assertEqual(plan.Servicios_tipos.get(), servicio)
+        self.assertEqual(plan.servicios_cantidades, {str(servicio.id): 3})
+
+        response = self.client.get('/admintiposhabitacion?tab=planes')
+        self.assertContains(
+            response,
+            f'name="servicio_cantidad_{servicio.id}" type="number" min="1" max="1000" value="3"',
+        )
+        self.assertContains(
+            self.client.get('/planes'),
+            '3 × Desayuno',
+        )
+
+        response = self.client.post('/admintiposhabitacion', {
+            'accion': 'editar_plan',
+            'tab': 'planes',
+            'plan_id': str(plan.id),
+            'nombre': plan.nombre,
+            'precio': '300000',
+            'modo_precio': 'manual',
+            'disponibles': '5',
+            'duracion_dias': '2',
+            'tipo_habitacion': str(self.tipo_habitacion.id),
+            'cantidad_habitaciones_incluidas': '3',
+            'servicios': [str(servicio.id)],
+            f'servicio_cantidad_{servicio.id}': '4',
+            'max_adultos': '2',
+            'max_ninos': '0',
+            'orden': '0',
+            'caracteristicas': '',
+            'estado': 'on',
+        })
+
+        plan.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(plan.cantidad_habitaciones_incluidas, 3)
+        self.assertEqual(plan.servicios_cantidades, {str(servicio.id): 4})
+
+    def test_service_picker_groups_services_by_category(self):
+        categoria = CategoriaServicio.objects.create(nombre='Bienestar')
+        servicio = Servicios.objects.create(
+            nombre='Masaje relajante',
+            precio=Decimal('50000.00'),
+            categoria='Bienestar',
+            categoria_catalogo=categoria,
+        )
+
+        response = self.client.get('/admintiposhabitacion?tab=planes')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-service-category')
+        self.assertContains(response, 'data-service-select')
+        self.assertContains(response, 'data-category="Bienestar"')
+        self.assertContains(response, 'Masaje relajante')
+
     def test_editing_plan_saves_new_image_and_renders_its_media_url(self):
         plan = Planes.objects.create(
             nombre='Plan Caribe',
@@ -652,6 +791,8 @@ class AdminPlanTypeManagementTests(TestCase):
                 'imagen': imagen_nueva,
                 'disponibles': '8',
                 'duracion_dias': '3',
+                'tipo_habitacion': str(self.tipo_habitacion.id),
+                'cantidad_habitaciones_incluidas': '1',
                 'max_adultos': '2',
                 'max_ninos': '1',
                 'orden': '2',
@@ -696,6 +837,20 @@ class AdminPlanTypeManagementTests(TestCase):
 class PlanReservationCreationTests(TestCase):
     def setUp(self):
         self.huesped = crear_huesped_prueba()
+        self.tipo_habitacion = TipoHabitacion.objects.create(
+            nombre='Habitación plan',
+            capacidad=3,
+            tarifa=Decimal('50000.00'),
+        )
+        self.habitaciones = [
+            Habitaciones.objects.create(
+                tipohabitacion=self.tipo_habitacion,
+                numero=f'P-{numero}',
+                capacidad=3,
+                precio=Decimal('50000.00'),
+            )
+            for numero in (101, 102)
+        ]
         self.plan = Planes.objects.create(
             nombre='Plan de prueba',
             precio=Decimal('250000.00'),
@@ -703,6 +858,8 @@ class PlanReservationCreationTests(TestCase):
             max_adultos=2,
             max_ninos=1,
             disponibles=4,
+            tipo_habitacion=self.tipo_habitacion,
+            cantidad_habitaciones_incluidas=1,
         )
         session = self.client.session
         session['usuario_id'] = self.huesped.usuarios_id
@@ -722,6 +879,15 @@ class PlanReservationCreationTests(TestCase):
             f'id="planEntrada" class="form-control-modalentrada" min="{timezone.localdate():%Y-%m-%d}"',
         )
 
+    def test_booking_modal_offers_room_type_and_quantity(self):
+        response = self.client.get('/planes')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="planTipoHabitacion"')
+        self.assertContains(response, 'id="planCantidadHabitaciones"')
+        self.assertContains(response, 'data-tarifa="50000.00"')
+        self.assertContains(response, 'Habitación plan')
+
     def test_guest_can_create_future_plan_reservation(self):
         entrada = timezone.localdate() + timedelta(days=5)
 
@@ -731,12 +897,16 @@ class PlanReservationCreationTests(TestCase):
             'salida': (entrada + timedelta(days=self.plan.duracion_dias)).isoformat(),
             'adultos': '2',
             'ninos': '1',
+            'tipo_habitacion': str(self.tipo_habitacion.id),
+            'cantidad_habitaciones': '1',
         })
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()['ok'])
         reserva = Reservas.objects.get(id=response.json()['reserva_id'])
         self.assertEqual(reserva.planes, self.plan)
+        self.assertEqual(reserva.tipo_habitacion_solicitado, self.tipo_habitacion)
+        self.assertEqual(reserva.cantidad_habitaciones, 1)
         self.assertEqual(reserva.fechaentrada, entrada)
         self.assertEqual(reserva.estado, 'Pendiente')
         self.assertEqual(
@@ -755,6 +925,8 @@ class PlanReservationCreationTests(TestCase):
             'salida': (entrada + timedelta(days=self.plan.duracion_dias)).isoformat(),
             'adultos': '1',
             'ninos': '0',
+            'tipo_habitacion': str(self.tipo_habitacion.id),
+            'cantidad_habitaciones': '1',
         })
 
         self.assertEqual(response.status_code, 200)
@@ -776,6 +948,8 @@ class PlanReservationCreationTests(TestCase):
                 'salida': (entrada + timedelta(days=self.plan.duracion_dias)).isoformat(),
                 'adultos': '1',
                 'ninos': '0',
+                'tipo_habitacion': str(self.tipo_habitacion.id),
+                'cantidad_habitaciones': '1',
             })
 
         self.assertEqual(response.status_code, 500)
@@ -796,11 +970,205 @@ class PlanReservationCreationTests(TestCase):
             'salida': (entrada + timedelta(days=self.plan.duracion_dias)).isoformat(),
             'adultos': '1',
             'ninos': '0',
+            'tipo_habitacion': str(self.tipo_habitacion.id),
+            'cantidad_habitaciones': '1',
         })
 
         self.assertEqual(response.status_code, 400)
         self.assertFalse(response.json()['ok'])
         self.assertFalse(Reservas.objects.filter(planes=self.plan).exists())
+
+    def test_room_based_price_multiplies_rate_by_plan_duration_and_room_count(self):
+        self.plan.modo_precio = 'habitacion'
+        self.plan.cantidad_habitaciones_incluidas = 2
+        self.plan.save(update_fields=['modo_precio', 'cantidad_habitaciones_incluidas'])
+        entrada = timezone.localdate() + timedelta(days=5)
+
+        response = self.client.post('/reservar-plan/crear/', {
+            'plan_id': str(self.plan.id),
+            'entrada': entrada.isoformat(),
+            'salida': (entrada + timedelta(days=self.plan.duracion_dias)).isoformat(),
+            'adultos': '2',
+            'ninos': '1',
+            'tipo_habitacion': str(self.tipo_habitacion.id),
+            'cantidad_habitaciones': '2',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        reserva = Reservas.objects.get(id=response.json()['reserva_id'])
+        self.assertEqual(reserva.valortotal, Decimal('300000.00'))
+        self.assertEqual(Pagos.objects.get(reservas=reserva).valor, Decimal('150000.00'))
+
+    def test_fixed_manual_price_does_not_change_with_room_count(self):
+        self.plan.cantidad_habitaciones_incluidas = 2
+        self.plan.save(update_fields=['cantidad_habitaciones_incluidas'])
+        entrada = timezone.localdate() + timedelta(days=5)
+
+        response = self.client.post('/reservar-plan/crear/', {
+            'plan_id': str(self.plan.id),
+            'entrada': entrada.isoformat(),
+            'salida': (entrada + timedelta(days=self.plan.duracion_dias)).isoformat(),
+            'adultos': '2',
+            'ninos': '1',
+            'tipo_habitacion': str(self.tipo_habitacion.id),
+            'cantidad_habitaciones': '2',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        reserva = Reservas.objects.get(id=response.json()['reserva_id'])
+        self.assertEqual(reserva.valortotal, Decimal('250000.00'))
+
+    def test_booking_rejects_more_rooms_than_available_for_selected_dates(self):
+        self.plan.cantidad_habitaciones_incluidas = 2
+        self.plan.save(update_fields=['cantidad_habitaciones_incluidas'])
+        entrada = timezone.localdate() + timedelta(days=5)
+        reserva_existente = crear_reserva_prueba(self.huesped, fechaentrada=entrada)
+        reserva_existente.habitaciones = self.habitaciones[0]
+        reserva_existente.fechasalida = entrada + timedelta(days=2)
+        reserva_existente.save(update_fields=['habitaciones', 'fechasalida'])
+
+        response = self.client.post('/reservar-plan/crear/', {
+            'plan_id': str(self.plan.id),
+            'entrada': entrada.isoformat(),
+            'salida': (entrada + timedelta(days=self.plan.duracion_dias)).isoformat(),
+            'adultos': '2',
+            'ninos': '1',
+            'tipo_habitacion': str(self.tipo_habitacion.id),
+            'cantidad_habitaciones': '2',
+        })
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn('Solo hay 1 habitación', response.json()['error'])
+        self.assertFalse(Reservas.objects.filter(planes=self.plan).exists())
+
+    def test_capacity_is_validated_against_room_type_and_quantity(self):
+        self.tipo_habitacion.capacidad = 2
+        self.tipo_habitacion.save(update_fields=['capacidad'])
+        entrada = timezone.localdate() + timedelta(days=5)
+
+        response = self.client.post('/reservar-plan/crear/', {
+            'plan_id': str(self.plan.id),
+            'entrada': entrada.isoformat(),
+            'salida': (entrada + timedelta(days=self.plan.duracion_dias)).isoformat(),
+            'adultos': '2',
+            'ninos': '1',
+            'tipo_habitacion': str(self.tipo_habitacion.id),
+            'cantidad_habitaciones': '1',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Reservas.objects.filter(planes=self.plan).exists())
+
+    def test_guest_cannot_change_the_fixed_room_quantity_of_a_plan(self):
+        entrada = timezone.localdate() + timedelta(days=5)
+
+        response = self.client.post('/reservar-plan/crear/', {
+            'plan_id': str(self.plan.id),
+            'entrada': entrada.isoformat(),
+            'salida': (entrada + timedelta(days=self.plan.duracion_dias)).isoformat(),
+            'adultos': '2',
+            'ninos': '1',
+            'tipo_habitacion': str(self.tipo_habitacion.id),
+            'cantidad_habitaciones': '2',
+        })
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn('composición del plan cambió', response.json()['error'])
+        self.assertFalse(Reservas.objects.filter(planes=self.plan).exists())
+
+    def test_availability_endpoint_subtracts_room_and_plan_reservations(self):
+        entrada = timezone.localdate() + timedelta(days=5)
+        reserva_habitacion = crear_reserva_prueba(self.huesped, fechaentrada=entrada)
+        reserva_habitacion.habitaciones = self.habitaciones[0]
+        reserva_habitacion.fechasalida = entrada + timedelta(days=2)
+        reserva_habitacion.save(update_fields=['habitaciones', 'fechasalida'])
+
+        response = self.client.get('/api/disponibilidad-plan/', {
+            'tipo_id': self.tipo_habitacion.id,
+            'entrada': entrada.isoformat(),
+            'salida': (entrada + timedelta(days=3)).isoformat(),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['disponibles'], 1)
+
+        reserva_plan = crear_reserva_prueba(self.huesped, fechaentrada=entrada)
+        reserva_plan.planes = self.plan
+        reserva_plan.tipo_habitacion_solicitado = self.tipo_habitacion
+        reserva_plan.cantidad_habitaciones = 1
+        reserva_plan.fechasalida = entrada + timedelta(days=3)
+        reserva_plan.save(update_fields=[
+            'planes',
+            'tipo_habitacion_solicitado',
+            'cantidad_habitaciones',
+            'fechasalida',
+        ])
+
+        response = self.client.get('/api/disponibilidad-plan/', {
+            'tipo_id': self.tipo_habitacion.id,
+            'entrada': entrada.isoformat(),
+            'salida': (entrada + timedelta(days=3)).isoformat(),
+        })
+        self.assertEqual(response.json()['disponibles'], 0)
+
+
+class OccupancyProjectionTests(TestCase):
+    def test_projected_occupancy_includes_requested_plan_room_quantity(self):
+        huesped = crear_huesped_prueba()
+        tipo = TipoHabitacion.objects.create(
+            nombre='Habitación ocupación',
+            capacidad=2,
+            tarifa=Decimal('80000.00'),
+        )
+        habitaciones = [
+            Habitaciones.objects.create(
+                tipohabitacion=tipo,
+                numero=f'O-{numero}',
+                capacidad=2,
+                precio=Decimal('80000.00'),
+            )
+            for numero in (201, 202, 203)
+        ]
+        hoy = timezone.localdate()
+        confirmada = crear_reserva_prueba(huesped, fechaentrada=hoy)
+        confirmada.habitaciones = habitaciones[0]
+        confirmada.fechasalida = hoy + timedelta(days=2)
+        confirmada.save(update_fields=['habitaciones', 'fechasalida'])
+
+        en_curso = crear_reserva_prueba(huesped, fechaentrada=hoy)
+        en_curso.habitaciones = habitaciones[1]
+        en_curso.estado = 'En curso'
+        en_curso.fechasalida = hoy + timedelta(days=2)
+        en_curso.save(update_fields=['habitaciones', 'estado', 'fechasalida'])
+
+        plan = Planes.objects.create(
+            nombre='Plan de varias habitaciones',
+            precio=Decimal('100000.00'),
+        )
+        reserva_plan = crear_reserva_prueba(huesped, fechaentrada=hoy)
+        reserva_plan.planes = plan
+        reserva_plan.tipo_habitacion_solicitado = tipo
+        reserva_plan.cantidad_habitaciones = 2
+        reserva_plan.fechasalida = hoy + timedelta(days=2)
+        reserva_plan.save(update_fields=[
+            'planes',
+            'tipo_habitacion_solicitado',
+            'cantidad_habitaciones',
+            'fechasalida',
+        ])
+
+        request = RequestFactory().get('/administrador')
+        request.session = {'rol': 'Administrador'}
+        with patch('caribeconfort.views.finalizar_reservas_vencidas'), patch(
+            'caribeconfort.views.render',
+            return_value=HttpResponse(),
+        ) as render_view:
+            response = administrador(request)
+
+        self.assertEqual(response.status_code, 200)
+        dia_actual = render_view.call_args.args[2]['datos_ocupacion_semanal'][hoy.weekday()]
+        self.assertEqual(dia_actual['real'], 33)
+        self.assertEqual(dia_actual['proyectada'], 100)
 
 
 class ReservationDashboardCountTests(TestCase):
@@ -1360,10 +1728,16 @@ class AdminImageRemovalTests(TestCase):
 
     def test_plan_image_can_be_removed_without_uploading_a_replacement(self):
         imagen_anterior = 'uploads/planes/anterior.jpg'
+        tipo_habitacion = TipoHabitacion.objects.create(
+            nombre='Tipo plan',
+            capacidad=2,
+            tarifa=Decimal('50000.00'),
+        )
         plan = Planes.objects.create(
             nombre='Escapada',
             precio=Decimal('200.00'),
             imagen=imagen_anterior,
+            tipo_habitacion=tipo_habitacion,
         )
         datos = {
             'accion': 'editar_plan',
@@ -1374,6 +1748,8 @@ class AdminImageRemovalTests(TestCase):
             'precio': '200.00',
             'disponibles': '10',
             'duracion_dias': '5',
+            'tipo_habitacion': str(tipo_habitacion.id),
+            'cantidad_habitaciones_incluidas': '1',
             'max_adultos': '4',
             'max_ninos': '4',
             'orden': '0',

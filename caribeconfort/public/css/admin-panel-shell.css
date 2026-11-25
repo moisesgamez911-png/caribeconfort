@@ -1150,9 +1150,50 @@ html[data-theme="dark"] body:not(.admin-dashboard-page) .reception-card tbody tr
     }
 }
 
-.plan-type-dialog {
-    width: min(760px, calc(100vw - 24px));
-    max-width: 760px;
+.plan-type-dialog[open] {
+    display: flex;
+    flex-direction: column;
+    width: min(900px, calc(100vw - 32px));
+    max-width: 900px;
+    max-height: min(90vh, 880px);
+    overflow: hidden;
+    padding: 0;
+    border-color: #D7E0DE;
+    border-radius: 16px;
+    background: #fff;
+    color: #263D3E;
+    box-shadow: 0 28px 90px rgba(13, 39, 39, .28);
+}
+
+.plan-type-dialog .adm-dialog-heading {
+    flex: none;
+    margin: 0;
+    padding: 20px 24px;
+    border-bottom: 1px solid #E5EBE9;
+}
+
+.plan-type-form {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.plan-type-fields {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    align-content: start;
+    gap: 16px;
+    padding: 22px 24px;
+}
+
+.plan-type-form .adm-form-actions {
+    flex: none;
+    margin: 0;
+    padding: 16px 24px;
+    border-top: 1px solid #E5EBE9;
+    background: #F8FAF9;
 }
 
 body:not(.admin-dashboard-page) .rv-layout .dash-card > .dash-card-head {
@@ -1342,8 +1383,257 @@ html[data-theme="dark"] body:not(.admin-dashboard-page) table button img {
     resize: vertical;
 }
 
-.plan-type-fields .plan-services-select {
-    min-height: 112px;
+.plan-type-fields input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    min-height: 18px;
+    padding: 0;
+    accent-color: #16484B;
+}
+
+.plan-active-field > span:last-child {
+    justify-self: start;
+    gap: 9px;
+}
+
+.plan-service-builder {
+    padding: 16px;
+    border: 1px solid #DDE6E3;
+    border-radius: 12px;
+    background: #FAFCFB;
+}
+
+.plan-service-builder > .plan-section-title {
+    color: #183F40;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.plan-service-picker {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto;
+    align-items: end;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.plan-service-picker-field {
+    display: grid;
+    min-width: 0;
+    gap: 6px;
+}
+
+.plan-service-picker-field label,
+.plan-service-item > label {
+    color: #465D5C;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.plan-service-picker select,
+.plan-service-item input[type="number"] {
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
+    padding: 8px 10px;
+    border: 1px solid #CBD8D4;
+    border-radius: 8px;
+    background: #fff;
+    color: #263D3E;
+    font: inherit;
+    font-size: 13px;
+}
+
+.plan-service-picker .adm-button {
+    white-space: nowrap;
+}
+
+.plan-service-picker .adm-button:disabled {
+    cursor: not-allowed;
+    opacity: .55;
+}
+
+.plan-service-help,
+.plan-service-feedback,
+.plan-service-summary {
+    margin: 10px 0 0;
+    color: #647977;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.plan-service-feedback:empty {
+    display: none;
+}
+
+.plan-service-feedback:not(:empty) {
+    color: #9A5A18;
+}
+
+.plan-service-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.plan-service-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 70px 100px 36px;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #E0E8E5;
+    border-radius: 9px;
+    background: #fff;
+}
+
+.plan-service-item-info {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+}
+
+.plan-service-item-info strong {
+    overflow: hidden;
+    color: #294B4B;
+    font-size: 13px;
+    text-overflow: ellipsis;
+}
+
+.plan-service-item-info small {
+    color: #718582;
+    font-size: 11px;
+}
+
+.plan-service-item input[type="number"] {
+    min-height: 36px;
+    padding: 6px 9px;
+}
+
+.plan-service-remove {
+    width: 34px;
+    height: 34px;
+    border: 1px solid #F0D8D6;
+    border-radius: 8px;
+    background: #FFF8F7;
+    color: #A8433C;
+    font-size: 21px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.plan-service-remove:hover {
+    background: #FCEAE8;
+}
+
+.plan-service-empty {
+    margin: 0;
+    padding: 12px;
+    border: 1px dashed #D3DEDA;
+    border-radius: 9px;
+    color: #718582;
+    font-size: 12px;
+    text-align: center;
+}
+
+.plan-service-summary {
+    padding-top: 9px;
+    border-top: 1px solid #E5EBE9;
+    color: #315B56;
+    font-weight: 600;
+}
+
+html[data-theme="dark"] .plan-type-dialog[open] {
+    border-color: #465351;
+    background: #242D2C;
+    color: #F3F6F5;
+}
+
+html[data-theme="dark"] .plan-type-dialog .adm-dialog-heading,
+html[data-theme="dark"] .plan-type-form .adm-form-actions,
+html[data-theme="dark"] .plan-service-summary {
+    border-color: #3B4947;
+}
+
+html[data-theme="dark"] .plan-type-form .adm-form-actions,
+html[data-theme="dark"] .plan-service-builder {
+    background: #202827;
+}
+
+html[data-theme="dark"] .plan-service-builder,
+html[data-theme="dark"] .plan-service-item {
+    border-color: #3B4947;
+}
+
+html[data-theme="dark"] .plan-service-builder > .plan-section-title,
+html[data-theme="dark"] .plan-service-item-info strong {
+    color: #E5EFED;
+}
+
+html[data-theme="dark"] .plan-service-picker-field label,
+html[data-theme="dark"] .plan-service-item > label,
+html[data-theme="dark"] .plan-service-help,
+html[data-theme="dark"] .plan-service-feedback,
+html[data-theme="dark"] .plan-service-summary,
+html[data-theme="dark"] .plan-service-item-info small {
+    color: #B5C4C1;
+}
+
+html[data-theme="dark"] .plan-service-picker select,
+html[data-theme="dark"] .plan-service-item input[type="number"] {
+    border-color: #465351;
+    background: #283130;
+    color: #F3F6F5;
+}
+
+@media (max-width: 700px) {
+    .plan-type-dialog[open] {
+        width: calc(100vw - 20px);
+        max-height: 94vh;
+        border-radius: 12px;
+    }
+
+    .plan-type-dialog .adm-dialog-heading {
+        padding: 16px;
+    }
+
+    .plan-type-fields {
+        padding: 16px;
+    }
+
+    .plan-type-form .adm-form-actions {
+        padding: 12px 16px;
+    }
+
+    .plan-service-picker {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .plan-service-picker .adm-button {
+        width: 100%;
+    }
+
+    .plan-service-item {
+        grid-template-columns: minmax(0, 1fr) 82px 36px;
+        gap: 8px;
+    }
+
+    .plan-service-item-info {
+        grid-column: 1 / 3;
+    }
+
+    .plan-service-item > label {
+        grid-column: 1;
+    }
+
+    .plan-service-item input[type="number"] {
+        grid-column: 2;
+    }
+
+    .plan-service-remove {
+        grid-column: 3;
+        grid-row: 1 / 3;
+    }
 }
 
 .plan-active-field {

@@ -307,6 +307,16 @@ html {
     line-height: 1.6;
 }
 
+.plan-description-includes {
+    display: block;
+    margin-top: 6px;
+    color: #315B56;
+}
+
+.plan-description-includes strong {
+    color: #16484B;
+}
+
 .plan-features {
     display: grid;
     gap: 10px;

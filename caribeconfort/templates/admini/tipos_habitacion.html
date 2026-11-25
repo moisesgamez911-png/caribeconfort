@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{% static 'css/barra-encabezado.css' %}?v=107">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'css/administrador/modulos.css' %}">
-    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=13">
+    <link rel="stylesheet" href="{% static 'css/admin-panel-shell.css' %}?v=14">
 </head>
 <body>
 {% include 'inc/admin_header.html' %}
@@ -74,7 +74,7 @@
                         {% for plan in planes_admin %}
                         <tr>
                             <td><strong>{{ plan.nombre|reparar_texto }}</strong><small class="adm-table-subtext">{{ plan.descripcion|default:"—"|reparar_texto }}</small></td>
-                            <td>${{ plan.precio|precio:2 }}</td>
+                            <td>{% if plan.modo_precio == 'habitacion' %}{% trans "Automático" %}{% else %}${{ plan.precio|precio:2 }}{% endif %}<small class="adm-table-subtext">{% if plan.modo_precio == 'habitacion' %}{% trans "Según habitación, días y cantidad" %}{% else %}{% trans "Precio manual fijo" %}{% endif %}</small></td>
                             <td>{{ plan.duracion_dias }} {% trans "días" %}</td>
                             <td>{{ plan.disponibles }}</td>
                             <td>{% if plan.estado %}{% trans "Activo" %}{% else %}{% trans "Inactivo" %}{% endif %}</td>
@@ -98,7 +98,7 @@
             <header class="adm-dialog-heading"><div><p class="adm-eyebrow">{% trans "CATÁLOGO DE PLANES" %}</p><h2 id="tituloEditarPlan{{ plan.id }}">{% trans "Editar tipo de plan" %}</h2></div><button class="room-modal-close" type="button" data-close-plan aria-label="{% trans 'Cerrar' %}">&times;</button></header>
             <form method="post" enctype="multipart/form-data" class="plan-type-form">
                 {% csrf_token %}<input type="hidden" name="accion" value="editar_plan"><input type="hidden" name="plan_id" value="{{ plan.id }}"><input type="hidden" name="tab" value="planes">
-                {% include "admini/plan_tipo_campos.html" with form_id=plan.id plan=plan %}
+                {% include "admini/plan_tipo_campos.html" with form_id=plan.id plan=plan servicios_plan=plan.servicios_plan servicios_admin=servicios_admin categorias_servicio=categorias_servicio %}
                 <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-plan>{% trans "Cancelar" %}</button><button class="adm-button" type="submit">{% trans "Guardar cambios" %}</button></footer>
             </form>
         </dialog>
@@ -124,7 +124,7 @@
     <header class="adm-dialog-heading"><div><p class="adm-eyebrow">{% trans "CATÁLOGO DE PLANES" %}</p><h2 id="tituloTipoPlan">{% trans "Crear tipo de plan" %}</h2></div><button class="room-modal-close" type="button" data-close-plan aria-label="{% trans 'Cerrar' %}">&times;</button></header>
     <form method="post" enctype="multipart/form-data" class="plan-type-form">
         {% csrf_token %}<input type="hidden" name="accion" value="crear_plan"><input type="hidden" name="tab" value="planes">
-        {% include "admini/plan_tipo_campos.html" with form_id="nuevoPlan" %}
+        {% include "admini/plan_tipo_campos.html" with form_id="nuevoPlan" servicios_plan=servicios_plan_nuevo servicios_admin=servicios_admin categorias_servicio=categorias_servicio %}
         <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-plan>{% trans "Cancelar" %}</button><button class="adm-button" type="submit">{% trans "Crear tipo de plan" %}</button></footer>
     </form>
 </dialog>
@@ -146,6 +146,154 @@
     });
     document.querySelectorAll('[data-close-plan]').forEach((button) => {
         button.addEventListener('click', () => button.closest('dialog').close());
+    });
+    document.querySelectorAll('.plan-type-form').forEach((form) => {
+        const modoPrecio = form.querySelector('[name="modo_precio"]');
+        const precioManual = form.querySelector('[name="precio"]');
+        const campoPrecio = precioManual.closest('[data-manual-price-field]');
+        const actualizarCampoPrecio = () => {
+            const manual = modoPrecio.value === 'manual';
+            campoPrecio.hidden = !manual;
+            campoPrecio.style.display = manual ? '' : 'none';
+            precioManual.disabled = !manual;
+            precioManual.required = manual;
+        };
+        modoPrecio.addEventListener('change', actualizarCampoPrecio);
+        actualizarCampoPrecio();
+    });
+    document.querySelectorAll('[data-plan-service-builder]').forEach((builder) => {
+        const categorySelect = builder.querySelector('[data-service-category]');
+        const serviceSelect = builder.querySelector('[data-service-select]');
+        const addButton = builder.querySelector('[data-add-service]');
+        const list = builder.querySelector('[data-service-list]');
+        const emptyMessage = builder.querySelector('[data-service-empty]');
+        const feedback = builder.querySelector('[data-service-feedback]');
+        const summary = builder.querySelector('[data-service-summary]');
+        const options = Array.from(serviceSelect.options).slice(1);
+
+        const updateServicePicker = () => {
+            const category = categorySelect.value;
+            const included = new Set(
+                Array.from(list.querySelectorAll('[data-service-id]'))
+                    .map((item) => item.dataset.serviceId)
+            );
+            let availableCount = 0;
+            options.forEach((option) => {
+                const matchesCategory = !category || option.dataset.category === category;
+                const available = matchesCategory && !included.has(option.value);
+                option.hidden = !matchesCategory;
+                option.disabled = !available;
+                if (available) availableCount += 1;
+            });
+            if (serviceSelect.value && serviceSelect.selectedOptions[0].disabled) {
+                serviceSelect.value = '';
+            }
+            serviceSelect.disabled = availableCount === 0;
+            addButton.disabled = availableCount === 0;
+            if (availableCount === 0) {
+                feedback.textContent = options.length === 0
+                    ? 'Aún no hay servicios registrados.'
+                    : category
+                        ? 'No hay servicios disponibles en esta categoría.'
+                        : 'Todos los servicios disponibles ya están incluidos.';
+            } else {
+                feedback.textContent = '';
+            }
+        };
+
+        const updateServiceSummary = () => {
+            const items = Array.from(list.querySelectorAll('[data-service-id]'));
+            emptyMessage.hidden = items.length > 0;
+            if (!items.length) {
+                summary.textContent = 'Sin servicios incluidos.';
+                return;
+            }
+            const components = items.map((item) => {
+                const name = item.querySelector('.plan-service-item-info strong').textContent;
+                const quantity = item.querySelector('[name^="servicio_cantidad_"]').value || '1';
+                return `${quantity} × ${name}`;
+            });
+            summary.textContent = `Se incluirá en la descripción pública: ${components.join(', ')}.`;
+        };
+
+        const addServiceItem = (option) => {
+            const serviceId = option.value;
+            if (list.querySelector(`[data-service-id="${serviceId}"]`)) return;
+
+            const item = document.createElement('div');
+            item.className = 'plan-service-item';
+            item.dataset.serviceId = serviceId;
+
+            const hiddenId = document.createElement('input');
+            hiddenId.type = 'hidden';
+            hiddenId.name = 'servicios';
+            hiddenId.value = serviceId;
+
+            const info = document.createElement('div');
+            info.className = 'plan-service-item-info';
+            const name = document.createElement('strong');
+            name.textContent = option.textContent;
+            const category = document.createElement('small');
+            category.textContent = option.dataset.category;
+            info.append(name, category);
+
+            const quantityId = `planServicioCantidad${builder.dataset.formId}${serviceId}`;
+            const quantityLabel = document.createElement('label');
+            quantityLabel.htmlFor = quantityId;
+            quantityLabel.textContent = 'Cantidad';
+            const quantity = document.createElement('input');
+            quantity.id = quantityId;
+            quantity.name = `servicio_cantidad_${serviceId}`;
+            quantity.type = 'number';
+            quantity.min = '1';
+            quantity.max = '1000';
+            quantity.value = '1';
+            quantity.required = true;
+
+            const removeButton = document.createElement('button');
+            removeButton.className = 'plan-service-remove';
+            removeButton.type = 'button';
+            removeButton.dataset.removeService = '';
+            removeButton.setAttribute('aria-label', `Quitar servicio ${option.textContent}`);
+            removeButton.textContent = '×';
+
+            item.append(hiddenId, info, quantityLabel, quantity, removeButton);
+            list.insertBefore(item, emptyMessage);
+            feedback.textContent = '';
+            serviceSelect.value = '';
+            updateServicePicker();
+            updateServiceSummary();
+        };
+
+        categorySelect.addEventListener('change', () => {
+            serviceSelect.value = '';
+            feedback.textContent = '';
+            updateServicePicker();
+        });
+        addButton.addEventListener('click', () => {
+            const option = serviceSelect.selectedOptions[0];
+            if (!option || !option.value) {
+                feedback.textContent = 'Selecciona un servicio para añadirlo.';
+                return;
+            }
+            addServiceItem(option);
+        });
+        list.addEventListener('click', (event) => {
+            const removeButton = event.target.closest('[data-remove-service]');
+            if (!removeButton) return;
+            removeButton.closest('[data-service-id]').remove();
+            feedback.textContent = '';
+            updateServicePicker();
+            updateServiceSummary();
+        });
+        list.addEventListener('input', (event) => {
+            if (event.target.matches('[name^="servicio_cantidad_"]')) {
+                updateServiceSummary();
+            }
+        });
+
+        updateServicePicker();
+        updateServiceSummary();
     });
     document.querySelectorAll('.plan-delete-form').forEach((form) => {
         form.addEventListener('submit', (event) => {

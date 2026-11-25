@@ -1,4 +1,4 @@
-{% load static i18n precio_format %}
+{% load static i18n l10n precio_format %}
 {% get_current_language as CURRENT_LANGUAGE %}
 <!DOCTYPE html>
 <html lang="{{ CURRENT_LANGUAGE }}">
@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% trans "Planes" %} | Caribe Confort</title>
-    <link rel="stylesheet" href="{% static 'css/planes.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/planes.css' %}?v=4">
     <link rel="stylesheet" href="{% static 'css/usuariomenu.css' %}?v=5">
     <link rel="stylesheet" href="{% static 'css/idiomas.css' %}?v=2">
     <link rel="stylesheet" href="{% static 'css/feedback.css' %}?v=1">
@@ -80,9 +80,17 @@
                     <div class="plan-content-main">
                         <h3>{{ p.nombre }}</h3>
                         <span class="plan-accent-line" aria-hidden="true"></span>
-                        <p class="plan-description">{{ p.descripcion }}</p>
+                        <p class="plan-description">
+                            {% if p.descripcion %}<span>{{ p.descripcion }}</span>{% endif %}
+                            {% if p.servicios_composicion %}
+                                <span class="plan-description-includes"><strong>{% trans "Incluye:" %}</strong>
+                                    {% for componente in p.servicios_composicion %}{{ componente.cantidad }} × {{ componente.servicio.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                </span>
+                            {% endif %}
+                        </p>
 
                         <ul class="plan-features">
+                            <li>{{ p.cantidad_habitaciones_incluidas }} habitación(es) · {{ p.tipo_habitacion.nombre }}</li>
                             {% for c in p.caracteristicas.all %}
                                 <li>
                                     <svg class="plan-feature-icon icon" aria-hidden="true"><use href="#i-{{ c.icono }}"/></svg>
@@ -94,18 +102,30 @@
 
                     <div class="plan-card-footer">
                         <div class="plan-price">
-                            <span>{% trans "Desde" %}</span>
-                            <strong>$ {{ p.precio|precio:0 }} <small>COP</small></strong>
+                            <span>{% if p.modo_precio == 'habitacion' %}{% trans "Total automático" %}{% else %}{% trans "Total fijo" %}{% endif %}</span>
+                            <strong>
+                                {% if p.modo_precio == 'habitacion' and p.precio_desde %}
+                                    $ {{ p.precio_desde|precio:0 }}
+                                {% elif p.modo_precio == 'habitacion' %}
+                                    {% trans "Según habitación" %}
+                                {% else %}
+                                    $ {{ p.precio|precio:0 }}
+                                {% endif %}
+                                <small>COP</small>
+                            </strong>
                         </div>
-                        {% if p.disponibles > 0 %}
+                        {% if p.disponibles > 0 and p.tipo_habitacion_id %}
                             {% if request.session.usuario_id %}
                                 <button type="button" class="plan-btn btn-abrir-modal-plan"
                                     data-id="{{ p.id }}"
                                     data-nombre="{{ p.nombre }}"
-                                    data-precio="{{ p.precio }}"
                                     data-duracion="{{ p.duracion_dias }}"
                                     data-max-adultos="{{ p.max_adultos }}"
-                                    data-max-ninos="{{ p.max_ninos }}">
+                                    data-max-ninos="{{ p.max_ninos }}"
+                                    data-modo-precio="{{ p.modo_precio }}"
+                                    data-tipo-habitacion="{{ p.tipo_habitacion_id }}"
+                                    data-cantidad-habitaciones="{{ p.cantidad_habitaciones_incluidas }}"
+                                    data-precio="{{ p.precio|unlocalize }}">
                                     {% trans "Reservar" %}
                                 </button>
                             {% else %}
@@ -113,7 +133,7 @@
                             {% endif %}
                         {% else %}
                             <button type="button" class="plan-btn plan-btn-unavailable" disabled>
-                                {% trans "No disponible" %}
+                                {% if not p.tipo_habitacion_id %}{% trans "Pendiente de configurar" %}{% else %}{% trans "No disponible" %}{% endif %}
                             </button>
                         {% endif %}
                     </div>
@@ -171,6 +191,24 @@
             <div class="m-info-fila">
                 <span class="m-info-label"><svg class="icon"><use href="#i-salida"/></svg>{% trans "Fecha de salida" %}</span>
                 <strong class="m-info-valor" id="txtPlanSalida">--</strong>
+            </div>
+            <div class="m-info-fila">
+                <label class="m-info-label" for="planTipoHabitacion">{% trans "Tipo de habitación incluido" %}</label>
+                <select id="planTipoHabitacion" class="form-control-modal" required>
+                    <option value="">{% trans "Selecciona un tipo" %}</option>
+                    {% for tipo in tipos_habitacion_reserva %}
+                        <option value="{{ tipo.id }}" data-tarifa="{{ tipo.tarifa|unlocalize }}" data-capacidad="{{ tipo.capacidad }}">
+                            {{ tipo.nombre }} · {{ tipo.capacidad }} {% trans "personas" %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="m-info-fila">
+                <label class="m-info-label" for="planCantidadHabitaciones">{% trans "Habitaciones incluidas en el plan" %}</label>
+                <input type="number" id="planCantidadHabitaciones" class="form-control-modal" min="1" value="1" readonly required>
+                <small class="m-info-valor" id="planDisponibilidadHabitaciones" aria-live="polite">
+                    {% trans "Selecciona tipo y fechas para consultar disponibilidad." %}
+                </small>
             </div>
             <div class="m-info-fila">
                 <label class="m-info-label" for="planAdultos"><svg class="icon"><use href="#i-personas"/></svg>{% trans "Adultos" %}</label>

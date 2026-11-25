@@ -176,6 +176,13 @@ class Planes(models.Model):
     orden       = models.IntegerField(default=0)
     disponibles  = models.IntegerField(default=10) 
     tipo_habitacion = models.ForeignKey(TipoHabitacion, on_delete=models.PROTECT, db_column='idtipohabitacion', null=True, blank=True)
+    cantidad_habitaciones_incluidas = models.PositiveIntegerField(default=1)
+    servicios_cantidades = models.JSONField(default=dict, blank=True)
+    modos_precio = [
+        ('manual', 'Manual'),
+        ('habitacion', 'Por habitación'),
+    ]
+    modo_precio = models.CharField(max_length=20, choices=modos_precio, default='manual')
     Servicios_tipos = models.ManyToManyField(Servicios, blank=True)
     duracion_dias = models.IntegerField(default=5)
     max_adultos = models.PositiveSmallIntegerField(default=4)
@@ -198,6 +205,14 @@ class Reservas (models.Model):
     huespedes=models.ForeignKey(Huespedes, on_delete=models.PROTECT, db_column='idhuespedes')
     habitaciones=models.ForeignKey(Habitaciones, on_delete=models.PROTECT, db_column='idhabitaciones', null=True, blank=True)
     planes = models.ForeignKey(Planes, on_delete=models.PROTECT, db_column='idplanes', null=True, blank=True)
+    tipo_habitacion_solicitado = models.ForeignKey(
+        TipoHabitacion,
+        on_delete=models.PROTECT,
+        related_name='reservas_solicitadas',
+        blank=True,
+        null=True,
+    )
+    cantidad_habitaciones = models.PositiveIntegerField(default=1)
     fechasolicitud=models.DateTimeField(auto_now_add=True)
     fechaentrada=models.DateField()
     fechasalida=models.DateField()
