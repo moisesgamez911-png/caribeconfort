@@ -54,8 +54,8 @@
         <label for="planHabitacion{{ form_id }}">{% trans "Tipo de habitación asociado" %}</label>
         <select id="planHabitacion{{ form_id }}" name="tipo_habitacion" required>
             <option value="">{% trans "Sin tipo de habitación" %}</option>
-            {% for tipo in tipos_habitacion %}
-            <option value="{{ tipo.id }}" {% if plan.tipo_habitacion_id == tipo.id %}selected{% endif %}>{{ tipo.nombre|reparar_texto }}</option>
+            {% for tipo in tipos_habitacion_plan %}
+            <option value="{{ tipo.id }}" {% if plan.tipo_habitacion_id == tipo.id %}selected{% endif %}>{{ tipo.nombre_selector_opcion }}</option>
             {% endfor %}
         </select>
     </div>

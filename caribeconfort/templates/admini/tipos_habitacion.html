@@ -98,7 +98,7 @@
             <header class="adm-dialog-heading"><div><p class="adm-eyebrow">{% trans "CATÁLOGO DE PLANES" %}</p><h2 id="tituloEditarPlan{{ plan.id }}">{% trans "Editar tipo de plan" %}</h2></div><button class="room-modal-close" type="button" data-close-plan aria-label="{% trans 'Cerrar' %}">&times;</button></header>
             <form method="post" enctype="multipart/form-data" class="plan-type-form">
                 {% csrf_token %}<input type="hidden" name="accion" value="editar_plan"><input type="hidden" name="plan_id" value="{{ plan.id }}"><input type="hidden" name="tab" value="planes">
-                {% include "admini/plan_tipo_campos.html" with form_id=plan.id plan=plan servicios_plan=plan.servicios_plan servicios_admin=servicios_admin categorias_servicio=categorias_servicio %}
+                {% include "admini/plan_tipo_campos.html" with form_id=plan.id plan=plan tipos_habitacion_plan=plan.tipos_habitacion_selector servicios_plan=plan.servicios_plan servicios_admin=servicios_admin categorias_servicio=categorias_servicio %}
                 <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-plan>{% trans "Cancelar" %}</button><button class="adm-button" type="submit">{% trans "Guardar cambios" %}</button></footer>
             </form>
         </dialog>
@@ -124,7 +124,7 @@
     <header class="adm-dialog-heading"><div><p class="adm-eyebrow">{% trans "CATÁLOGO DE PLANES" %}</p><h2 id="tituloTipoPlan">{% trans "Crear tipo de plan" %}</h2></div><button class="room-modal-close" type="button" data-close-plan aria-label="{% trans 'Cerrar' %}">&times;</button></header>
     <form method="post" enctype="multipart/form-data" class="plan-type-form">
         {% csrf_token %}<input type="hidden" name="accion" value="crear_plan"><input type="hidden" name="tab" value="planes">
-        {% include "admini/plan_tipo_campos.html" with form_id="nuevoPlan" servicios_plan=servicios_plan_nuevo servicios_admin=servicios_admin categorias_servicio=categorias_servicio %}
+        {% include "admini/plan_tipo_campos.html" with form_id="nuevoPlan" tipos_habitacion_plan=tipos_habitacion_nuevo servicios_plan=servicios_plan_nuevo servicios_admin=servicios_admin categorias_servicio=categorias_servicio %}
         <footer class="adm-form-actions"><button class="adm-button secondary" type="button" data-close-plan>{% trans "Cancelar" %}</button><button class="adm-button" type="submit">{% trans "Crear tipo de plan" %}</button></footer>
     </form>
 </dialog>

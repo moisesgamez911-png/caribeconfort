@@ -124,6 +124,9 @@
                                     data-max-ninos="{{ p.max_ninos }}"
                                     data-modo-precio="{{ p.modo_precio }}"
                                     data-tipo-habitacion="{{ p.tipo_habitacion_id }}"
+                                    data-tipo-habitacion-nombre="{{ p.tipo_habitacion.nombre }}"
+                                    data-tarifa="{{ p.tipo_habitacion.tarifa|unlocalize }}"
+                                    data-capacidad="{{ p.tipo_habitacion.capacidad }}"
                                     data-cantidad-habitaciones="{{ p.cantidad_habitaciones_incluidas }}"
                                     data-precio="{{ p.precio|unlocalize }}">
                                     {% trans "Reservar" %}
@@ -196,11 +199,6 @@
                 <label class="m-info-label" for="planTipoHabitacion">{% trans "Tipo de habitación incluido" %}</label>
                 <select id="planTipoHabitacion" class="form-control-modal" required>
                     <option value="">{% trans "Selecciona un tipo" %}</option>
-                    {% for tipo in tipos_habitacion_reserva %}
-                        <option value="{{ tipo.id }}" data-tarifa="{{ tipo.tarifa|unlocalize }}" data-capacidad="{{ tipo.capacidad }}">
-                            {{ tipo.nombre }} · {{ tipo.capacidad }} {% trans "personas" %}
-                        </option>
-                    {% endfor %}
                 </select>
             </div>
             <div class="m-info-fila">
@@ -259,7 +257,7 @@
 
 <script src="{% static 'js/bootstrap.bundle.js' %}"></script>
 <script src="{% static 'js/feedback.js' %}?v=1"></script>
-<script src="{% static 'js/planes.js' %}?v=10003"></script>
+<script src="{% static 'js/planes.js' %}?v=10004"></script>
 <script src="{% static 'js/cliente-menu-movil.js' %}?v=1"></script>
 {% include 'inc/client_mobile_nav.html' %}
 </body>

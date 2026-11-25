@@ -569,6 +569,39 @@ class AdminPlanTypeManagementTests(TestCase):
         self.assertContains(response, f'name="servicios" value="{servicio.id}"')
         self.assertContains(response, 'adNotificationToggle')
 
+    def test_plan_room_type_select_deduplicates_repaired_names(self):
+        tipo_estandar = TipoHabitacion.objects.create(
+            nombre='Estándar',
+            capacidad=2,
+            tarifa=Decimal('120000.00'),
+        )
+        plan = Planes.objects.create(
+            nombre='Plan con estándar',
+            precio=Decimal('50000.00'),
+            tipo_habitacion=tipo_estandar,
+        )
+        TipoHabitacion.objects.create(
+            nombre='EstÃ¡ndar',
+            capacidad=tipo_estandar.capacidad,
+            tarifa=tipo_estandar.tarifa,
+        )
+
+        response = self.client.get('/admintiposhabitacion?tab=planes')
+        html = response.content.decode()
+        create_select = html.split(
+            '<select id="planHabitacionnuevoPlan"', 1
+        )[1].split('</select>', 1)[0]
+        edit_select = html.split(
+            f'<select id="planHabitacion{plan.id}"', 1
+        )[1].split('</select>', 1)[0]
+
+        self.assertEqual(create_select.count('>Estándar</option>'), 1)
+        self.assertEqual(edit_select.count('>Estándar</option>'), 1)
+        self.assertIn(
+            f'<option value="{tipo_estandar.id}" selected>Estándar</option>',
+            edit_select,
+        )
+
     def test_create_edit_and_delete_unreferenced_plan_type(self):
         datos = {
             'accion': 'crear_plan',
@@ -880,13 +913,25 @@ class PlanReservationCreationTests(TestCase):
         )
 
     def test_booking_modal_offers_room_type_and_quantity(self):
+        TipoHabitacion.objects.create(
+            nombre=self.tipo_habitacion.nombre,
+            capacidad=4,
+            tarifa=Decimal('75000.00'),
+        )
         response = self.client.get('/planes')
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="planTipoHabitacion"')
         self.assertContains(response, 'id="planCantidadHabitaciones"')
         self.assertContains(response, 'data-tarifa="50000.00"')
+        self.assertContains(
+            response,
+            f'data-tipo-habitacion="{self.tipo_habitacion.id}"',
+        )
         self.assertContains(response, 'Habitación plan')
+        html = response.content.decode()
+        select = html.split('<select id="planTipoHabitacion"', 1)[1].split('</select>', 1)[0]
+        self.assertEqual(select.count('<option'), 1)
 
     def test_guest_can_create_future_plan_reservation(self):
         entrada = timezone.localdate() + timedelta(days=5)

@@ -64,6 +64,7 @@ from caribeconfort.models import (Habitaciones, Servicios,TipoHabitacion, Usuari
 Planes, CaracteristicaPlan, Huespedes, Roles, Pagos, Reservas, Hoteles, ServicioReserva, Acompanante,
 CodigosConvenio, TipoConvenio, ReglaDescuento)
 from caribeconfort.models import Resena
+from caribeconfort.templatetags.reparar_texto import reparar_texto
 
 logger = logging.getLogger(__name__)
 
@@ -548,8 +549,6 @@ def planes(request):
     planesnombre = Planes.objects.all
     todoplanes = Planes.objects.all
 
-    tipos_habitacion_reserva = list(TipoHabitacion.objects.order_by('nombre'))
-
     for p in planes_qs:
         p.precio_fmt = f"{int(p.precio):,}".replace(",", ".")
         p.url_imagen = _url_imagen_plan(p)
@@ -569,7 +568,6 @@ def planes(request):
     context = {
         'planes': planes_qs,
         'todoplanes': todoplanes,
-        'tipos_habitacion_reserva': tipos_habitacion_reserva,
     }
     return render(request, 'clientes/planes.html', context)
 
@@ -4036,9 +4034,60 @@ def tiposhabitacionadmin(request):
         messages.success(request, mensaje)
         return redirect(destino)
 
-    tipos_habitacion = list(TipoHabitacion.objects.order_by('nombre'))
+    tipos_habitacion = list(TipoHabitacion.objects.order_by('nombre', 'id'))
     for tipo in tipos_habitacion:
         tipo.url_imagen = _url_imagen_local(tipo.imagen)
+        tipo.nombre_selector = reparar_texto(tipo.nombre).strip()
+
+    planes_por_tipo = dict(
+        Planes.objects.exclude(tipo_habitacion_id__isnull=True)
+        .values('tipo_habitacion_id')
+        .annotate(total=Count('id'))
+        .values_list('tipo_habitacion_id', 'total')
+    )
+    habitaciones_por_tipo = dict(
+        Habitaciones.objects.exclude(tipohabitacion_id__isnull=True)
+        .values('tipohabitacion_id')
+        .annotate(total=Count('id'))
+        .values_list('tipohabitacion_id', 'total')
+    )
+    tipos_por_firma = {}
+    firmas_por_nombre = {}
+    for tipo in tipos_habitacion:
+        firma = (
+            tipo.nombre_selector.casefold(),
+            tipo.capacidad,
+            tipo.tarifa,
+        )
+        tipos_por_firma.setdefault(firma, []).append(tipo)
+        firmas_por_nombre.setdefault(firma[0], set()).add(firma)
+
+    representantes_por_firma = {
+        firma: max(
+            grupo,
+            key=lambda tipo: (
+                planes_por_tipo.get(tipo.id, 0),
+                habitaciones_por_tipo.get(tipo.id, 0),
+                -tipo.id,
+            ),
+        )
+        for firma, grupo in tipos_por_firma.items()
+    }
+    firmas_ordenadas = sorted(
+        representantes_por_firma,
+        key=lambda firma: (firma[0], firma[1], firma[2]),
+    )
+    tipos_habitacion_nuevo = []
+    for firma in firmas_ordenadas:
+        tipo = representantes_por_firma[firma]
+        tipo.nombre_selector_opcion = tipo.nombre_selector
+        if len(firmas_por_nombre[firma[0]]) > 1:
+            tipo.nombre_selector_opcion = (
+                f'{tipo.nombre_selector} · {tipo.capacidad} personas · '
+                f'{tipo.tarifa} COP'
+            )
+        tipos_habitacion_nuevo.append(tipo)
+
     servicios_admin = list(
         Servicios.objects.select_related('categoria_catalogo').order_by('nombre')
     )
@@ -4064,6 +4113,35 @@ def tiposhabitacionadmin(request):
         ).order_by('orden', 'id'))
     for plan in planes_admin:
         plan.url_imagen = _url_imagen_local(plan.imagen)
+        firma_plan = None
+        if plan.tipo_habitacion_id:
+            tipo_plan = plan.tipo_habitacion
+            tipo_plan.nombre_selector = reparar_texto(tipo_plan.nombre).strip()
+            firma_plan = (
+                reparar_texto(tipo_plan.nombre).strip().casefold(),
+                tipo_plan.capacidad,
+                tipo_plan.tarifa,
+            )
+        plan.tipos_habitacion_selector = [
+            (
+                plan.tipo_habitacion
+                if firma == firma_plan
+                else representantes_por_firma[firma]
+            )
+            for firma in firmas_ordenadas
+        ]
+        for tipo in plan.tipos_habitacion_selector:
+            tipo.nombre_selector_opcion = tipo.nombre_selector
+            firma = (
+                tipo.nombre_selector.casefold(),
+                tipo.capacidad,
+                tipo.tarifa,
+            )
+            if len(firmas_por_nombre[firma[0]]) > 1:
+                tipo.nombre_selector_opcion = (
+                    f'{tipo.nombre_selector} · {tipo.capacidad} personas · '
+                    f'{tipo.tarifa} COP'
+                )
         servicios_seleccionados = {
             servicio.id for servicio in plan.Servicios_tipos.all()
         }
@@ -4078,6 +4156,7 @@ def tiposhabitacionadmin(request):
 
     return render(request, 'admini/tipos_habitacion.html', {
         'tipos_habitacion': tipos_habitacion,
+        'tipos_habitacion_nuevo': tipos_habitacion_nuevo,
         'planes_admin': planes_admin,
         'servicios_admin': servicios_admin,
         'categorias_servicio': categorias_servicio,

@@ -82,11 +82,20 @@ document.addEventListener("DOMContentLoaded", function () {
                 modoPrecio: this.dataset.modoPrecio || 'manual',
                 precio: parseFloat(this.dataset.precio) || 0,
                 tipoHabitacion: this.dataset.tipoHabitacion,
+                nombreTipoHabitacion: this.dataset.tipoHabitacionNombre,
+                tarifaTipoHabitacion: this.dataset.tarifa,
+                capacidadTipoHabitacion: this.dataset.capacidad,
                 cantidadHabitaciones: parseInt(this.dataset.cantidadHabitaciones) || 1
             };
 
             inPlanId.value = planActual.id;
             if (inPlanCodigoConvenio) inPlanCodigoConvenio.value = '';
+            const opcionTipoHabitacion = document.createElement('option');
+            opcionTipoHabitacion.value = planActual.tipoHabitacion;
+            opcionTipoHabitacion.dataset.tarifa = planActual.tarifaTipoHabitacion;
+            opcionTipoHabitacion.dataset.capacidad = planActual.capacidadTipoHabitacion;
+            opcionTipoHabitacion.textContent = `${planActual.nombreTipoHabitacion} · ${planActual.capacidadTipoHabitacion} personas`;
+            selectTipoHabitacion.replaceChildren(opcionTipoHabitacion);
             selectTipoHabitacion.value = planActual.tipoHabitacion;
             selectTipoHabitacion.disabled = true;
             inputCantidadHabitaciones.value = String(planActual.cantidadHabitaciones);
