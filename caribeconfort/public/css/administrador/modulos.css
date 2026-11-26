@@ -200,7 +200,7 @@
 .adm-pagination a { padding: 8px 12px; color: #16484b; border: 1px solid #dce3e1; border-radius: 7px; }
 .adm-pagination a:hover { background: #f5f8f6; }
 
-.adm-form-card { max-width: 1000px; }
+.adm-form-card { max-width: 100%; }
 .adm-form { width: 100%; }
 .adm-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .adm-field { display: grid; gap: 7px; min-width: 0; }
