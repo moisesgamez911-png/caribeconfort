@@ -343,7 +343,7 @@ html[data-theme="dark"] .adm-category-actions .adm-button-danger {
 }
 .adm-category-destination .adm-help-text { margin: 0; }
 .adm-delete-form { display: flex; justify-content: flex-end; padding: 0 16px 16px; }
-.adm-upload-card { max-width: 1100px; }
+.adm-upload-card { max-width: 100%; }
 
 .room-stats {
     display: grid;
